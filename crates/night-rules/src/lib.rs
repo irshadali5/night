@@ -38,6 +38,10 @@ pub fn default_rules() -> Vec<Rule> {
             action: WindowAction::Float,
         },
         Rule {
+            app_id: "night-settings".to_string(),
+            action: WindowAction::Float,
+        },
+        Rule {
             app_id: "nm-connection-editor".to_string(),
             action: WindowAction::Float,
         },

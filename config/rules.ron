@@ -44,6 +44,10 @@
         app_id: "rsclip",
         action: Float,
     ),
+    Rule(
+        app_id: "night-settings",
+        action: Float,
+    ),
 
     // Application tag assignments
     Rule(
