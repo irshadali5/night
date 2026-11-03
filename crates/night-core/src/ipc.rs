@@ -25,13 +25,15 @@ pub struct DesktopStatus {
     pub inhibited: bool,
     #[serde(default)]
     pub gamma_temp: Option<u32>,
+    #[serde(default)]
+    pub media_info: Option<String>,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -45,6 +47,10 @@ impl DesktopStatus {
             self.inhibited,
             match self.gamma_temp {
                 Some(t) => t.to_string(),
+                None => "null".to_string(),
+            },
+            match &self.media_info {
+                Some(m) => format!("\"{}\"", m.replace('\\', "\\\\").replace('"', "\\\"")),
                 None => "null".to_string(),
             }
         )
@@ -64,7 +70,28 @@ impl DesktopStatus {
             .replace("{output_count}", &self.output_count.to_string())
             .replace("{inhibited}", if self.inhibited { "󰈈 Inhibited" } else { "󰈉 Normal" })
             .replace("{gamma}", &self.gamma_temp.map(|t| format!("{t}K")).unwrap_or_else(|| "6500K".into()))
+            .replace("{media}", self.media_info.as_deref().unwrap_or("No Media"))
     }
+}
+
+/// Actions for MPRIS Media Players
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MediaAction {
+    PlayPause,
+    Next,
+    Previous,
+    Stop,
+    Query,
+}
+
+/// Actions for Wayland Clipboard History
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ClipboardAction {
+    List,
+    Show,
+    Clear,
+    Copy(usize),
+    Record(String),
 }
 
 /// DPMS Display Power Action
@@ -130,6 +157,14 @@ pub enum IpcCommand {
     ShowSessionMenu,
     /// Triggers the Snowcap Tokyo Night visual window switcher modal
     ShowSwitcher,
+    /// Triggers the Snowcap Tokyo Night clipboard history modal
+    ShowClipboard,
+    /// Performs Wayland clipboard history operation
+    Clipboard(ClipboardAction),
+    /// Performs MPRIS media operation
+    Media(MediaAction),
+    /// Toggles a named scratchpad drawer (term, music, notes, fm)
+    ToggleNamedScratchpad(String),
     /// Toggles night light / gamma color temperature
     ToggleGamma,
     /// Sets night light color temperature in Kelvin (e.g. 3800, 6500)
@@ -157,6 +192,8 @@ pub enum IpcResponse {
     Status(DesktopStatus),
     Gamma(u32),
     Inhibited(bool),
+    Clipboard(Vec<String>),
+    Media(Option<String>),
     Error(String),
 }
 
