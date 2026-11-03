@@ -18,6 +18,27 @@ fn current_desktop_status() -> DesktopStatus {
         .map(|w| format!("{} ({})", w.title(), w.app_id()));
     let output_count = pinnacle_api::output::get_all().count();
 
+    let media_info = if which::which("playerctl").is_ok() {
+        std::process::Command::new("playerctl")
+            .args(["metadata", "--format", "{{artist}} - {{title}}"])
+            .output()
+            .ok()
+            .and_then(|out| {
+                if out.status.success() {
+                    let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                    if !s.is_empty() && s != " - " {
+                        Some(s)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+    } else {
+        None
+    };
+
     DesktopStatus {
         active_tag: state.active_tag,
         layout: night_layout::current_layout().name().into(),
@@ -28,6 +49,7 @@ fn current_desktop_status() -> DesktopStatus {
         last_reload: state.last_reload_timestamp,
         inhibited: night_core::gamma::is_inhibited(),
         gamma_temp: Some(night_core::gamma::current_temperature()),
+        media_info,
     }
 }
 
@@ -197,6 +219,45 @@ async fn config() {
                 }
                 IpcCommand::ShowSwitcher => {
                     night_binds::show_window_switcher();
+                    IpcResponse::Ok
+                }
+                IpcCommand::ShowClipboard => {
+                    night_binds::show_clipboard_modal();
+                    IpcResponse::Ok
+                }
+                IpcCommand::Clipboard(action) => {
+                    use night_core::ipc::ClipboardAction;
+                    match action {
+                        ClipboardAction::List => {
+                            let hist = night_core::clipboard::ClipboardHistory::load();
+                            let items = hist.items.into_iter().map(|i| i.content).collect();
+                            IpcResponse::Clipboard(items)
+                        }
+                        ClipboardAction::Clear => {
+                            night_core::clipboard::ClipboardHistory::clear_all();
+                            IpcResponse::Ok
+                        }
+                        ClipboardAction::Copy(idx) => {
+                            let _ = night_core::clipboard::ClipboardHistory::copy_entry_at(idx);
+                            IpcResponse::Ok
+                        }
+                        ClipboardAction::Record(text) => {
+                            night_core::clipboard::ClipboardHistory::record_text(&text);
+                            IpcResponse::Ok
+                        }
+                        ClipboardAction::Show => {
+                            night_binds::show_clipboard_modal();
+                            IpcResponse::Ok
+                        }
+                    }
+                }
+                IpcCommand::Media(action) => {
+                    night_binds::handle_media_action(action);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Ok
+                }
+                IpcCommand::ToggleNamedScratchpad(name) => {
+                    night_binds::toggle_named_scratchpad(&name);
                     IpcResponse::Ok
                 }
                 IpcCommand::ToggleGamma => {
