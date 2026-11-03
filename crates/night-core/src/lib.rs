@@ -5,6 +5,7 @@
 pub mod config;
 pub mod defaults;
 pub mod exec;
+pub mod gamma;
 pub mod ipc;
 pub mod monitors;
 pub mod state;
