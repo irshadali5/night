@@ -40,6 +40,7 @@ pub struct AppsConfig {
     pub launcher: String,
     pub minimal_launcher: String,
     pub file_manager: String,
+    pub lock_cmd: String,
 }
 
 impl Default for AppsConfig {
@@ -50,6 +51,7 @@ impl Default for AppsConfig {
             launcher: "anyrun".to_string(),
             minimal_launcher: "yofi".to_string(),
             file_manager: "yazi".to_string(),
+            lock_cmd: "veila".to_string(),
         }
     }
 }
