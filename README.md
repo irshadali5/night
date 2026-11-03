@@ -77,6 +77,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Screen Recorder** | [wl-screenrec](https://github.com/russelltg/wl-screenrec) | Rust + FFmpeg | Bound to `Super + Alt + r` in `night-binds`. |
 | **Idle Management** | [wayidle](https://github.com/hirsch-conner/wayidle) | Pure Rust | Screen lock & DPMS monitor started by `night-daemons`. |
 | **Screen Locker** | [Veila](https://github.com/naurissteins/Veila) | Pure Rust (`ext-session-lock-v1`) | Fast, modern PAM screen locker triggered on idle or via `Super + Escape`. |
+| **Night Light (Gamma)** | [wlsunset](https://github.com/kennylevinsen/wlsunset) | Pure Wayland Gamma | Smooth color temperature transitions for late-night ergonomics. |
 | **Settings & Control Center** | [`night-settings`](./crates/night-settings) | Pure Rust + Slint UI | Tokyo Night GUI settings & live preview bound to `Super + i`. |
 
 ---
@@ -98,6 +99,9 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 
 ### Window Navigation & Layout
 * `Super + Tab` $\rightarrow$ Cycle Tiling Layout (**MasterStack** $\rightarrow$ **Dwindle** $\rightarrow$ **Spiral** $\rightarrow$ **Fair**)
+* `Super + w` or `Alt + Tab` $\rightarrow$ Open **Tokyo Night Visual Window Switcher** (Interactive Cross-Tag Window Picker)
+* `Super + Shift + g` $\rightarrow$ Toggle **Night Light** / Blue Light Filter (6500K $\leftrightarrow$ 3800K)
+* `Super + Shift + p` $\rightarrow$ Toggle **Idle Inhibition / Presentation Mode** (Prevents Screen Lock & Sleep)
 * `Super + =` / `Super + -` $\rightarrow$ Increase / Decrease Layout Gaps in Real-Time
 * `Super + [h/j/k/l]` or `Super + Arrows` $\rightarrow$ Directional Focus (West / South / North / East)
 * `Super + Shift + [h/j/k/l]` $\rightarrow$ Swap Window with Neighbor in Direction
