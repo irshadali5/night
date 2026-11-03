@@ -306,17 +306,17 @@ pub fn register_all() {
 
     // Volume Up
     input::keybind(Mod::empty(), "XF86AudioRaiseVolume").on_press(|| {
-        spawn(Defaults::OSD_CLIENT, &["--output-volume", "raise"]);
+        night_core::audio::handle_volume_action(night_core::audio::VolumeAction::Raise(5));
     });
 
     // Volume Down
     input::keybind(Mod::empty(), "XF86AudioLowerVolume").on_press(|| {
-        spawn(Defaults::OSD_CLIENT, &["--output-volume", "lower"]);
+        night_core::audio::handle_volume_action(night_core::audio::VolumeAction::Lower(5));
     });
 
     // Audio Mute Toggle
     input::keybind(Mod::empty(), "XF86AudioMute").on_press(|| {
-        spawn(Defaults::OSD_CLIENT, &["--output-volume", "mute-toggle"]);
+        night_core::audio::handle_volume_action(night_core::audio::VolumeAction::MuteToggle);
     });
 
     // Brightness Up
