@@ -185,11 +185,37 @@ enum Commands {
     /// Query network connectivity status and active interfaces
     Net,
 
+    /// Display Tokyo Night real-time system performance monitor (CPU, RAM, Temp, Disk)
+    #[command(alias = "sys")]
+    Top,
+
+    /// Query Bluetooth controller and connected wireless peripherals
+    Bt,
+
+    /// Manage audio output sinks (headphones, speakers, HDMI, USB DAC)
+    Sink {
+        #[command(subcommand)]
+        action: Option<SinkCommand>,
+    },
+
     /// Query or set Tokyo Night desktop wallpaper
     Wallpaper {
         /// Optional path to wallpaper image file
         path: Option<String>,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum SinkCommand {
+    /// List all discovered audio output sinks
+    List,
+    /// Cycle to the next audio output sink
+    #[command(alias = "next")]
+    Cycle,
+    /// Set default audio output sink by ID
+    Set { id: u32 },
+    /// Open the Snowcap interactive audio output selector modal
+    Menu,
 }
 
 #[derive(Subcommand, Debug)]
@@ -745,6 +771,83 @@ async fn main() {
             Err(e) => fatal(e),
         },
 
+        Commands::Top => match send_command(&IpcCommand::GetSystemStats).await {
+            Ok(IpcResponse::SystemStats(s)) => {
+                println!("🌙 Tokyo Night System Resource Monitor");
+                println!("   CPU Usage    : {:<22} {:>3}%", ascii_bar(s.cpu_pct, 20), s.cpu_pct);
+                println!(
+                    "  󰍛 Memory (RAM) : {:<22} {:>3}% ({:.1} / {:.1} GiB)",
+                    ascii_bar(s.mem_pct, 20),
+                    s.mem_pct,
+                    s.mem_used_mb as f32 / 1024.0,
+                    s.mem_total_mb as f32 / 1024.0
+                );
+                println!(
+                    "  󰋊 Root Disk    : {:<22} {:>3}% ({} / {} GiB)",
+                    ascii_bar(s.disk_pct, 20),
+                    s.disk_pct,
+                    s.disk_used_gb,
+                    s.disk_total_gb
+                );
+                if let Some(temp) = s.cpu_temp_c {
+                    println!("  󰔏 Temperature  : {}°C", temp);
+                }
+            }
+            Ok(other) => println!("{other:?}"),
+            Err(e) => fatal(e),
+        },
+
+        Commands::Bt => match send_command(&IpcCommand::GetBluetooth).await {
+            Ok(IpcResponse::Bluetooth(Some(bt))) => {
+                println!("󰂯 Bluetooth Subsystem: {}", bt.display_string());
+                println!("  Powered   : {}", if bt.is_powered { "Yes" } else { "No" });
+                println!("  Connected : {}", if bt.is_connected { "Yes" } else { "No" });
+                if !bt.devices.is_empty() {
+                    println!("  Connected Wireless Peripherals:");
+                    for dev in &bt.devices {
+                        let bat = dev.battery_pct.map(|b| format!("({b}%)")).unwrap_or_default();
+                        println!("    {} {:<28} {} [{}]", dev.icon, dev.name, bat, dev.mac);
+                    }
+                }
+            }
+            Ok(IpcResponse::Bluetooth(None)) => {
+                println!("󰂲 Bluetooth: Controller not detected or uninitialized");
+            }
+            Ok(other) => println!("{other:?}"),
+            Err(e) => fatal(e),
+        },
+
+        Commands::Sink { action } => match action {
+            Some(SinkCommand::List) | None => {
+                match send_command(&IpcCommand::GetAudioSinks).await {
+                    Ok(IpcResponse::AudioSinks(sinks)) => {
+                        println!("🔊 Discovered Audio Output Sinks (PipeWire / PulseAudio):");
+                        if sinks.is_empty() {
+                            println!("  No active output sinks found.");
+                        } else {
+                            for sink in sinks {
+                                let marker = if sink.is_default { "▶ [ACTIVE]" } else { "          " };
+                                println!("  {} [{}] {} {}", marker, sink.id, sink.icon(), sink.name);
+                            }
+                        }
+                    }
+                    Ok(other) => println!("{other:?}"),
+                    Err(e) => fatal(e),
+                }
+            }
+            Some(SinkCommand::Cycle) => {
+                run_cmd(IpcCommand::CycleAudioSink).await;
+                println!("🔊 Cycled to next audio output sink");
+            }
+            Some(SinkCommand::Set { id }) => {
+                run_cmd(IpcCommand::SetAudioSink(id)).await;
+                println!("🔊 Default audio output sink set to ID: {id}");
+            }
+            Some(SinkCommand::Menu) => {
+                run_cmd(IpcCommand::ShowAudioSinkMenu).await;
+            }
+        },
+
         Commands::Wallpaper { path } => {
             if let Some(p) = path {
                 let cmd = format!("swww img \"{p}\" --transition-type wipe --transition-angle 30 --transition-duration 1.5");
@@ -786,6 +889,12 @@ fn fatal(msg: String) -> ! {
     exit(1);
 }
 
+fn ascii_bar(pct: u8, width: usize) -> String {
+    let filled = ((pct as usize * width) / 100).min(width);
+    let empty = width.saturating_sub(filled);
+    format!("[{}{}]", "█".repeat(filled), "░".repeat(empty))
+}
+
 fn print_status_table(status: &DesktopStatus) {
     let glyph = status.active_tag_glyph.as_deref().unwrap_or("󰣆");
     let theme = status.theme.as_deref().unwrap_or("Night");
@@ -804,6 +913,12 @@ fn print_status_table(status: &DesktopStatus) {
     }
     if let Some(ref n) = status.network {
         println!("  Network Connectivity : {}", n.display_string());
+    }
+    if let Some(ref s) = status.system {
+        println!("  System Resources     : CPU: {}% | RAM: {}% ({:.1}/{:.1} GiB)", s.cpu_pct, s.mem_pct, s.mem_used_mb as f32 / 1024.0, s.mem_total_mb as f32 / 1024.0);
+    }
+    if let Some(ref bt) = status.bluetooth {
+        println!("  Bluetooth Status     : {}", bt.display_string());
     }
     println!("  Night Light (Gamma)  : {}K", status.gamma_temp.unwrap_or(6500));
     println!("  Idle Inhibition Mode : {}", if status.inhibited { "☕ Enabled (Sleep Suspended)" } else { "🌙 Normal Power Saving" });
