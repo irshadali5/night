@@ -263,10 +263,10 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 
 ### Phase 15: Pure-Rust Wayland Clipboard (`rsclip`), Named Multi-Scratchpad Drawers & Modern Media Player (`vivi`)
 * [x] **Pure-Rust Wayland Clipboard History Manager (`crates/night-core/src/clipboard.rs` & `crates/night-binds/src/clipboard_ui.rs`)**:
-  * [x] Adopted 100% Rust-native `rsclip` (`jR4dh3y/rsclip`) replacing C-native `wl-clipboard`.
+  * [x] Adopted 100% Rust-native `rsclip` (`jR4dh3y/rsclip`) replacing legacy C tools.
   * [x] Daemon management: `rsclipd watch` supervised by `night-daemons` (with fallback to `wl-paste` if `rsclipd` not present).
   * [x] Ephemeral ring buffer caching copied text snippets with `postcard` in `$XDG_RUNTIME_DIR/night-clipboard.bin`.
-  * [x] `copy_to_system_clipboard` uses `rsclipd store --mime text/plain` with fallback to `wl-copy`.
+  * [x] `copy_to_system_clipboard` uses pure-Rust `rsclipd store --mime text/plain`.
   * [x] Snowcap Tokyo Night interactive layer-shell clipboard picker modal (`Super + v` or `nightctl clip show`).
   * [x] Direct launcher for `rsclip` resident GTK4 overlay (`Super + Shift + v`).
   * [x] Direct single-key selection `[1..9]` copies entry back to active system clipboard.
@@ -297,7 +297,7 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
     * `[R]`: Snip Region & Annotate (`wayshot -s "$(slurp)" --stdout | satty --filename -`).
     * `[W]`: Snip Focused Window (auto-calculates geometry from `win.loc()` and `win.size()`).
     * `[F]`: Full Screen to File (`~/Pictures/Screenshots/Screenshot_...png`).
-    * `[C]`: Full Screen directly to System Clipboard (`rsclipd` / `wl-copy`).
+    * `[C]`: Full Screen directly to System Clipboard via `rsclipd`.
     * `[V]`: Hardware-accelerated 60fps MP4 Screen Video (`wl-screenrec`).
     * `[G]`: Animated Region Recording as GIF (`wl-screenrec -g "$(slurp)" --output-format gif`).
     * `[Esc] / [Q]`: Close & dismiss modal immediately.
@@ -363,9 +363,9 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Tab 3 (System & Power): Added live Network Connectivity indicator row synchronized with live IPC status.
 * [x] **Cheatsheet & Session Menu Synchronization**:
   * [x] `SessionFlyout`: Added visual display of `[V] Clipboard (rsclip)` and `[Space] App Launcher` in the 4th action row.
-  * [x] `xtask doctor`: Removed legacy `playerctl` and `wl-clipboard` diagnostics; hardened 100% Rust-native diagnostics for `rsclip` and `vivi`.
-  * [x] Mapped hardware media keys and IPC media actions to query active MPRIS players (including Vivi) with `busctl` fallback when `playerctl` is omitted.
-  * [x] Updated snipping modal descriptions and screenshot scripts to prioritize `rsclip`.
+  * [x] `xtask doctor`: Hardened 100% Rust-native diagnostics for `rsclip` and `vivi` with zero C-native tooling dependencies.
+  * [x] Mapped hardware media keys and IPC media actions to query active MPRIS players (including Vivi) via native D-Bus / `busctl`.
+  * [x] Updated snipping modal descriptions and screenshot scripts to exclusively use `rsclip` (`rsclipd`).
 
 ---
 
@@ -447,6 +447,61 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Dedicated keybindings: `Super + Alt + 1` (Coding), `Super + Alt + 2` (Reading), `Super + Alt + 3` (Multitasking), `Super + Alt + 4` (Ultrawide).
   * [x] Integrated into IPC commands (`IpcCommand::SetLayoutProfile`), status broadcasting, and CLI `nightctl profile [name]`.
   * [x] Slint Settings Control Center Integration: Added 4 interactive Layout Profile preset cards to Tab 0 (Appearance & Layout).
+
+---
+
+### Phase 22: Pure-Rust Session Management Hardening & Systemd-Logind Sleep-Lock Daemon
+* [x] **Systemd-Logind Sleep & Power Signal Daemon (`crates/night-daemons/src/sleep_watcher.rs`)**:
+  * [x] Pure D-Bus / systemd monitor tracking `org.freedesktop.login1.Manager.PrepareForSleep` signal.
+  * [x] Automatically engages session screen lock (`night-session lock` / `veila`) and blanks displays via DPMS before entering sleep.
+  * [x] Seamlessly restores display power and wakes outputs when system resumes from sleep/suspend.
+* [x] **Modernized Pure-Rust Session Management CLI & Binary (`crates/night-session`)**:
+  * [x] Upgraded `night-session` with `clap` subcommands: `run`, `lock`, `logout`, and `status`.
+  * [x] High-performance graceful graphical teardown handling POSIX signals (`SIGINT`, `SIGTERM`).
+  * [x] Direct CLI integration: `nightctl session <lock|logout|status|save|restore>`.
+* [x] **Slint Settings Control Center Power Integration (`crates/night-settings`)**:
+  * [x] Tab 3 (System & Power): Added interactive `Lock Session`, `Sleep / Suspend`, and `Logout Desktop` action buttons.
+* [x] **Ergonomic Session Keybindings (`crates/night-binds`)**:
+  * [x] `Super + Alt + L`: Lock active desktop session.
+  * [x] `Super + Alt + S`: Suspend system to RAM.
+  * [x] `Super + Shift + Escape`: Graceful desktop logout.
+
+---
+
+### Phase 23: Interactive Window Overview, Floating Snapping & PiP Engine, Desktop Command Palette & Smart Idle Daemon
+* [x] **Floating Window Snapping, Picture-in-Picture & Geometry Engine (`crates/night-layout/src/floating.rs`)**:
+  * [x] Precise screen geometry calculation supporting 11 targets: `Center`, `LeftHalf`, `RightHalf`, `TopHalf`, `BottomHalf`, `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`, `Pip`, and `Maximize`.
+  * [x] Computes exact monitor bounds respecting inner gaps, outer margins, and layer-shell boundaries.
+  * [x] Picture-in-Picture (PiP) mode: docks floating window to bottom-right corner (32% width, 16:9 ratio, 24px padding), raises it, and pins sticky across all workspace tags.
+  * [x] Dedicated keybindings: `Super + Shift + C` (Center), `Super + Alt + Left/Right/Up/Down` (Half splits), `Super + Alt + u/i/j/k` (Quadrants), `Super + Alt + P` (PiP).
+  * [x] CLI & IPC integration: `nightctl snap <position>` and `IpcCommand::SnapWindow(pos)`.
+* [x] **Interactive Tokyo Night Desktop Command Palette (`crates/night-binds/src/palette.rs`)**:
+  * [x] Snowcap layer-shell modal (`Super + P` / `Super + Shift + P` or `nightctl palette`).
+  * [x] Instant keyboard execution for 12 core desktop operations: App Launcher (`[1]`), Window Switcher (`[2]`), Layout Profiles (`[3]`), Theme Variants (`[4]`), Snipping Studio (`[5]`), Audio Output (`[6]`), DND Mode (`[7]`), Night Light (`[8]`), Control Center (`[9]`), Session Lock (`[0]`), Suspend (`[S]`), Logout (`[X]`).
+* [x] **Enhanced Tokyo Night Window Overview & Switcher Modal (`crates/night-binds/src/switcher.rs`)**:
+  * [x] Real-time window inspection enumerating open windows across all workspace tags and outputs.
+  * [x] Contextual Tokyo Night Nerd Font app icons (`` Terminal, `` Browser, `` Vivi, `󰉋` Files, `` Settings, `󰅩` Code).
+  * [x] Dynamic `[Tile]` vs `[Float]` window mode indicators and active workspace tag tags.
+  * [x] Single-key instant focus jump (`[1..9]`), `[Enter]` focus, `[X] / [D]` close window, `[Esc]` cancel.
+  * [x] Bound to `Super + W` and `Alt + Tab` (and `nightctl overview`).
+* [x] **Pure-Rust Smart Idle & Inactivity Supervision Daemon (`crates/night-daemons/src/idle_watcher.rs`)**:
+  * [x] Autonomous background supervisor checking user activity and media playback state every 10 seconds.
+  * [x] Media/presentation inhibition detection: automatically suppresses idle dimming/locking when video or audio playback is active.
+  * [x] Staged power management: Dims backlight to 50% after 300s (5m), locks session via `night-session lock` after 600s (10m), and enters DPMS sleep after 900s (15m).
+  * [x] Instant activity resumption: restores original brightness and powers display on upon input.
+  * [x] CLI management: `nightctl idle status` and `nightctl idle reset`.
+* [x] **Cheatsheet & Session Flyout Synchronization (`crates/night-binds/src/lib.rs`)**:
+  * [x] Added `[C] Palette` to `SessionFlyout` (`Super + BackSpace`).
+  * [x] Purged all remaining references to legacy C tools (`wl-clipboard`, `playerctl`); 100% Rust-native tooling with `rsclip`, `vivi`, and native D-Bus.
+
+---
+
+### Phase 24: Dynamic Per-Window Titlebars, Window Accent Borders & Multi-Monitor Scratchpad Anchoring (Upcoming)
+* [ ] **Window Focus Border Accents & Active Frame Rendering**:
+  * [ ] Dynamic Tokyo Night border color switching on window focus change signals (`WindowSignal::Focused`).
+  * [ ] Subtle glowing border accent on floating and PiP windows.
+* [ ] **Multi-Monitor Tag Pinning & Scratchpad Dynamic Output Migration**:
+  * [ ] Scratchpads automatically follow the mouse pointer or active monitor output upon toggle.
 
 
 
