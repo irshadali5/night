@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme] [Signals & Packaging]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging & Media]
 ```
 
 ---
@@ -123,3 +123,53 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Implemented `cargo xtask session` to install session files to `~/.cargo/bin` and wayland-sessions.
 * [x] **Comprehensive Status Reporting (`cargo xtask msg status`)**:
   * [x] Added `GetStatus` IPC query returning `DesktopStatus` (active tag, layout, inner/outer gaps, connected monitor count, focused window title).
+
+---
+
+### Phase 8: Per-Tag Layout Memory, Dropdown Scratchpad & Ironbar TOML Integration
+* [x] **Per-Tag Dynamic Layout Memory (`crates/night-layout`)**:
+  * [x] Implemented per-tag layout state (`HashMap<String, LayoutKind>`).
+  * [x] Each workspace tag (1..9) independently remembers its preferred tiling algorithm across switches (AwesomeWM style).
+* [x] **Quake-Style Dropdown Scratchpad Terminal (`night-binds`, `night-rules`, `config/rules.ron`)**:
+  * [x] Bound to `Super + grave` (tilde `~` key) for instant toggle.
+  * [x] Window tag visibility management: hides when visible on active tag; attaches, raises, and focuses when hidden.
+  * [x] Auto-floats via declarative window matching rules in `rules.ron`.
+  * [x] Remote triggerable via IPC (`cargo xtask msg scratchpad`).
+* [x] **Ironbar Native TOML Configuration (`config/ironbar.toml`)**:
+  * [x] Created clean TOML configuration for Ironbar GTK4-layer-shell status bar.
+  * [x] Configured modules: `workspaces`, `focused` window title, `clock`, `sys_info`, `volume`, and `tray`.
+  * [x] Automated deployment to `~/.config/ironbar/config.toml` alongside `style.css`.
+
+---
+
+### Phase 9: Real-time Bar Integration, Snowcap Companion Widgets & `nightctl` CLI Client
+* [x] **Dedicated CLI Binary (`crates/night-ctl`)**:
+  * [x] Created `nightctl` binary crate for sub-millisecond local command execution (`tag`, `layout`, `gaps`, `scratchpad`, `overlay`, `quit-prompt`, `status`, `stream`).
+  * [x] Added `stream` mode for streaming real-time status updates without polling lag (`--json` or `--format "{layout} | {active_tag} | {active_window}"`).
+  * [x] Integrated into workspace members and automated installation via `cargo xtask install` into `~/.cargo/bin/nightctl`.
+* [x] **Multi-Client Pub/Sub IPC Streaming (`crates/night-core/src/ipc.rs`)**:
+  * [x] Transitioned IPC server to async multi-client task spawning with `tokio::sync::broadcast`.
+  * [x] Added `IpcCommand::Subscribe` persistent event stream delivering zero-allocation postcard binary updates.
+  * [x] Connected compositor signals (`TagSignal::Active`, `WindowSignal::Focused`, `WindowSignal::TitleChanged`) for live state synchronization.
+* [x] **Native Snowcap Widget Integration (`crates/night-binds`)**:
+  * [x] Wired up `pinnacle_api::snowcap::BindOverlay` (`Super + /`) displaying all registered keybindings in a Tokyo Night styled modal.
+  * [x] Wired up `pinnacle_api::snowcap::QuitPrompt` (`Super + Shift + e`) with confirmation and Tokyo Night dark palette styling.
+  * [x] Exposed remote triggers via IPC (`IpcCommand::ShowBinds`, `IpcCommand::ShowQuit`).
+* [x] **Ironbar Real-Time Layout Stream Module (`config/ironbar.toml`)**:
+  * [x] Added custom layout module running `nightctl stream --format '󰕰 {layout}'` with interactive click-to-cycle (`on_click_left = "nightctl layout next"`).
+
+---
+
+### Phase 10: Dynamic Wallpaper Transitions, Screen Capture, Systemd Units & Arch Linux PKGBUILD
+* [x] **Dynamic Wallpaper Controller (`assets/wallpaper.sh`)**:
+  * [x] Pure-Rust Wayland wallpaper manager using `swww` with smooth Tokyo Night transition shaders (`--transition-type grow`).
+  * [x] Automatic discovery from `~/.config/night/wallpapers/` or `~/Pictures/Wallpapers/` with fallback to solid Tokyo Night canvas (`#1a1b26`).
+* [x] **Rust-Native Screen Capture & Recording Helper Scripts (`assets/`)**:
+  * [x] `assets/screenshot.sh`: Pure-Rust interactive selection and fullscreen capture via `wayshot` + `slurp` + `satty`.
+  * [x] `assets/record.sh`: Hardware-accelerated Wayland screen recorder toggle via `wl-screenrec`.
+* [x] **Systemd User Session Lifecycle Integration (`assets/`)**:
+  * [x] Created `assets/night-session.target` and `assets/night-session.service` for systemd `--user` process supervision.
+* [x] **Arch Linux & AUR PKGBUILD Specification (`packaging/PKGBUILD`)**:
+  * [x] Complete Arch Linux packaging specification compiling `night-pinnacle` and `nightctl` with `--release --locked`.
+  * [x] Installs binaries, session desktop entry, scripts, Tokyo Night config templates, and systemd units to standard Arch Linux paths.
+
