@@ -84,6 +84,16 @@ enum MsgCommand {
     /// Triggers the Snowcap quit confirmation prompt
     #[command(alias = "prompt-quit")]
     QuitPrompt,
+    /// Triggers the Snowcap Tokyo Night interactive visual window switcher
+    #[command(alias = "switch-window")]
+    Switcher,
+    /// Toggles or sets night light color temperature
+    Gamma {
+        /// Optional temperature in Kelvin (e.g. 3800, 6500)
+        temp: Option<u32>,
+    },
+    /// Toggles idle inhibition (presentation mode)
+    Inhibit,
     /// Subscribes to real-time status updates stream
     Stream,
 }
@@ -432,6 +442,15 @@ async fn task_msg(command: MsgCommand) {
         MsgCommand::Gaps { delta } => night_core::ipc::IpcCommand::AdjustGaps(delta),
         MsgCommand::Overlay => night_core::ipc::IpcCommand::ShowBinds,
         MsgCommand::QuitPrompt => night_core::ipc::IpcCommand::ShowQuit,
+        MsgCommand::Switcher => night_core::ipc::IpcCommand::ShowSwitcher,
+        MsgCommand::Gamma { temp } => {
+            if let Some(t) = temp {
+                night_core::ipc::IpcCommand::SetGamma(t)
+            } else {
+                night_core::ipc::IpcCommand::ToggleGamma
+            }
+        }
+        MsgCommand::Inhibit => night_core::ipc::IpcCommand::ToggleInhibit,
         MsgCommand::Stream => {
             println!("📡 Subscribing to real-time Night status stream...");
             let res = night_core::ipc::subscribe_status(|s| {
@@ -494,6 +513,7 @@ fn task_doctor() {
         ("wl-screenrec Recorder", "wl-screenrec", "wl-screenrec"),
         ("wayidle Idle Daemon", "wayidle", "wayidle"),
         ("Veila Screen Locker", "veila", "veila-bin"),
+        ("wlsunset Night Light", "wlsunset", "wlsunset"),
     ];
 
     let mut missing = Vec::new();
