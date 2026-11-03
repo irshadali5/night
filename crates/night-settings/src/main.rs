@@ -409,6 +409,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
+    ui.on_session_suspend(|| {
+        night_core::exec::spawn_shell("systemctl suspend 2>/dev/null || true");
+    });
+
+    ui.on_session_logout(|| {
+        night_core::exec::spawn_shell("night-session logout");
+    });
+
     ui.on_session_poweroff(|| {
         night_core::exec::spawn_shell("systemctl poweroff");
     });
