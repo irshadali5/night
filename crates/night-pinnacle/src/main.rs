@@ -58,6 +58,7 @@ fn current_desktop_status() -> DesktopStatus {
         theme: Some(theme_str),
         battery: night_core::power::read_battery(),
         volume: night_core::audio::get_volume(),
+        network: night_core::network::read_network(),
     }
 }
 
@@ -360,6 +361,13 @@ async fn config() {
                 }
                 IpcCommand::GetVolume => {
                     IpcResponse::Volume(night_core::audio::get_volume())
+                }
+                IpcCommand::ShowLauncher => {
+                    night_binds::show_launcher_modal();
+                    IpcResponse::Ok
+                }
+                IpcCommand::GetNetwork => {
+                    IpcResponse::Network(night_core::network::read_network())
                 }
                 IpcCommand::Subscribe => {
                     IpcResponse::Status(current_desktop_status())
