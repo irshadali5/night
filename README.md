@@ -66,25 +66,54 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Screenshots** | [Wayshot](https://github.com/waycrate/wayshot) + [Satty](https://github.com/gabm/Satty) | Rust (`wayland-rs` / GTK4) | Bound to `Print` and `Super + Print` in `night-binds`. |
 | **Screen Recorder** | [wl-screenrec](https://github.com/russelltg/wl-screenrec) | Rust + FFmpeg | Bound to `Super + Alt + r` in `night-binds`. |
 | **Idle Management** | [wayidle](https://github.com/hirsch-conner/wayidle) | Pure Rust | Screen lock & DPMS monitor started by `night-daemons`. |
+| **Screen Locker** | [Veila](https://github.com/naurissteins/Veila) | Pure Rust (`ext-session-lock-v1`) | Fast, modern PAM screen locker triggered on idle or via `Super + Escape`. |
 
 ---
 
-## ⌨️ Default Keybindings (in `night-binds`)
+## ⌨️ Default Keybindings & Mouse Controls (in `night-binds`)
 
-* `Super + Return` $\rightarrow$ Launch **Alacritty**
-* `Super + Shift + Return` $\rightarrow$ Launch **Rio**
-* `Super + Space` $\rightarrow$ Launch **Anyrun**
-* `Super + d` $\rightarrow$ Launch **Yofi**
+### Application Launchers
+* `Super + Return` $\rightarrow$ Launch **Alacritty** (Terminal)
+* `Super + Shift + Return` $\rightarrow$ Launch **Rio** (GPU Terminal)
+* `Super + Space` $\rightarrow$ Launch **Anyrun** (Runner)
+* `Super + d` $\rightarrow$ Launch **Yofi** (Minimal Pure-Rust Launcher)
 * `Super + e` $\rightarrow$ Launch **Yazi** (Terminal File Manager)
+* `Super + Escape` $\rightarrow$ Lock Session (**Veila** - Pure Rust Locker)
+
+### Window Navigation & Layout
+* `Super + [h/j/k/l]` or `Super + Arrows` $\rightarrow$ Directional Focus (West / South / North / East)
+* `Super + Shift + [h/j/k/l]` $\rightarrow$ Swap Window with Neighbor in Direction
+* `Super + f` $\rightarrow$ Toggle Fullscreen Mode
+* `Super + Shift + Space` $\rightarrow$ Toggle Floating Mode
 * `Super + Shift + q` $\rightarrow$ Close Focused Window
+* `Super + Left-Click + Drag` $\rightarrow$ Interactive Floating Window Move
+* `Super + Right-Click + Drag` $\rightarrow$ Interactive Floating Window Resize
+
+### Dynamic Workspaces (AwesomeWM Style)
+* `Super + [1..9]` $\rightarrow$ View Tag 1–9
+* `Super + Shift + [1..9]` $\rightarrow$ Move Window to Tag 1–9
+
+### Multimedia, Screenshots & Session
 * `Super + Shift + r` $\rightarrow$ Reload Pinnacle Configuration
 * `Super + Shift + e` $\rightarrow$ Exit Pinnacle Session
 * `Print` $\rightarrow$ Interactive Region Screenshot & Annotate (**Wayshot** + **Satty**)
 * `Super + Print` $\rightarrow$ Fullscreen Screenshot to `~/Pictures`
 * `Super + Alt + r` $\rightarrow$ Toggle Screen Recording (**wl-screenrec**)
-* `Super + [1..9]` $\rightarrow$ View Tag 1–9
-* `Super + Shift + [1..9]` $\rightarrow$ Move Window to Tag 1–9
-* `XF86Audio*` / `XF86MonBrightness*` $\rightarrow$ SwayOSD Volume & Brightness Controls
+* `XF86Audio*` / `XF86MonBrightness*` $\rightarrow$ SwayOSD Volume & Brightness Indicators
+
+---
+
+## 📡 Remote IPC Control (`cargo xtask msg`)
+
+Night includes an ultra-fast Unix domain socket server (`$XDG_RUNTIME_DIR/night.sock`) powered by `postcard` binary serialization. You can control your desktop from external scripts, Ironbar status widgets, or terminals:
+
+```bash
+cargo xtask msg reload              # Reloads configuration
+cargo xtask msg switch-tag 3        # Switches active tag to 3
+cargo xtask msg state               # Queries session state
+cargo xtask msg spawn alacritty     # Launches an application
+cargo xtask msg close               # Closes currently focused window
+```
 
 ---
 
@@ -95,7 +124,7 @@ No need for GNU Stow, Makefiles, or shell scripts. Everything is handled by the 
 ### 1. Install System Dependencies (Arch Linux)
 ```bash
 sudo pacman -S --needed rustup base-devel git slurp
-yay -S pinnacle-comp-git alacritty ironbar-bin anyrun-git wired-notify-bin swayosd-git swww wayshot satty-bin yazi
+yay -S pinnacle-comp-git alacritty ironbar-bin anyrun-git wired-notify-bin swayosd-git swww wayshot satty-bin yazi veila-bin
 ```
 
 ### 2. Install Night
