@@ -23,6 +23,18 @@
 
     // Application tag assignments
     Rule(
+        app_id: "zen",
+        action: MoveToTag("2"),
+    ),
+    Rule(
+        app_id: "brave",
+        action: MoveToTag("2"),
+    ),
+    Rule(
+        app_id: "favnyr",
+        action: MoveToTag("3"),
+    ),
+    Rule(
         app_id: "discord",
         action: MoveToTag("8"),
     ),
