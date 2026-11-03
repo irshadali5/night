@@ -2,8 +2,10 @@
 //! Built with `clap` for typed, declarative CLI parsing.
 //! Connects directly to the Night Wayland Compositor via Unix domain sockets.
 
-use clap::{Parser, Subcommand};
-use night_core::ipc::{send_command, subscribe_status, DesktopStatus, IpcCommand, IpcResponse};
+use clap::{Parser, Subcommand, ValueEnum};
+use night_core::ipc::{
+    send_command, subscribe_status, DesktopStatus, DpmsAction, IpcCommand, IpcResponse, OutputNav,
+};
 use std::io::{self, Write};
 use std::process::exit;
 
@@ -13,7 +15,7 @@ use std::process::exit;
     author = "Night Desktop Team",
     version,
     about = "🌙 Lightning-fast pure-Rust CLI client and status streaming tool for the Night Wayland Desktop",
-    long_about = "Connects directly to the Night Wayland Compositor via Unix domain sockets.\nProvides instant remote control, layout management, and zero-allocation event streaming for status bars."
+    long_about = "Connects directly to the Night Wayland Compositor via Unix domain sockets.\nProvides instant remote control, multi-monitor navigation, layout management, and zero-allocation event streaming for status bars."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -59,6 +61,20 @@ enum Commands {
         delta: f32,
     },
 
+    /// Manage multi-monitor focus and window placement across displays
+    #[command(alias = "monitor")]
+    Output {
+        #[command(subcommand)]
+        action: OutputCommand,
+    },
+
+    /// Control DPMS display power across connected monitors
+    Dpms {
+        /// Power action to execute (on, off, toggle)
+        #[arg(value_enum, default_value = "toggle")]
+        action: DpmsArg,
+    },
+
     /// Toggle the Quake-style dropdown scratchpad terminal
     Scratchpad,
 
@@ -82,6 +98,28 @@ enum Commands {
 
     /// Reload the compositor configuration
     Reload,
+}
+
+#[derive(Subcommand, Debug)]
+enum OutputCommand {
+    /// Focus the next connected display output
+    Next,
+    /// Focus the previous connected display output
+    Prev,
+    /// Focus a display output by connector name (e.g. "DP-1")
+    Focus { name: String },
+    /// Move the currently focused window to next, prev, or named output
+    MoveWindow {
+        /// Target output ("next", "prev", or connector name)
+        target: String,
+    },
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug)]
+enum DpmsArg {
+    On,
+    Off,
+    Toggle,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -151,6 +189,32 @@ async fn main() {
 
         Commands::Gaps { delta } => {
             run_cmd(IpcCommand::AdjustGaps(delta)).await;
+        }
+
+        Commands::Output { action } => match action {
+            OutputCommand::Next => run_cmd(IpcCommand::FocusOutput(OutputNav::Next)).await,
+            OutputCommand::Prev => run_cmd(IpcCommand::FocusOutput(OutputNav::Prev)).await,
+            OutputCommand::Focus { name } => {
+                run_cmd(IpcCommand::FocusOutput(OutputNav::Name(name))).await
+            }
+            OutputCommand::MoveWindow { target } => {
+                let nav = match target.to_lowercase().as_str() {
+                    "next" => OutputNav::Next,
+                    "prev" => OutputNav::Prev,
+                    _ => OutputNav::Name(target),
+                };
+                run_cmd(IpcCommand::MoveWindowToOutput(nav)).await;
+            }
+        },
+
+        Commands::Dpms { action } => {
+            let act = match action {
+                DpmsArg::On => DpmsAction::On,
+                DpmsArg::Off => DpmsAction::Off,
+                DpmsArg::Toggle => DpmsAction::Toggle,
+            };
+            run_cmd(IpcCommand::Dpms(act)).await;
+            println!("🌙 DPMS display power updated: {action:?}");
         }
 
         Commands::Scratchpad => {
