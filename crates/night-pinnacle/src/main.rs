@@ -19,7 +19,7 @@ fn current_desktop_status() -> DesktopStatus {
 
     let media_info = {
         let bus_out = std::process::Command::new("sh")
-            .args(["-c", "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{print $1}'); if [ -n \"$target\" ]; then busctl --user get-property \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata 2>/dev/null; elif command -v playerctl >/dev/null 2>&1; then playerctl metadata --format '{{artist}} - {{title}}' 2>/dev/null; fi"])
+            .args(["-c", "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{print $1}'); if [ -n \"$target\" ]; then busctl --user get-property \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata 2>/dev/null; fi"])
             .output()
             .ok();
         bus_out.and_then(|out| {
@@ -240,8 +240,17 @@ async fn config() {
                     night_binds::show_session_menu();
                     IpcResponse::Ok
                 }
-                IpcCommand::ShowSwitcher => {
+                IpcCommand::ShowSwitcher | IpcCommand::ShowOverview => {
                     night_binds::show_window_switcher();
+                    IpcResponse::Ok
+                }
+                IpcCommand::ShowPalette => {
+                    night_binds::show_command_palette();
+                    IpcResponse::Ok
+                }
+                IpcCommand::SnapWindow(pos) => {
+                    night_binds::snap_focused_window(pos);
+                    night_core::ipc::broadcast_status(current_desktop_status());
                     IpcResponse::Ok
                 }
                 IpcCommand::ShowClipboard => {
@@ -334,6 +343,9 @@ async fn config() {
                             if let Some(focused) = pinnacle_api::window::get_focused() {
                                 focused.toggle_maximized();
                             }
+                        }
+                        night_core::ipc::WindowAction::Snap(pos) => {
+                            night_binds::snap_focused_window(pos);
                         }
                     }
                     night_core::ipc::broadcast_status(current_desktop_status());
