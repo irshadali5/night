@@ -12,11 +12,13 @@ use tracing::info;
 pub mod audio_ui;
 pub mod clipboard_ui;
 pub mod launcher;
+pub mod notifications_ui;
 pub mod snipping;
 pub mod switcher;
 pub use audio_ui::show_audio_sink_modal;
 pub use clipboard_ui::show_clipboard_modal;
 pub use launcher::{scan_desktop_applications, show_launcher_modal, AppEntry};
+pub use notifications_ui::show_notifications_modal;
 pub use snipping::show_snipping_modal;
 pub use switcher::show_window_switcher;
 
@@ -328,14 +330,19 @@ pub fn register_all() {
         show_audio_sink_modal();
     });
 
+    // Super + Shift + n -> Notification Center & DND Modal
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'n').on_press(|| {
+        show_notifications_modal();
+    });
+
     // Brightness Up
     input::keybind(Mod::empty(), "XF86MonBrightnessUp").on_press(|| {
-        spawn(Defaults::OSD_CLIENT, &["--brightness", "raise"]);
+        night_core::backlight::handle_backlight_action(night_core::backlight::BacklightAction::Raise(5));
     });
 
     // Brightness Down
     input::keybind(Mod::empty(), "XF86MonBrightnessDown").on_press(|| {
-        spawn(Defaults::OSD_CLIENT, &["--brightness", "lower"]);
+        night_core::backlight::handle_backlight_action(night_core::backlight::BacklightAction::Lower(5));
     });
 
     // MPRIS Media Controls (Vivi & System Players)
@@ -723,7 +730,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
         .into()]);
 
         let actions_row4 = Row::new_with_children([Text::new(
-            "  [V] Clipboard        [Space] App Launcher        [A] Audio Sinks",
+            "  [V] Clipboard     [Space] Launcher     [A] Sinks     [N] Notify",
         )
         .style(
             text::Style::new()
@@ -841,6 +848,10 @@ pub fn show_session_menu() {
             Keysym::a | Keysym::A => {
                 h.close();
                 show_audio_sink_modal();
+            }
+            Keysym::n | Keysym::N => {
+                h.close();
+                show_notifications_modal();
             }
             _ => {
                 h.close();
