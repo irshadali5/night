@@ -1,11 +1,14 @@
 //! 🌙 Night Interprocess Communication (IPC)
-//! Powered by `interprocess` for Unix domain sockets and `postcard` for binary message serialization.
+//! Powered by standard Unix domain sockets and `postcard` for binary message serialization.
+//! Provides single-command request/response as well as real-time event streaming for status bars and widgets.
 
 use crate::state::SessionState;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{UnixListener, UnixStream};
+use tokio::sync::broadcast;
 use tracing::{error, info, warn};
 
 /// Comprehensive real-time desktop status
@@ -18,6 +21,39 @@ pub struct DesktopStatus {
     pub active_window: Option<String>,
     pub output_count: usize,
     pub last_reload: u64,
+}
+
+impl DesktopStatus {
+    /// Formats this status as a JSON string without external dependencies
+    pub fn to_json(&self) -> String {
+        format!(
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{}}}"#,
+            self.active_tag,
+            self.layout,
+            self.inner_gaps,
+            self.outer_gaps,
+            match &self.active_window {
+                Some(w) => format!("\"{}\"", w.replace('\\', "\\\\").replace('"', "\\\"")),
+                None => "null".to_string(),
+            },
+            self.output_count,
+            self.last_reload
+        )
+    }
+
+    /// Formats this status using a customizable template string
+    pub fn format_template(&self, template: &str) -> String {
+        let active_win = self.active_window.as_deref().unwrap_or("None");
+        template
+            .replace("{active_tag}", &self.active_tag)
+            .replace("{tag}", &self.active_tag)
+            .replace("{layout}", &self.layout)
+            .replace("{active_window}", active_win)
+            .replace("{window}", active_win)
+            .replace("{inner_gaps}", &format!("{:.0}", self.inner_gaps))
+            .replace("{outer_gaps}", &format!("{:.0}", self.outer_gaps))
+            .replace("{output_count}", &self.output_count.to_string())
+    }
 }
 
 /// Desktop IPC Request Commands
@@ -41,6 +77,14 @@ pub enum IpcCommand {
     GetLayout,
     /// Queries full desktop status
     GetStatus,
+    /// Toggles the interactive Quake-style dropdown scratchpad terminal
+    ToggleScratchpad,
+    /// Triggers the Snowcap keybindings overlay
+    ShowBinds,
+    /// Triggers the Snowcap quit confirmation prompt
+    ShowQuit,
+    /// Subscribes to real-time status updates (persistent event stream)
+    Subscribe,
 }
 
 /// Desktop IPC Response
@@ -53,6 +97,22 @@ pub enum IpcResponse {
     Error(String),
 }
 
+/// Global status broadcast channel for real-time subscribers
+static STATUS_BROADCASTER: OnceLock<broadcast::Sender<DesktopStatus>> = OnceLock::new();
+
+/// Returns reference to the global status broadcaster sender
+pub fn broadcaster() -> &'static broadcast::Sender<DesktopStatus> {
+    STATUS_BROADCASTER.get_or_init(|| {
+        let (tx, _rx) = broadcast::channel(64);
+        tx
+    })
+}
+
+/// Broadcasts a newly computed `DesktopStatus` to all connected streaming clients
+pub fn broadcast_status(status: DesktopStatus) {
+    let _ = broadcaster().send(status);
+}
+
 /// Resolves standard XDG socket path via `dirs`
 pub fn socket_path() -> PathBuf {
     dirs::runtime_dir()
@@ -60,7 +120,7 @@ pub fn socket_path() -> PathBuf {
         .join("night.sock")
 }
 
-/// Sends an IPC command to the running Night compositor instance
+/// Sends a single IPC command to the running Night compositor instance and awaits response
 pub async fn send_command(cmd: &IpcCommand) -> Result<IpcResponse, String> {
     let path = socket_path();
     let mut stream = UnixStream::connect(&path)
@@ -85,10 +145,49 @@ pub async fn send_command(cmd: &IpcCommand) -> Result<IpcResponse, String> {
         .map_err(|e| format!("Deserialization error: {e}"))
 }
 
-/// Runs the IPC listener server, processing commands asynchronously
-pub async fn run_ipc_server<F>(mut handler: F)
+/// Connects to Night IPC and subscribes to real-time `DesktopStatus` updates.
+/// Invokes the provided callback on each update until disconnected.
+pub async fn subscribe_status<F>(mut on_status: F) -> Result<(), String>
 where
-    F: FnMut(IpcCommand) -> IpcResponse + Send + 'static,
+    F: FnMut(DesktopStatus),
+{
+    let path = socket_path();
+    let mut stream = UnixStream::connect(&path)
+        .await
+        .map_err(|e| format!("Failed to connect to Night IPC socket ({}): {e}", path.display()))?;
+
+    let payload = postcard::to_stdvec(&IpcCommand::Subscribe)
+        .map_err(|e| format!("Serialization error: {e}"))?;
+
+    let len = payload.len() as u32;
+    stream.write_all(&len.to_be_bytes()).await.map_err(|e| e.to_string())?;
+    stream.write_all(&payload).await.map_err(|e| e.to_string())?;
+
+    loop {
+        let mut len_buf = [0u8; 4];
+        if stream.read_exact(&mut len_buf).await.is_err() {
+            break;
+        }
+        let resp_len = u32::from_be_bytes(len_buf) as usize;
+
+        let mut resp_buf = vec![0u8; resp_len];
+        if stream.read_exact(&mut resp_buf).await.is_err() {
+            break;
+        }
+
+        if let Ok(IpcResponse::Status(status)) = postcard::from_bytes::<IpcResponse>(&resp_buf) {
+            on_status(status);
+        }
+    }
+
+    Ok(())
+}
+
+/// Runs the multi-client IPC listener server, supporting both single commands and persistent event subscriptions.
+pub async fn run_ipc_server<F, S>(handler: F, status_provider: S)
+where
+    F: Fn(IpcCommand) -> IpcResponse + Send + Sync + 'static,
+    S: Fn() -> DesktopStatus + Send + Sync + 'static,
 {
     let path = socket_path();
     let _ = std::fs::remove_file(&path);
@@ -104,29 +203,70 @@ where
         }
     };
 
+    let handler_arc = std::sync::Arc::new(handler);
+    let status_arc = std::sync::Arc::new(status_provider);
+
     loop {
         match listener.accept().await {
             Ok((mut stream, _addr)) => {
-                let mut len_buf = [0u8; 4];
-                if stream.read_exact(&mut len_buf).await.is_err() {
-                    continue;
-                }
-                let len = u32::from_be_bytes(len_buf) as usize;
-                let mut buf = vec![0u8; len];
-                if stream.read_exact(&mut buf).await.is_err() {
-                    continue;
-                }
+                let handler = handler_arc.clone();
+                let status_fn = status_arc.clone();
 
-                let response = match postcard::from_bytes::<IpcCommand>(&buf) {
-                    Ok(cmd) => handler(cmd),
-                    Err(e) => IpcResponse::Error(format!("Malformed command: {e}")),
-                };
+                tokio::spawn(async move {
+                    let mut len_buf = [0u8; 4];
+                    if stream.read_exact(&mut len_buf).await.is_err() {
+                        return;
+                    }
+                    let len = u32::from_be_bytes(len_buf) as usize;
+                    let mut buf = vec![0u8; len];
+                    if stream.read_exact(&mut buf).await.is_err() {
+                        return;
+                    }
 
-                if let Ok(resp_payload) = postcard::to_stdvec(&response) {
-                    let resp_len = resp_payload.len() as u32;
-                    let _ = stream.write_all(&resp_len.to_be_bytes()).await;
-                    let _ = stream.write_all(&resp_payload).await;
-                }
+                    match postcard::from_bytes::<IpcCommand>(&buf) {
+                        Ok(IpcCommand::Subscribe) => {
+                            // 1. Send immediate initial state
+                            let initial = status_fn();
+                            if let Ok(initial_payload) = postcard::to_stdvec(&IpcResponse::Status(initial)) {
+                                let len = initial_payload.len() as u32;
+                                if stream.write_all(&len.to_be_bytes()).await.is_err()
+                                    || stream.write_all(&initial_payload).await.is_err()
+                                {
+                                    return;
+                                }
+                            }
+
+                            // 2. Stream broadcasted events
+                            let mut rx = broadcaster().subscribe();
+                            while let Ok(status) = rx.recv().await {
+                                if let Ok(resp_payload) = postcard::to_stdvec(&IpcResponse::Status(status)) {
+                                    let len = resp_payload.len() as u32;
+                                    if stream.write_all(&len.to_be_bytes()).await.is_err()
+                                        || stream.write_all(&resp_payload).await.is_err()
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        Ok(cmd) => {
+                            let response = handler(cmd);
+                            if let Ok(resp_payload) = postcard::to_stdvec(&response) {
+                                let resp_len = resp_payload.len() as u32;
+                                let _ = stream.write_all(&resp_len.to_be_bytes()).await;
+                                let _ = stream.write_all(&resp_payload).await;
+                            }
+                        }
+                        Err(e) => {
+                            let response = IpcResponse::Error(format!("Malformed command: {e}"));
+                            if let Ok(resp_payload) = postcard::to_stdvec(&response) {
+                                let resp_len = resp_payload.len() as u32;
+                                let _ = stream.write_all(&resp_len.to_be_bytes()).await;
+                                let _ = stream.write_all(&resp_payload).await;
+                            }
+                        }
+                    }
+                });
             }
             Err(e) => {
                 warn!(error = %e, "IPC accept error");
