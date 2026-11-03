@@ -1,0 +1,20 @@
+[package]
+name = "night-settings"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Tokyo Night Control Center & System Settings written in Slint"
+
+[dependencies]
+night-core.workspace = true
+slint.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+clap.workspace = true
+dirs.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[build-dependencies]
+slint-build.workspace = true
+

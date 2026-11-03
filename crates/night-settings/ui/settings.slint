@@ -1,0 +1,978 @@
+import { Button, Slider, LineEdit, CheckBox, ScrollView, ComboBox } from "std-widgets.slint";
+
+component SidebarItem inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    in property <bool> active;
+    callback clicked();
+
+    background: active ? #24283b : (touch.has-hover ? #1f2335 : transparent);
+    border-radius: 8px;
+    height: 44px;
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 12px;
+        alignment: start;
+
+        Text {
+            text: root.icon;
+            font-size: 16px;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.text;
+            color: root.active ? #7aa2f7 : (touch.has-hover ? #c0caf5 : #787c99);
+            font-size: 14px;
+            font-weight: root.active ? 600 : 400;
+            vertical-alignment: center;
+        }
+    }
+
+    if active: Rectangle {
+        x: 0;
+        width: 4px;
+        height: 24px;
+        y: (parent.height - self.height) / 2;
+        background: #7aa2f7;
+        border-radius: 2px;
+    }
+}
+
+component TokyoButton inherits Rectangle {
+    in property <string> text;
+    in property <color> btn-color: #7aa2f7;
+    in property <color> text-color: #1a1b26;
+    callback clicked();
+
+    background: touch.pressed ? root.btn-color.darker(0.2) : (touch.has-hover ? root.btn-color.brighter(0.15) : root.btn-color);
+    border-radius: 6px;
+    height: 36px;
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+
+    Text {
+        text: root.text;
+        color: root.text-color;
+        font-weight: 600;
+        font-size: 13px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+export component SettingsWindow inherits Window {
+    title: "Night Settings - Control Center";
+    min-width: 900px;
+    min-height: 620px;
+    background: #1a1b26;
+
+    // State properties
+    in-out property <int> active-tab: 0;
+    in-out property <string> ipc-status: "Connected";
+    in-out property <bool> ipc-connected: true;
+    in-out property <string> notification-msg: "";
+
+    // Appearance properties
+    in-out property <float> inner-gaps: 6.0;
+    in-out property <float> outer-gaps: 10.0;
+    in-out property <int> border-width: 2;
+    in-out property <string> current-layout: "MasterStack";
+
+    // Application preferences
+    in-out property <string> app-terminal: "alacritty";
+    in-out property <string> app-alt-terminal: "rio";
+    in-out property <string> app-browser: "zen-browser";
+    in-out property <string> app-alt-browser: "brave";
+    in-out property <string> app-file-manager: "favnyr";
+    in-out property <string> app-term-file-manager: "yazi";
+    in-out property <string> app-launcher: "anyrun";
+    in-out property <string> app-minimal-launcher: "yofi";
+    in-out property <string> app-lock-cmd: "veila";
+
+    // Monitor properties
+    in-out property <string> monitor-name: "*";
+    in-out property <float> monitor-scale: 1.0;
+    in-out property <int> monitor-width: 1920;
+    in-out property <int> monitor-height: 1080;
+    in-out property <int> monitor-refresh: 60;
+    in-out property <string> monitor-transform: "Normal";
+    in-out property <string> monitor-vrr: "Off";
+
+    // System properties
+    in-out property <bool> autostart-daemons: true;
+    in-out property <string> active-tag: "1";
+    in-out property <int> output-count: 1;
+
+    // Callbacks to Rust backend
+    callback apply-gaps-preview(float, float);
+    callback save-appearance-config(float, float, int);
+    callback cycle-layout();
+    callback save-apps-config(string, string, string, string, string, string, string, string, string);
+    callback save-monitor-config(string, float, int, int, int, string, string);
+    callback toggle-dpms();
+    callback lock-screen();
+    callback reload-compositor();
+    callback session-poweroff();
+    callback session-reboot();
+
+    HorizontalLayout {
+        padding: 0px;
+        spacing: 0px;
+
+        // -------------------------------------------------------------
+        // Left Navigation Sidebar
+        // -------------------------------------------------------------
+        Rectangle {
+            width: 240px;
+            background: #16161e;
+
+            VerticalLayout {
+                padding: 16px;
+                spacing: 12px;
+
+                // Header
+                VerticalLayout {
+                    spacing: 4px;
+                    padding-bottom: 12px;
+
+                    Text {
+                        text: "🌙 Project Night";
+                        color: #c0caf5;
+                        font-size: 18px;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: "Compositor Control Center";
+                        color: #565f89;
+                        font-size: 11px;
+                    }
+                }
+
+                // Nav items
+                SidebarItem {
+                    text: "Appearance & Gaps";
+                    icon: "🎨";
+                    active: root.active-tab == 0;
+                    clicked => { root.active-tab = 0; }
+                }
+
+                SidebarItem {
+                    text: "Applications";
+                    icon: "🚀";
+                    active: root.active-tab == 1;
+                    clicked => { root.active-tab = 1; }
+                }
+
+                SidebarItem {
+                    text: "Displays & Monitors";
+                    icon: "🖥️";
+                    active: root.active-tab == 2;
+                    clicked => { root.active-tab = 2; }
+                }
+
+                SidebarItem {
+                    text: "System & Power";
+                    icon: "⚡";
+                    active: root.active-tab == 3;
+                    clicked => { root.active-tab = 3; }
+                }
+
+                SidebarItem {
+                    text: "About Night";
+                    icon: "ℹ️";
+                    active: root.active-tab == 4;
+                    clicked => { root.active-tab = 4; }
+                }
+
+                // Spacer
+                Rectangle { vertical-stretch: 1; }
+
+                // IPC Status Pill
+                Rectangle {
+                    height: 36px;
+                    background: #1f2335;
+                    border-radius: 8px;
+                    border-color: #292e42;
+                    border-width: 1px;
+
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        spacing: 8px;
+                        alignment: center;
+
+                        Rectangle {
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 4px;
+                            background: root.ipc-connected ? #9ece6a : #f7768e;
+                            y: (parent.height - self.height) / 2;
+                        }
+
+                        Text {
+                            text: root.ipc-status;
+                            color: root.ipc-connected ? #9ece6a : #f7768e;
+                            font-size: 11px;
+                            font-weight: 600;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Right Main Content Area
+        // -------------------------------------------------------------
+        Rectangle {
+            horizontal-stretch: 1;
+            background: #1a1b26;
+
+            VerticalLayout {
+                padding: 24px;
+                spacing: 16px;
+
+                // Notification bar (if active)
+                if root.notification-msg != "": Rectangle {
+                    height: 38px;
+                    background: #24283b;
+                    border-color: #7aa2f7;
+                    border-width: 1px;
+                    border-radius: 6px;
+
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: 8px;
+                        alignment: start;
+
+                        Text {
+                            text: "ℹ️ " + root.notification-msg;
+                            color: #7aa2f7;
+                            font-size: 13px;
+                            font-weight: 600;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+
+                // =========================================================
+                // TAB 0: Appearance & Gaps
+                // =========================================================
+                if root.active-tab == 0: ScrollView {
+                    VerticalLayout {
+                        spacing: 20px;
+                        alignment: start;
+
+                        // Header
+                        VerticalLayout {
+                            spacing: 4px;
+                            Text {
+                                text: "🎨 Appearance & Tiling Gaps";
+                                color: #c0caf5;
+                                font-size: 20px;
+                                font-weight: 700;
+                            }
+                            Text {
+                                text: "Configure dynamic gaps, window borders, and layout geometry in real-time.";
+                                color: #787c99;
+                                font-size: 13px;
+                            }
+                        }
+
+                        // Card: Gaps Controls
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 16px;
+
+                                Text {
+                                    text: "Window Gaps Configuration";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                // Inner Gaps
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    HorizontalLayout {
+                                        Text {
+                                            text: "Inner Gaps (between windows):";
+                                            color: #c0caf5;
+                                            font-size: 13px;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text {
+                                            text: Math.round(root.inner-gaps) + " px";
+                                            color: #7dcfff;
+                                            font-weight: 600;
+                                            font-size: 13px;
+                                        }
+                                    }
+                                    Slider {
+                                        minimum: 0;
+                                        maximum: 40;
+                                        value: root.inner-gaps;
+                                        changed(val) => {
+                                            root.inner-gaps = val;
+                                            root.apply-gaps-preview(root.inner-gaps, root.outer-gaps);
+                                        }
+                                    }
+                                }
+
+                                // Outer Gaps
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    HorizontalLayout {
+                                        Text {
+                                            text: "Outer Gaps (screen edges):";
+                                            color: #c0caf5;
+                                            font-size: 13px;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text {
+                                            text: Math.round(root.outer-gaps) + " px";
+                                            color: #7dcfff;
+                                            font-weight: 600;
+                                            font-size: 13px;
+                                        }
+                                    }
+                                    Slider {
+                                        minimum: 0;
+                                        maximum: 60;
+                                        value: root.outer-gaps;
+                                        changed(val) => {
+                                            root.outer-gaps = val;
+                                            root.apply-gaps-preview(root.inner-gaps, root.outer-gaps);
+                                        }
+                                    }
+                                }
+
+                                // Border Width
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    HorizontalLayout {
+                                        Text {
+                                            text: "Window Border Width:";
+                                            color: #c0caf5;
+                                            font-size: 13px;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text {
+                                            text: root.border-width + " px";
+                                            color: #7dcfff;
+                                            font-weight: 600;
+                                            font-size: 13px;
+                                        }
+                                    }
+                                    Slider {
+                                        minimum: 0;
+                                        maximum: 8;
+                                        value: root.border-width;
+                                        changed(val) => {
+                                            root.border-width = Math.round(val);
+                                        }
+                                    }
+                                }
+
+                                // Action Buttons
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    TokyoButton {
+                                        text: "Save to night.toml";
+                                        btn-color: #7aa2f7;
+                                        clicked => {
+                                            root.save-appearance-config(root.inner-gaps, root.outer-gaps, root.border-width);
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        text: "Reset Defaults (6px / 10px)";
+                                        btn-color: #414868;
+                                        text-color: #c0caf5;
+                                        clicked => {
+                                            root.inner-gaps = 6.0;
+                                            root.outer-gaps = 10.0;
+                                            root.border-width = 2;
+                                            root.apply-gaps-preview(6.0, 10.0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Card: Layout Engine
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: "Tiling Layout Algorithm";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                HorizontalLayout {
+                                    alignment: center;
+                                    spacing: 16px;
+
+                                    Text {
+                                        text: "Current Active Layout:";
+                                        color: #c0caf5;
+                                        font-size: 14px;
+                                        vertical-alignment: center;
+                                    }
+
+                                    Rectangle {
+                                        background: #1f2335;
+                                        border-color: #7aa2f7;
+                                        border-width: 1px;
+                                        border-radius: 6px;
+                                        height: 32px;
+                                        width: 140px;
+
+                                        Text {
+                                            text: "󰕰 " + root.current-layout;
+                                            color: #7aa2f7;
+                                            font-weight: 700;
+                                            font-size: 13px;
+                                            horizontal-alignment: center;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        width: 160px;
+                                        text: "Cycle Next Layout";
+                                        btn-color: #bb9af7;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.cycle-layout();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // =========================================================
+                // TAB 1: Default Applications
+                // =========================================================
+                if root.active-tab == 1: ScrollView {
+                    VerticalLayout {
+                        spacing: 20px;
+                        alignment: start;
+
+                        VerticalLayout {
+                            spacing: 4px;
+                            Text {
+                                text: "🚀 Default Applications";
+                                color: #c0caf5;
+                                font-size: 20px;
+                                font-weight: 700;
+                            }
+                            Text {
+                                text: "Set default pure-Rust applications launched via global keybindings.";
+                                color: #787c99;
+                                font-size: 13px;
+                            }
+                        }
+
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                // Terminal
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Primary Terminal (Super+Return):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-terminal;
+                                    }
+                                }
+
+                                // Alt Terminal
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Secondary Terminal (Super+Shift+Return):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-alt-terminal;
+                                    }
+                                }
+
+                                // Browser
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Primary Browser (Super+b):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-browser;
+                                    }
+                                }
+
+                                // Alt Browser
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Secondary Browser (Super+Shift+b):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-alt-browser;
+                                    }
+                                }
+
+                                // GUI File Manager
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "GUI File Manager (Super+e):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-file-manager;
+                                    }
+                                }
+
+                                // TUI File Manager
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Terminal File Manager (Super+Shift+e):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-term-file-manager;
+                                    }
+                                }
+
+                                // App Launcher
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "App Launcher (Super+d):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-launcher;
+                                    }
+                                }
+
+                                // Lock Screen
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Lock Screen Command (Super+Escape):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-lock-cmd;
+                                    }
+                                }
+
+                                Rectangle { height: 8px; }
+
+                                TokyoButton {
+                                    text: "Save Applications to night.toml";
+                                    btn-color: #7aa2f7;
+                                    clicked => {
+                                        root.save-apps-config(
+                                            root.app-terminal,
+                                            root.app-alt-terminal,
+                                            root.app-browser,
+                                            root.app-alt-browser,
+                                            root.app-file-manager,
+                                            root.app-term-file-manager,
+                                            root.app-launcher,
+                                            root.app-minimal-launcher,
+                                            root.app-lock-cmd
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // =========================================================
+                // TAB 2: Displays & Monitors
+                // =========================================================
+                if root.active-tab == 2: ScrollView {
+                    VerticalLayout {
+                        spacing: 20px;
+                        alignment: start;
+
+                        VerticalLayout {
+                            spacing: 4px;
+                            Text {
+                                text: "🖥️ Displays & Monitors";
+                                color: #c0caf5;
+                                font-size: 20px;
+                                font-weight: 700;
+                            }
+                            Text {
+                                text: "Configure monitor connectors, HiDPI scaling, and orientation saved to `monitors.ron`.";
+                                color: #787c99;
+                                font-size: 13px;
+                            }
+                        }
+
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Target Output Connector:";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 200px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.monitor-name;
+                                        placeholder-text: "* (or eDP-1, DP-1, HDMI-A-1)";
+                                    }
+                                }
+
+                                // HiDPI Scale
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    HorizontalLayout {
+                                        Text {
+                                            text: "HiDPI Display Scale:";
+                                            color: #c0caf5;
+                                            font-size: 13px;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text {
+                                            text: root.monitor-scale + "x";
+                                            color: #7dcfff;
+                                            font-weight: 600;
+                                            font-size: 13px;
+                                        }
+                                    }
+
+                                    HorizontalLayout {
+                                        spacing: 10px;
+                                        TokyoButton {
+                                            text: "1.0x (100%)";
+                                            btn-color: root.monitor-scale == 1.0 ? #7aa2f7 : #1f2335;
+                                            text-color: root.monitor-scale == 1.0 ? #1a1b26 : #c0caf5;
+                                            clicked => { root.monitor-scale = 1.0; }
+                                        }
+                                        TokyoButton {
+                                            text: "1.25x (125%)";
+                                            btn-color: root.monitor-scale == 1.25 ? #7aa2f7 : #1f2335;
+                                            text-color: root.monitor-scale == 1.25 ? #1a1b26 : #c0caf5;
+                                            clicked => { root.monitor-scale = 1.25; }
+                                        }
+                                        TokyoButton {
+                                            text: "1.5x (150%)";
+                                            btn-color: root.monitor-scale == 1.5 ? #7aa2f7 : #1f2335;
+                                            text-color: root.monitor-scale == 1.5 ? #1a1b26 : #c0caf5;
+                                            clicked => { root.monitor-scale = 1.5; }
+                                        }
+                                        TokyoButton {
+                                            text: "2.0x (200%)";
+                                            btn-color: root.monitor-scale == 2.0 ? #7aa2f7 : #1f2335;
+                                            text-color: root.monitor-scale == 2.0 ? #1a1b26 : #c0caf5;
+                                            clicked => { root.monitor-scale = 2.0; }
+                                        }
+                                    }
+                                }
+
+                                // Adaptive Sync / VRR
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Adaptive Sync (VRR):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 200px;
+                                        vertical-alignment: center;
+                                    }
+                                    TokyoButton {
+                                        text: "Off";
+                                        btn-color: root.monitor-vrr == "Off" ? #7aa2f7 : #1f2335;
+                                        text-color: root.monitor-vrr == "Off" ? #1a1b26 : #c0caf5;
+                                        clicked => { root.monitor-vrr = "Off"; }
+                                    }
+                                    TokyoButton {
+                                        text: "Always On";
+                                        btn-color: root.monitor-vrr == "AlwaysOn" ? #7aa2f7 : #1f2335;
+                                        text-color: root.monitor-vrr == "AlwaysOn" ? #1a1b26 : #c0caf5;
+                                        clicked => { root.monitor-vrr = "AlwaysOn"; }
+                                    }
+                                }
+
+                                Rectangle { height: 8px; }
+
+                                TokyoButton {
+                                    text: "Save Profile to monitors.ron";
+                                    btn-color: #7aa2f7;
+                                    clicked => {
+                                        root.save-monitor-config(
+                                            root.monitor-name,
+                                            root.monitor-scale,
+                                            root.monitor-width,
+                                            root.monitor-height,
+                                            root.monitor-refresh,
+                                            root.monitor-transform,
+                                            root.monitor-vrr
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // =========================================================
+                // TAB 3: System & Power
+                // =========================================================
+                if root.active-tab == 3: ScrollView {
+                    VerticalLayout {
+                        spacing: 20px;
+                        alignment: start;
+
+                        VerticalLayout {
+                            spacing: 4px;
+                            Text {
+                                text: "⚡ System & Session Management";
+                                color: #c0caf5;
+                                font-size: 20px;
+                                font-weight: 700;
+                            }
+                            Text {
+                                text: "Direct power operations, DPMS display control, and compositor lifecycle.";
+                                color: #787c99;
+                                font-size: 13px;
+                            }
+                        }
+
+                        // Display Power DPMS
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: "Display Power Management (DPMS)";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    TokyoButton {
+                                        text: "Toggle DPMS Power";
+                                        btn-color: #bb9af7;
+                                        text-color: #1a1b26;
+                                        clicked => { root.toggle-dpms(); }
+                                    }
+
+                                    TokyoButton {
+                                        text: "Lock Screen (Veila)";
+                                        btn-color: #7aa2f7;
+                                        text-color: #1a1b26;
+                                        clicked => { root.lock-screen(); }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Session Actions
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: "Compositor & Session Control";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+
+                                    TokyoButton {
+                                        text: "Reload Compositor Config";
+                                        btn-color: #7dcfff;
+                                        text-color: #1a1b26;
+                                        clicked => { root.reload-compositor(); }
+                                    }
+
+                                    TokyoButton {
+                                        text: "Reboot System";
+                                        btn-color: #ff9e64;
+                                        text-color: #1a1b26;
+                                        clicked => { root.session-reboot(); }
+                                    }
+
+                                    TokyoButton {
+                                        text: "Power Off";
+                                        btn-color: #f7768e;
+                                        text-color: #1a1b26;
+                                        clicked => { root.session-poweroff(); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // =========================================================
+                // TAB 4: About Night
+                // =========================================================
+                if root.active-tab == 4: ScrollView {
+                    VerticalLayout {
+                        spacing: 20px;
+                        alignment: start;
+
+                        VerticalLayout {
+                            spacing: 4px;
+                            Text {
+                                text: "ℹ️ About Project Night";
+                                color: #c0caf5;
+                                font-size: 20px;
+                                font-weight: 700;
+                            }
+                            Text {
+                                text: "High-performance, 100% Rust-native Wayland Desktop Environment.";
+                                color: #787c99;
+                                font-size: 13px;
+                            }
+                        }
+
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 12px;
+
+                                Text {
+                                    text: "🌙 Architecture Highlights";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                Text {
+                                    text: "• Compositor: Powered by Pinnacle (Rust native, Smithay based)";
+                                    color: #c0caf5;
+                                    font-size: 13px;
+                                }
+                                Text {
+                                    text: "• IPC: Sub-2ms Postcard binary serialization over Unix domain socket";
+                                    color: #c0caf5;
+                                    font-size: 13px;
+                                }
+                                Text {
+                                    text: "• GUI Settings: Pure-Rust Slint Toolkit with Tokyo Night dark palette";
+                                    color: #c0caf5;
+                                    font-size: 13px;
+                                }
+                                Text {
+                                    text: "• Configuration: TOML (`night.toml`) & RON (`rules.ron`, `monitors.ron`)";
+                                    color: #c0caf5;
+                                    font-size: 13px;
+                                }
+                                Text {
+                                    text: "• Recommended Suite: Alacritty / Rio, Favnyr, Yazi, Zen / Brave, Veila";
+                                    color: #c0caf5;
+                                    font-size: 13px;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
