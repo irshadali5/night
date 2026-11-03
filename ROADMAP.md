@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme]
 ```
 
 ---
@@ -88,3 +88,22 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5
   * [x] Async Unix socket server in `night-pinnacle` (`/run/user/1000/night.sock`).
   * [x] Binary serialized IPC commands (`ReloadConfig`, `SwitchTag`, `QueryState`, `Spawn`, `CloseFocused`) via `postcard`.
   * [x] CLI control runner in task runner (`cargo xtask msg <reload|switch-tag|state|spawn|close>`).
+
+---
+
+### Phase 6: Dynamic Layout Engine & Tokyo Night Desktop Suite Exporter
+* [x] **Dynamic Layout Engine (`crates/night-layout`)**:
+  * [x] Created `night-layout` crate implementing `pinnacle_api::layout::manage`.
+  * [x] State machine supporting 4 dynamic tiling algorithms: `MasterStack`, `Dwindle`, `Spiral`, and `Fair`.
+  * [x] Real-time gaps adjustment (`inner_gaps` and `outer_gaps`) via atomic state and `LayoutRequester`.
+* [x] **Keybindings for Layout & Gaps (`night-binds`)**:
+  * [x] `Super + Tab` $\rightarrow$ Cycle through layouts (`MasterStack` $\rightarrow$ `Dwindle` $\rightarrow$ `Spiral` $\rightarrow$ `Fair`).
+  * [x] `Super + equal` $\rightarrow$ Increase gaps (+2px).
+  * [x] `Super + minus` $\rightarrow$ Decrease gaps (-2px).
+* [x] **IPC Layout Remote Control (`night-core::ipc`)**:
+  * [x] Added `CycleLayout`, `AdjustGaps`, and `GetLayout` IPC commands.
+  * [x] `cargo xtask msg layout [next]` and `cargo xtask msg gaps <delta>`.
+* [x] **Tokyo Night Theme Exporter (`xtask theme`)**:
+  * [x] Pure-Rust theme generator in `cargo xtask theme`.
+  * [x] Generates matching configurations for external suite: `alacritty.toml`, `ironbar.css`, `anyrun.css`, `veila.toml`.
+  * [x] Automatically deployed to user config paths on `cargo xtask install`.
