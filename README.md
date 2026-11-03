@@ -18,7 +18,7 @@
 
 ## 🏗️ Architecture: The `night` Workspace
 
-All source code lives in a clean, root-level **Cargo Workspace** (7 crates):
+All source code lives in a clean, root-level **Cargo Workspace** (8 crates):
 
 ```text
 night/
@@ -46,6 +46,7 @@ night/
     ├── night-rules/              # RON-powered declarative window placement & auto-floating
     ├── night-binds/              # Keyboard shortcuts, media keys, and screenshot binds
     ├── night-ctl/                # High-performance CLI client & real-time status streaming tool
+    ├── night-settings/           # Tokyo Night Control Center & Settings GUI written in Slint
     └── night-pinnacle/           # Main binary entrypoint orchestrating all crates
 ```
 
@@ -76,6 +77,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Screen Recorder** | [wl-screenrec](https://github.com/russelltg/wl-screenrec) | Rust + FFmpeg | Bound to `Super + Alt + r` in `night-binds`. |
 | **Idle Management** | [wayidle](https://github.com/hirsch-conner/wayidle) | Pure Rust | Screen lock & DPMS monitor started by `night-daemons`. |
 | **Screen Locker** | [Veila](https://github.com/naurissteins/Veila) | Pure Rust (`ext-session-lock-v1`) | Fast, modern PAM screen locker triggered on idle or via `Super + Escape`. |
+| **Settings & Control Center** | [`night-settings`](./crates/night-settings) | Pure Rust + Slint UI | Tokyo Night GUI settings & live preview bound to `Super + i`. |
 
 ---
 
@@ -90,6 +92,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + y` $\rightarrow$ Launch **Yazi** (Async Terminal File Manager)
 * `Super + b` $\rightarrow$ Launch **Zen Browser** (Primary Web Browser)
 * `Super + Shift + b` $\rightarrow$ Launch **Brave Browser** (Alternative Browser)
+* `Super + i` $\rightarrow$ Launch **Night Settings** (Tokyo Night Slint Control Center)
 * `Super + ` ` ` (tilde) $\rightarrow$ Toggle **Scratchpad** Dropdown Terminal
 * `Super + Escape` $\rightarrow$ Lock Session (**Veila** - Pure Rust Locker)
 
