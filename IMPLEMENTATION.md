@@ -21,13 +21,13 @@ Each technology has been chosen and implemented for its ideal use case:
 
 | Crate | Type | Dependencies / Format | Role | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **`xtask`** | Binary | Standard Library | Native task runner for `cargo xtask` automation. | 🟢 Active |
-| **`night-core`** | Library | `serde`, `toml`, `postcard`, `pinnacle-api` | Theme constants, default app definitions, TOML config, and postcard binary session caching. | 🟢 Active |
-| **`night-daemons`** | Library | `night-core`, `pinnacle-api` | Supervises startup of background services (`swww`, `ironbar`, `wired`, `swayosd`, `wayidle`). | 🟢 Active |
-| **`night-tags`** | Library | `night-core`, `pinnacle-api` | Dynamic tag management and AwesomeWM-style workspace switching. | 🟢 Active |
-| **`night-rules`** | Library | `night-core`, `serde`, `ron`, `pinnacle-api` | RON-powered declarative window matching rules (auto-floating dialogs, tag assignments). | 🟢 Active |
-| **`night-binds`** | Library | `night-core`, `night-tags`, `pinnacle-api` | Centralized keybindings for apps, OSD, multimedia, and screenshots. | 🟢 Active |
-| **`night-pinnacle`**| Binary | All internal crates + `pinnacle-api` | Main binary orchestrator running `pinnacle_api::main!(config)`. | 🟢 Active |
+| **`xtask`** | Binary | `night-core`, `tokio`, `dirs` | Native CLI runner for build, install, check, and IPC remote control (`cargo xtask msg`). | 🟢 Active |
+| **`night-core`** | Library | `dirs`, `interprocess`, `which`, `shell-words`, `postcard`, `toml`, `serde` | Theme constants, default apps, TOML config, binary session caching, and Unix socket IPC client/server. | 🟢 Active |
+| **`night-daemons`** | Library | `night-core`, `which`, `pinnacle-api` | Supervises background services (`swww`, `ironbar`, `wired`, `swayosd`, `wayidle`) with `$PATH` discovery. | 🟢 Active |
+| **`night-tags`** | Library | `night-core`, `pinnacle-api` | Multi-monitor dynamic tag management ([1..9]) with runtime display hotplug detection. | 🟢 Active |
+| **`night-rules`** | Library | `night-core`, `serde`, `ron`, `dirs`, `pinnacle-api` | RON-powered declarative window matching rules (auto-floating dialogs, tag assignments). | 🟢 Active |
+| **`night-binds`** | Library | `night-core`, `night-tags`, `pinnacle-api` | Centralized keybindings for apps, directional focus, swap, fullscreen, OSD, screenshots, and mouse drag/resize. | 🟢 Active |
+| **`night-pinnacle`**| Binary | All internal crates + `pinnacle-api` | Main binary orchestrator running `pinnacle_api::main!(config)` with async IPC server. | 🟢 Active |
 
 ---
 
@@ -49,6 +49,7 @@ Each technology has been chosen and implemented for its ideal use case:
 | **Wayshot + Satty**| [waycrate/wayshot](https://github.com/waycrate/wayshot) + [gabm/Satty](https://github.com/gabm/Satty) | Screenshot and annotation pipeline bound to `Print` and `Super + Print`. |
 | **wl-screenrec** | [russelltg/wl-screenrec](https://github.com/russelltg/wl-screenrec) | Hardware-accelerated recording bound to `Super + Alt + r`. |
 | **wayidle** | [hirsch-conner/wayidle](https://github.com/hirsch-conner/wayidle) | Idle monitor started in `night-daemons`. |
+| **Veila** | [naurissteins/Veila](https://github.com/naurissteins/Veila) | Pure-Rust Wayland screen locker triggered on idle or via `Super + Escape`. |
 
 ---
 
