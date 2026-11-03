@@ -14,6 +14,7 @@ pub mod clipboard_ui;
 pub mod launcher;
 pub mod notifications_ui;
 pub mod osd;
+pub mod palette;
 pub mod snipping;
 pub mod switcher;
 pub use audio_ui::show_audio_sink_modal;
@@ -24,6 +25,7 @@ pub use osd::{
     show_brightness_osd, show_dnd_osd, show_gamma_osd, show_layout_osd, show_osd,
     show_profile_osd, show_volume_osd, OsdKind,
 };
+pub use palette::show_command_palette;
 pub use snipping::show_snipping_modal;
 pub use switcher::show_window_switcher;
 
@@ -103,10 +105,24 @@ pub fn register_all() {
         spawn("night-settings", &[]);
     });
 
-    // Super + Escape -> Lock Session (Veila - Pure Rust Wayland Screen Locker)
+    // Super + Escape & Super + Alt + l -> Lock Session (Veila - Pure Rust Wayland Screen Locker)
     let lock_cmd = user_cfg.apps.lock_cmd.clone();
+    let lock_cmd_alt = lock_cmd.clone();
     input::keybind(Mod::SUPER, "Escape").on_press(move || {
         spawn_shell(&lock_cmd);
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, 'l').on_press(move || {
+        spawn_shell(&lock_cmd_alt);
+    });
+
+    // Super + Alt + s -> Suspend / Sleep System
+    input::keybind(Mod::SUPER | Mod::ALT, 's').on_press(|| {
+        spawn_shell("systemctl suspend 2>/dev/null || true");
+    });
+
+    // Super + Shift + Escape -> Graceful Session Logout
+    input::keybind(Mod::SUPER | Mod::SHIFT, "Escape").on_press(|| {
+        spawn_shell("night-session logout");
     });
 
     // Super + grave (tilde) -> Toggle Quake-style Dropdown Scratchpad Terminal
@@ -197,22 +213,59 @@ pub fn register_all() {
         toggle_sticky();
     });
 
-    // Super + p -> Toggle Picture-in-Picture (PiP) Floating Mode
+    // Super + p & Super + Shift + p -> Open Tokyo Night Command Palette
     input::keybind(Mod::SUPER, 'p').on_press(|| {
+        show_command_palette();
+    });
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'p').on_press(|| {
+        show_command_palette();
+    });
+
+    // Super + Alt + p -> Toggle Picture-in-Picture (PiP) Floating Mode
+    input::keybind(Mod::SUPER | Mod::ALT, 'p').on_press(|| {
         toggle_pip();
     });
 
-    // Super + c -> Center Focused Floating Window
+    // Super + c & Super + Shift + c -> Center Focused Floating Window
     input::keybind(Mod::SUPER, 'c').on_press(|| {
         center_focused_window();
     });
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'c').on_press(|| {
+        center_focused_window();
+    });
 
-    // Super + w -> Interactive Visual Window Switcher
+    // Super + Alt + Left/Right/Up/Down -> Snapping Half Splits
+    input::keybind(Mod::SUPER | Mod::ALT, "Left").on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::LeftHalf);
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, "Right").on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::RightHalf);
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, "Up").on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::TopHalf);
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, "Down").on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::BottomHalf);
+    });
+
+    // Super + Alt + u / i / j / k -> 4-Quadrant Snapping
+    input::keybind(Mod::SUPER | Mod::ALT, 'u').on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::TopLeft);
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, 'i').on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::TopRight);
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, 'j').on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::BottomLeft);
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, 'k').on_press(|| {
+        snap_focused_window(night_layout::SnapPosition::BottomRight);
+    });
+
+    // Super + w & Alt + Tab -> Interactive Visual Window Switcher & Overview
     input::keybind(Mod::SUPER, 'w').on_press(|| {
         show_window_switcher();
     });
-
-    // Alt + Tab -> Interactive Visual Window Switcher
     input::keybind(Mod::ALT, "Tab").on_press(|| {
         show_window_switcher();
     });
@@ -222,8 +275,8 @@ pub fn register_all() {
         night_core::gamma::toggle_night_light();
     });
 
-    // Super + Shift + p -> Toggle Idle Inhibit / Presentation Mode
-    input::keybind(Mod::SUPER | Mod::SHIFT, 'p').on_press(|| {
+    // Super + Alt + i -> Toggle Idle Inhibit / Presentation Mode
+    input::keybind(Mod::SUPER | Mod::ALT, 'i').on_press(|| {
         night_core::gamma::toggle_inhibit();
     });
 
@@ -576,7 +629,7 @@ pub fn toggle_scratchpad() {
 /// Handles an MPRIS media player operation (Vivi / MPRIS players)
 pub fn handle_media_action(action: night_core::ipc::MediaAction) {
     use night_core::ipc::MediaAction;
-    let (p_cmd, bus_method) = match action {
+    let (_p_cmd, bus_method) = match action {
         MediaAction::PlayPause => ("play-pause", "PlayPause"),
         MediaAction::Next => ("next", "Next"),
         MediaAction::Previous => ("previous", "Previous"),
@@ -586,7 +639,7 @@ pub fn handle_media_action(action: night_core::ipc::MediaAction) {
 
     // Pure D-Bus / systemd busctl dispatch to any active MPRIS player (including Vivi)
     let bus_cmd = format!(
-        "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{{print $1}}'); if [ -n \"$target\" ]; then busctl --user call \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player {bus_method} 2>/dev/null; elif command -v playerctl >/dev/null 2>&1; then playerctl {p_cmd} 2>/dev/null; fi"
+        "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{{print $1}}'); if [ -n \"$target\" ]; then busctl --user call \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player {bus_method} 2>/dev/null; fi"
     );
     spawn_shell(&bus_cmd);
 }
@@ -642,6 +695,13 @@ pub fn toggle_sticky() {
     }
 }
 
+/// Snaps the currently focused window according to the target geometric position
+pub fn snap_focused_window(pos: night_layout::SnapPosition) {
+    if let (Some(focused_win), Some(focused_op)) = (window::get_focused(), output::get_focused()) {
+        night_layout::snap_window(&focused_win, &focused_op, pos);
+    }
+}
+
 /// Toggles Picture-in-Picture (PiP) mode (bottom-right floating + sticky)
 pub fn toggle_pip() {
     if let (Some(focused_win), Some(focused_op)) = (window::get_focused(), output::get_focused()) {
@@ -658,25 +718,7 @@ pub fn toggle_pip() {
             }
             info!("Window restored from Picture-in-Picture mode");
         } else {
-            focused_win.set_floating(true);
-            for name in DEFAULT_TAG_NAMES {
-                if let Some(t) = pinnacle_api::tag::get_on_output(name, &focused_op) {
-                    focused_win.set_tag(&t, true);
-                }
-            }
-            let op_size = focused_op
-                .logical_size()
-                .unwrap_or(pinnacle_api::util::Size { w: 1920, h: 1080 });
-            let op_loc = focused_op
-                .loc()
-                .unwrap_or(pinnacle_api::util::Point { x: 0, y: 0 });
-            let pip_w = 480;
-            let pip_h = 270;
-            let pad = 24;
-            let x = op_loc.x + (op_size.w as i32) - pip_w - pad;
-            let y = op_loc.y + (op_size.h as i32) - pip_h - pad;
-            focused_win.set_geometry(x, y, pip_w as u32, pip_h as u32);
-            focused_win.raise();
+            night_layout::snap_window(&focused_win, &focused_op, night_layout::SnapPosition::Pip);
             info!("Window placed in Picture-in-Picture bottom-right overlay");
         }
     }
@@ -684,23 +726,7 @@ pub fn toggle_pip() {
 
 /// Centers the currently focused floating window on the active display
 pub fn center_focused_window() {
-    if let (Some(focused_win), Some(focused_op)) = (window::get_focused(), output::get_focused()) {
-        focused_win.set_floating(true);
-        let op_size = focused_op
-            .logical_size()
-            .unwrap_or(pinnacle_api::util::Size { w: 1920, h: 1080 });
-        let op_loc = focused_op
-            .loc()
-            .unwrap_or(pinnacle_api::util::Point { x: 0, y: 0 });
-        let win_size = focused_win
-            .size()
-            .unwrap_or(pinnacle_api::util::Size { w: 800, h: 500 });
-        let x = op_loc.x + ((op_size.w as i32) - (win_size.w as i32)) / 2;
-        let y = op_loc.y + ((op_size.h as i32) - (win_size.h as i32)) / 2;
-        focused_win.set_geometry(x, y, win_size.w, win_size.h);
-        focused_win.raise();
-        info!("Centered focused floating window on active display");
-    }
+    snap_focused_window(night_layout::SnapPosition::Center);
 }
 
 /// Interactive Tokyo Night Session Manager Flyout Modal
@@ -787,7 +813,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
         .into()]);
 
         let actions_row4 = Row::new_with_children([Text::new(
-            "  [V] Clipboard     [Space] Launcher     [A] Sinks     [N] Notify",
+            "  [V] Clip    [Space] Launcher    [C] Palette    [A] Sinks    [N] Notify",
         )
         .style(
             text::Style::new()
@@ -901,6 +927,10 @@ pub fn show_session_menu() {
             Keysym::space => {
                 h.close();
                 show_launcher_modal();
+            }
+            Keysym::c | Keysym::C => {
+                h.close();
+                show_command_palette();
             }
             Keysym::a | Keysym::A => {
                 h.close();
