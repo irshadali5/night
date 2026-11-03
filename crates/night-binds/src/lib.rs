@@ -38,9 +38,29 @@ pub fn register_all() {
         spawn(Defaults::MINIMAL_LAUNCHER, &[]);
     });
 
-    // Super + e -> Yazi File Manager in Terminal
-    input::keybind(Mod::SUPER, 'e').on_press(|| {
-        spawn(Defaults::TERMINAL, &["-e", Defaults::FILE_MANAGER]);
+    // Super + e -> Favnyr (Modern Rust+Slint GUI File Manager)
+    let fm = user_cfg.apps.file_manager.clone();
+    input::keybind(Mod::SUPER, 'e').on_press(move || {
+        spawn(&fm, &[]);
+    });
+
+    // Super + y -> Yazi (Async Terminal File Manager)
+    let term = user_cfg.apps.terminal.clone();
+    let term_fm = user_cfg.apps.term_file_manager.clone();
+    input::keybind(Mod::SUPER, 'y').on_press(move || {
+        spawn(&term, &["-e", &term_fm]);
+    });
+
+    // Super + b -> Zen Browser
+    let browser = user_cfg.apps.browser.clone();
+    input::keybind(Mod::SUPER, 'b').on_press(move || {
+        spawn(&browser, &[]);
+    });
+
+    // Super + Shift + b -> Brave Browser
+    let alt_browser = user_cfg.apps.alt_browser.clone();
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'b').on_press(move || {
+        spawn(&alt_browser, &[]);
     });
 
     // Super + Escape -> Lock Session (Veila - Pure Rust Wayland Screen Locker)
@@ -52,6 +72,21 @@ pub fn register_all() {
     // -------------------------------------------------------------------------
     // 2. Window Layout, Navigation & Directional Focus
     // -------------------------------------------------------------------------
+
+    // Super + Tab -> Cycle Tiling Layout (MasterStack -> Dwindle -> Spiral -> Fair)
+    input::keybind(Mod::SUPER, "Tab").on_press(|| {
+        night_layout::cycle_layout();
+    });
+
+    // Super + equal -> Increase Gaps
+    input::keybind(Mod::SUPER, "equal").on_press(|| {
+        night_layout::adjust_gaps(2.0);
+    });
+
+    // Super + minus -> Decrease Gaps
+    input::keybind(Mod::SUPER, "minus").on_press(|| {
+        night_layout::adjust_gaps(-2.0);
+    });
 
     // Super + f -> Toggle Fullscreen
     input::keybind(Mod::SUPER, 'f').on_press(|| {
@@ -138,8 +173,8 @@ pub fn register_all() {
         }
     });
 
-    // Super + Shift + e -> Exit Pinnacle compositor
-    input::keybind(Mod::SUPER | Mod::SHIFT, 'e').on_press(|| {
+    // Super + Shift + x -> Exit Pinnacle compositor
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'x').on_press(|| {
         pinnacle::quit();
     });
 

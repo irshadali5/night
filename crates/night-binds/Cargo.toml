@@ -9,6 +9,7 @@ license.workspace = true
 [dependencies]
 night-core.workspace = true
 night-tags.workspace = true
+night-layout.workspace = true
 pinnacle-api.workspace = true
 tokio.workspace = true
 tracing.workspace = true
