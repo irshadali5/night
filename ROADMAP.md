@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18 ──> Phase 19 ──> Phase 20
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync] [Sysinfo/Bluetooth/Audio Sinks] [Backlight/DND/Notifications/Session Restore]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18 ──> Phase 19 ──> Phase 20 ──> Phase 21
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync] [Sysinfo/Bluetooth/Audio Sinks] [Backlight/DND/Notifications/Session Restore] [Logging/Reliability/OSD/Layout Profiles]
 ```
 
 ---
@@ -417,6 +417,37 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 * [x] **Slint Settings Control Center Backlight & DND Integration (`crates/night-settings`)**:
   * [x] Tab 3 (System & Power): Added interactive Display Backlight slider with real-time percentage feedback.
   * [x] Tab 3 (System & Power): Added interactive Do Not Disturb (DND) toggle button with visual state changes.
+
+---
+
+### Phase 21: Production-Grade Non-Blocking Logging Architecture, Application Launch Resiliency, Visual OSD Engine & Dynamic Workspace Layout Profiles
+* [x] **Production-Grade Non-Blocking Logging Architecture (`crates/night-core/src/logging.rs`)**:
+  * [x] Integrated `tracing-appender = "0.2"` daily rolling file logger writing uncolored, timestamped, thread-indexed logs to `~/.local/state/night/logs/<service>.log`.
+  * [x] Automated fallback to `/tmp/night/logs/` if state dir permissions or sandboxes restrict user directory creation.
+  * [x] Global panic hook installation via `std::panic::set_hook` capturing panic payload, source location, thread ID, and full backtrace directly to the log file before process termination.
+  * [x] Integrated across all services: `night` (`night-pinnacle`), `settings` (`night-settings`), `ctl` (`nightctl`), and `session` (`night-session`).
+  * [x] Real-time log inspection CLI commands: `nightctl logs [service] [-n lines] [-f]` and `cargo xtask logs [service]`.
+* [x] **Desktop Application Launch Hardening & Reliability Repair (`crates/night-core/src/exec.rs`)**:
+  * [x] `ensure_desktop_env()`: Automatically prepends `~/.cargo/bin`, `~/.local/bin`, and `/usr/local/bin` to `PATH` upon startup to prevent missing binary errors when launched under systemd/greetd.
+  * [x] Dynamic `WAYLAND_DISPLAY` auto-detection scanning `$XDG_RUNTIME_DIR` for active sockets (`wayland-0`, `wayland-1`).
+  * [x] Added `resolve_executable()` thoroughly probing standard PATH, Cargo binaries, target release/debug artifacts, and system paths.
+  * [x] Resilient, decoupled child process execution: safely attempts `pinnacle_api` process spawning when inside compositor runtime, with seamless decoupled `std::process::Command` fallback (`Stdio::null()`) to prevent crashes when called from standalone tools or Slint GUI threads.
+  * [x] Updated Snowcap application launcher modal (`crates/night-binds/src/launcher.rs`) to resolve executables via `resolve_executable()`.
+* [x] **Slint Settings Control Center Resiliency (`crates/night-settings`)**:
+  * [x] Guaranteed non-crashing initialization with `init_logger("settings")` and `ensure_desktop_env()`.
+  * [x] Fixed panic in poweroff/reboot buttons by decoupling process spawning from `pinnacle_api`.
+  * [x] Added declarative floating window rule `Rule(app_id: "night-settings", action: Float)` in `config/rules.ron` and `crates/night-rules/src/lib.rs`.
+* [x] **Pure-Rust Visual On-Screen Display (OSD) Engine (`crates/night-binds/src/osd.rs`)**:
+  * [x] In-process Snowcap layer-shell visual HUD overlay replacing external C tools.
+  * [x] Displays Tokyo Night visual progress bars and Nerd Font icons for Volume, Brightness, DND, Gamma, and Layout switching.
+  * [x] Non-blocking auto-dismissal after 1200ms duration.
+  * [x] Hooked directly into hardware multimedia keys (`XF86Audio*`, `XF86MonBrightness*`), layout cycling (`Super + Tab`), and IPC triggers (`nightctl osd <target>`).
+* [x] **Dynamic Tiling Workspace Layout Profiles Engine (`crates/night-layout/src/profiles.rs`)**:
+  * [x] 4 ergonomic workflow presets: `Coding` (MasterStack 60/40, 8px/12px), `Reading` (MasterStack 32px margins), `Multitasking` (Fair 4-quadrant grid), `Ultrawide` (Spiral borderless edge).
+  * [x] Dedicated keybindings: `Super + Alt + 1` (Coding), `Super + Alt + 2` (Reading), `Super + Alt + 3` (Multitasking), `Super + Alt + 4` (Ultrawide).
+  * [x] Integrated into IPC commands (`IpcCommand::SetLayoutProfile`), status broadcasting, and CLI `nightctl profile [name]`.
+  * [x] Slint Settings Control Center Integration: Added 4 interactive Layout Profile preset cards to Tab 0 (Appearance & Layout).
+
 
 
 
