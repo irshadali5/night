@@ -8,6 +8,7 @@ default_tag = "1"
 border_width = 2
 inner_gaps = 6.0
 outer_gaps = 10.0
+theme = "Night"
 # primary_monitor = "eDP-1"
 
 [apps]

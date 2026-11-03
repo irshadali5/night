@@ -24,6 +24,8 @@ pub struct GeneralConfig {
     pub border_width: u32,
     pub inner_gaps: f32,
     pub outer_gaps: f32,
+    #[serde(default)]
+    pub theme: crate::theme::ThemeVariant,
 }
 
 impl Default for GeneralConfig {
@@ -35,6 +37,7 @@ impl Default for GeneralConfig {
             border_width: 2,
             inner_gaps: 6.0,
             outer_gaps: 10.0,
+            theme: crate::theme::ThemeVariant::Night,
         }
     }
 }
