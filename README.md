@@ -9,7 +9,7 @@
 
 | Tool / Format | Best Use Case in Night | Location / Artifact |
 | :--- | :--- | :--- |
-| 🦀 **`cargo xtask`** | **Pure-Rust Automation:** Replaces Makefiles and shell scripts with a type-safe CLI task runner. | [`crates/xtask`](./crates/xtask) (`cargo xtask install`) |
+| 🦀 **`cargo xtask`** | **Pure-Rust Automation:** Replaces Makefiles and shell scripts with a type-safe CLI task runner. | [`xtask/`](./xtask) (`cargo xtask install`) |
 | 📄 **TOML** | **Human-Editable Preferences:** Clean key-value format for desktop settings and app defaults. | [`config/night.toml`](./config/night.toml) $\rightarrow$ `~/.config/night/night.toml` |
 | 🦀 **RON** | **Rich Rust Types & Enums:** Strongly typed representation for complex window matching rules and actions. | [`config/rules.ron`](./config/rules.ron) $\rightarrow$ `~/.config/night/rules.ron` |
 | ⚡ **`postcard`** | **Ultra-Fast Binary Session Caching:** Zero-allocation binary serde format for instant state restoration across reloads. | `$XDG_RUNTIME_DIR/night-session.bin` |
@@ -30,8 +30,11 @@ night/
 │   ├── night.toml                # TOML: Human-editable settings & default apps
 │   └── rules.ron                 # RON: Strongly-typed window rules & enum actions
 │
-└── crates/
-    ├── xtask/                    # `cargo xtask` build, install, check automation
+├── xtask/                        # Pure-Rust workspace task runner (`cargo xtask`)
+│   ├── Cargo.toml
+│   └── src/main.rs
+│
+└── crates/                       # Production desktop crates
     ├── night-core/               # TOML config parsing, postcard state caching, theme constants
     ├── night-daemons/            # Autostart supervisor for background services
     ├── night-tags/               # AwesomeWM-style dynamic tag management ([1..9])
