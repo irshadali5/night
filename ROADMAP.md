@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync]
 ```
 
 ---
@@ -343,6 +343,30 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Dynamically hot-reloads window placement rules, display profiles, and theme preferences without restarting Pinnacle.
 * [x] **Slint Control Center System Integration (`crates/night-settings`)**:
   * [x] Tab 3 (System & Power): Added live battery status badge and interactive master volume slider.
+
+---
+
+### Phase 18: Pure-Rust Snowcap Tokyo Night Fuzzy App Launcher, Network Connectivity Monitor & System Synchronization
+* [x] **Pure-Rust Snowcap Application Launcher & Runner Modal (`crates/night-binds/src/launcher.rs`)**:
+  * [x] Fast, in-process XDG desktop application scanner inspecting `/usr/share/applications`, `~/.local/share/applications`, and `/usr/local/share/applications`.
+  * [x] Cleans XDG exec arguments (`%f`, `%u`, `%F`, etc.) and automatically wraps terminal applications.
+  * [x] Curated priority ordering for signature Tokyo Night tools (`Alacritty`, `Rio`, `Vivi`, `Favnyr`, `Yazi`, `Zen Browser`, `Brave`, `Night Settings`).
+  * [x] Snowcap layer-shell modal bound to `Super + space` (and `nightctl launcher`).
+  * [x] Interactive single-key instant launch (`[1]..=[8]`), extended search (`[9]` Yofi), mnemonic shortcuts (`[T]`, `[M]`, `[F]`, `[B]`, `[S]`), and `[Esc]` cancellation.
+* [x] **Pure-Rust Network Connectivity & Wi-Fi Monitor (`crates/night-core/src/network.rs`)**:
+  * [x] Direct sysfs `/sys/class/net` operstate scanner for active wired (`en*`, `eth*`) and wireless (`wl*`) interfaces.
+  * [x] Dynamic Nerd Font signal quality glyphs: `󰤨` (80-100%), `󰤥` (60-79%), `󰤢` (40-59%), `󰤟` (20-39%), `󰤯` (<20%), `󰈀` (Ethernet), `󰤮` (Disconnected).
+  * [x] Active SSID, signal strength, and local IPv4 address resolution.
+  * [x] Integrated into `DesktopStatus::network`, JSON serialization, and status bar template placeholders `{network}`, `{net_icon}`, `{ssid}`, `{ip}`.
+  * [x] CLI inspection command: `nightctl net`.
+* [x] **Slint Control Center Network Integration (`crates/night-settings`)**:
+  * [x] Tab 3 (System & Power): Added live Network Connectivity indicator row synchronized with live IPC status.
+* [x] **Cheatsheet & Session Menu Synchronization**:
+  * [x] `SessionFlyout`: Added visual display of `[V] Clipboard (rsclip)` and `[Space] App Launcher` in the 4th action row.
+  * [x] `xtask doctor`: Removed legacy `playerctl` and `wl-clipboard` diagnostics; hardened 100% Rust-native diagnostics for `rsclip` and `vivi`.
+  * [x] Mapped hardware media keys and IPC media actions to query active MPRIS players (including Vivi) with `busctl` fallback when `playerctl` is omitted.
+  * [x] Updated snipping modal descriptions and screenshot scripts to prioritize `rsclip`.
+
 
 
 
