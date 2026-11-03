@@ -1,0 +1,21 @@
+[Unit]
+Description=Night Wayland Desktop Environment (Pinnacle)
+Documentation=https://github.com/irshad/night
+BindsTo=graphical-session.target
+Before=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target
+
+Wants=xdg-desktop-autostart.target
+Before=xdg-desktop-autostart.target
+
+[Service]
+Slice=session.slice
+Type=notify
+Environment=PINNACLE_LOG_TIMESTAMPS=0
+ExecStart=/home/irshad/.cargo/bin/pinnacle --session
+Restart=no
+TimeoutStopSec=10s
+
+[Install]
+WantedBy=graphical-session.target
