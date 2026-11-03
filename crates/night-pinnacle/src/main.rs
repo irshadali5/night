@@ -166,6 +166,11 @@ async fn config() {
                     night_core::ipc::broadcast_status(current_desktop_status());
                     IpcResponse::Ok
                 }
+                IpcCommand::SetGaps { inner, outer } => {
+                    night_layout::set_gaps(inner, outer);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Ok
+                }
                 IpcCommand::GetLayout => {
                     IpcResponse::Layout(night_layout::current_layout().name().into())
                 }
