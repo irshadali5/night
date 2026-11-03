@@ -1,0 +1,7 @@
+[Unit]
+Description=Night Wayland Desktop Session Target
+Documentation=https://github.com/irshadali5/night
+BindsTo=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target
+
