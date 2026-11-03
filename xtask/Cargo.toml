@@ -10,3 +10,4 @@ dirs.workspace = true
 which.workspace = true
 night-core.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+clap.workspace = true
