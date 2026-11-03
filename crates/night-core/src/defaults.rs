@@ -15,8 +15,20 @@ impl Defaults {
     /// Minimalist pure-Rust application launcher
     pub const MINIMAL_LAUNCHER: &'static str = "yofi";
 
+    /// Modern lightweight Rust+Slint GUI file manager
+    pub const FILE_MANAGER: &'static str = "favnyr";
+
     /// Blazingly fast asynchronous terminal file manager
-    pub const FILE_MANAGER: &'static str = "yazi";
+    pub const TERM_FILE_MANAGER: &'static str = "yazi";
+
+    /// Modern focused web browser
+    pub const BROWSER: &'static str = "zen-browser";
+
+    /// Privacy-focused alternative browser
+    pub const ALT_BROWSER: &'static str = "brave";
+
+    /// Pure-Rust Wayland screen locker
+    pub const LOCKER: &'static str = "veila";
 
     /// Screenshot tool
     pub const SCREENSHOT_CLI: &'static str = "wayshot";

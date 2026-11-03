@@ -20,6 +20,8 @@ pub struct GeneralConfig {
     pub primary_monitor: Option<String>,
     pub default_tag: String,
     pub border_width: u32,
+    pub inner_gaps: f32,
+    pub outer_gaps: f32,
 }
 
 impl Default for GeneralConfig {
@@ -29,6 +31,8 @@ impl Default for GeneralConfig {
             primary_monitor: None,
             default_tag: "1".to_string(),
             border_width: 2,
+            inner_gaps: 6.0,
+            outer_gaps: 10.0,
         }
     }
 }
@@ -40,6 +44,9 @@ pub struct AppsConfig {
     pub launcher: String,
     pub minimal_launcher: String,
     pub file_manager: String,
+    pub term_file_manager: String,
+    pub browser: String,
+    pub alt_browser: String,
     pub lock_cmd: String,
 }
 
@@ -50,7 +57,10 @@ impl Default for AppsConfig {
             alt_terminal: "rio".to_string(),
             launcher: "anyrun".to_string(),
             minimal_launcher: "yofi".to_string(),
-            file_manager: "yazi".to_string(),
+            file_manager: "favnyr".to_string(),
+            term_file_manager: "yazi".to_string(),
+            browser: "zen-browser".to_string(),
+            alt_browser: "brave".to_string(),
             lock_cmd: "veila".to_string(),
         }
     }
