@@ -217,11 +217,27 @@ nightctl snip gif       # Animated screencast recording (GIF)
 nightctl theme status
 nightctl theme set storm
 nightctl theme toggle
+
+# Audio volume control (PipeWire / PulseAudio & SwayOSD)
+nightctl volume status
+nightctl volume raise 5
+nightctl volume lower 5
+nightctl volume mute
+
+# Battery & power status
+nightctl power
+
+# Wallpaper control (swww wipe transitions)
+nightctl wallpaper
+nightctl wallpaper ~/Pictures/Wallpapers/tokyo-night-storm.png
 ```
 
 Alternatively, remote commands can be delivered via `cargo xtask msg <CMD>`:
 * `cargo xtask msg status` $\rightarrow$ Prints detailed desktop status.
 * `cargo xtask msg stream` $\rightarrow$ Streams live compositor events.
+* `cargo xtask msg volume [raise|lower|mute]` $\rightarrow$ Controls audio volume.
+* `cargo xtask msg power` $\rightarrow$ Queries battery capacity and charging status.
+* `cargo xtask msg wallpaper [PATH]` $\rightarrow$ Inspects or changes desktop wallpaper.
 * `cargo xtask msg switch-tag <TAG>` $\rightarrow$ Switch to tag `[1..9]`.
 * `cargo xtask msg layout [next]` $\rightarrow$ Query or cycle tiling layouts.
 * `cargo xtask msg gaps <delta>` $\rightarrow$ Adjust gaps by numeric delta (e.g. `2.0` or `-2.0`).
