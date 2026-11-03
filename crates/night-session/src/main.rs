@@ -17,13 +17,21 @@ fn log(msg: &str) {
     let line = format!("[night-session:{now}] {msg}\n");
     print!("{line}");
 
-    // Log directly to /tmp/night-session.log for foolproof diagnostics
-    if let Ok(mut file) = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("/tmp/night-session.log")
-    {
-        let _ = file.write_all(line.as_bytes());
+    // Log to ~/.local/state/night/logs/session.log and /tmp/night-session.log for foolproof diagnostics
+    let state_log = dirs::state_dir()
+        .map(|d| d.join("night/logs/session.log"))
+        .unwrap_or_else(|| PathBuf::from("/tmp/night-session.log"));
+    if let Some(parent) = state_log.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    for target in [&state_log, &PathBuf::from("/tmp/night-session.log")] {
+        if let Ok(mut file) = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(target)
+        {
+            let _ = file.write_all(line.as_bytes());
+        }
     }
 }
 
