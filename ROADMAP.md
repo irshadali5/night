@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18 ──> Phase 19
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync] [Sysinfo/Bluetooth/Audio Sinks]
 ```
 
 ---
@@ -366,6 +366,33 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] `xtask doctor`: Removed legacy `playerctl` and `wl-clipboard` diagnostics; hardened 100% Rust-native diagnostics for `rsclip` and `vivi`.
   * [x] Mapped hardware media keys and IPC media actions to query active MPRIS players (including Vivi) with `busctl` fallback when `playerctl` is omitted.
   * [x] Updated snipping modal descriptions and screenshot scripts to prioritize `rsclip`.
+
+---
+
+### Phase 19: Pure-Rust System Performance Monitor, Bluetooth Peripheral Manager & Interactive Audio Sink Switcher Modal
+* [x] **Zero-Dependency Linux Procfs Performance Monitor (`crates/night-core/src/sysinfo.rs`)**:
+  * [x] Real-time CPU calculation from `/proc/stat` delta sampling without external dependencies.
+  * [x] Memory usage (total, used, percentage) parsed directly from `/proc/meminfo`.
+  * [x] CPU temperature monitoring via `/sys/class/thermal/thermal_zone0/temp` and hwmon.
+  * [x] Root filesystem `/` disk metrics via standard filesystem stats.
+  * [x] Dynamic Nerd Font glyphs: `` (CPU), `󰍛` (Memory), `󰔏` (Thermal), `󰋊` (Disk).
+  * [x] Integrated into `DesktopStatus::system`, JSON serialization, and status bar template placeholders `{cpu}`, `{cpu_pct}`, `{mem}`, `{mem_pct}`, `{temp}`, `{disk}`.
+  * [x] `nightctl top` / `nightctl sys`: High-performance terminal dashboard with ASCII gauges for CPU, RAM, Disk, and Temperature.
+* [x] **Pure-Rust Bluetooth Peripheral & Controller Monitor (`crates/night-core/src/bluetooth.rs`)**:
+  * [x] Zero-dependency BlueZ manager inspecting `/sys/class/bluetooth` adapter state and RFKill soft blocks.
+  * [x] Connected wireless peripheral discovery (headsets, mice, keyboards, game controllers).
+  * [x] Automatic battery reporting via `/sys/class/power_supply` for paired Bluetooth devices.
+  * [x] Integrated into `DesktopStatus::bluetooth`, JSON output, and template placeholders `{bt}`, `{bt_icon}`.
+  * [x] `nightctl bt` CLI command to inspect Bluetooth state and connected accessories.
+* [x] **Interactive Audio Output & Sink Switcher (`crates/night-core/src/audio.rs` & `crates/night-binds/src/audio_ui.rs`)**:
+  * [x] PipeWire (`wpctl status`) and PulseAudio (`pactl list sinks short`) device parser discovering active audio sinks.
+  * [x] Single-key Snowcap layer-shell modal (`show_audio_sink_modal`) bound to `Super + Shift + a`.
+  * [x] Integrated into Session Flyout (`Super + BackSpace` -> `[A] Audio Sinks`).
+  * [x] `nightctl sink <list|cycle|set <id>|menu>` CLI management suite.
+* [x] **Slint Settings Control Center Hardware & Peripheral Integration (`crates/night-settings`)**:
+  * [x] Tab 3 (System & Power): Added live Bluetooth wireless peripheral status badge.
+  * [x] Tab 3 (System & Power): Added live CPU utilization and Memory (RAM) Tokyo Night progress meters.
+
 
 
 
