@@ -178,6 +178,13 @@ enum Commands {
     /// Query battery capacity and charging status
     Power,
 
+    /// Show the Snowcap Tokyo Night application launcher modal
+    #[command(alias = "run")]
+    Launcher,
+
+    /// Query network connectivity status and active interfaces
+    Net,
+
     /// Query or set Tokyo Night desktop wallpaper
     Wallpaper {
         /// Optional path to wallpaper image file
@@ -711,6 +718,33 @@ async fn main() {
             Err(e) => fatal(e),
         },
 
+        Commands::Launcher => {
+            run_cmd(IpcCommand::ShowLauncher).await;
+        }
+
+        Commands::Net => match send_command(&IpcCommand::GetNetwork).await {
+            Ok(IpcResponse::Network(Some(net))) => {
+                println!("🌐 Network Status: {}", net.display_string());
+                println!("  Interface       : {}", net.interface);
+                println!("  Type            : {:?}", net.kind);
+                if let Some(ssid) = net.ssid {
+                    println!("  SSID            : {ssid}");
+                }
+                if let Some(sig) = net.signal_pct {
+                    println!("  Signal Quality  : {sig}%");
+                }
+                if let Some(ip) = net.ip_addr {
+                    println!("  Local IPv4      : {ip}");
+                }
+                println!("  Online          : {}", if net.is_online { "Yes" } else { "No" });
+            }
+            Ok(IpcResponse::Network(None)) => {
+                println!("🌐 Network: Disconnected / No active interface.");
+            }
+            Ok(other) => println!("{other:?}"),
+            Err(e) => fatal(e),
+        },
+
         Commands::Wallpaper { path } => {
             if let Some(p) = path {
                 let cmd = format!("swww img \"{p}\" --transition-type wipe --transition-angle 30 --transition-duration 1.5");
@@ -767,6 +801,9 @@ fn print_status_table(status: &DesktopStatus) {
     }
     if let Some(ref b) = status.battery {
         println!("  Battery Power        : {} ({})", b.display_string(), b.status);
+    }
+    if let Some(ref n) = status.network {
+        println!("  Network Connectivity : {}", n.display_string());
     }
     println!("  Night Light (Gamma)  : {}K", status.gamma_temp.unwrap_or(6500));
     println!("  Idle Inhibition Mode : {}", if status.inhibited { "☕ Enabled (Sleep Suspended)" } else { "🌙 Normal Power Saving" });
