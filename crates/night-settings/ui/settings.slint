@@ -111,6 +111,8 @@ export component SettingsWindow inherits Window {
     in-out property <bool> autostart-daemons: true;
     in-out property <string> active-tag: "1";
     in-out property <int> output-count: 1;
+    in-out property <float> gamma-temp: 6500.0;
+    in-out property <bool> is-inhibited: false;
 
     // Callbacks to Rust backend
     callback apply-gaps-preview(float, float);
@@ -123,6 +125,8 @@ export component SettingsWindow inherits Window {
     callback reload-compositor();
     callback session-poweroff();
     callback session-reboot();
+    callback set-gamma-temp(float);
+    callback toggle-inhibit();
 
     HorizontalLayout {
         padding: 0px;
@@ -851,6 +855,107 @@ export component SettingsWindow inherits Window {
                                         btn-color: #7aa2f7;
                                         text-color: #1a1b26;
                                         clicked => { root.lock-screen(); }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Late-Night Ergonomics: Night Light (Gamma)
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                HorizontalLayout {
+                                    Text {
+                                        text: "🌙 Late-Night Ergonomics (Night Light)";
+                                        color: #7aa2f7;
+                                        font-size: 15px;
+                                        font-weight: 600;
+                                    }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Text {
+                                        text: Math.round(root.gamma-temp) + " K";
+                                        color: #ff9e64;
+                                        font-weight: 700;
+                                        font-size: 14px;
+                                    }
+                                }
+
+                                Slider {
+                                    minimum: 2500;
+                                    maximum: 6500;
+                                    value: root.gamma-temp;
+                                    changed(val) => {
+                                        root.gamma-temp = val;
+                                        root.set-gamma-temp(val);
+                                    }
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    TokyoButton {
+                                        text: "Apply Night Light (3800K)";
+                                        btn-color: #ff9e64;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.gamma-temp = 3800.0;
+                                            root.set-gamma-temp(3800.0);
+                                        }
+                                    }
+                                    TokyoButton {
+                                        text: "Reset Daylight (6500K)";
+                                        btn-color: #7dcfff;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.gamma-temp = 6500.0;
+                                            root.set-gamma-temp(6500.0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Presentation / Idle Inhibition
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                HorizontalLayout {
+                                    Text {
+                                        text: "☕ Presentation & Compile Mode (Idle Inhibit)";
+                                        color: #7aa2f7;
+                                        font-size: 15px;
+                                        font-weight: 600;
+                                    }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Text {
+                                        text: root.is-inhibited ? "☕ Active (Sleep Suspended)" : "🌙 Normal Power Saving";
+                                        color: root.is-inhibited ? #9ece6a : #787c99;
+                                        font-weight: 600;
+                                        font-size: 13px;
+                                    }
+                                }
+
+                                HorizontalLayout {
+                                    TokyoButton {
+                                        text: root.is-inhibited ? "Disable Inhibit Mode" : "Enable Presentation Mode (Prevent Sleep)";
+                                        btn-color: root.is-inhibited ? #f7768e : #9ece6a;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.toggle-inhibit();
+                                        }
                                     }
                                 }
                             }

@@ -108,6 +108,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     u.set_output_count(status.output_count as i32);
                     u.set_inner_gaps(status.inner_gaps);
                     u.set_outer_gaps(status.outer_gaps);
+                    u.set_is_inhibited(status.inhibited);
+                    if let Some(temp) = status.gamma_temp {
+                        u.set_gamma_temp(temp as f32);
+                    }
                 });
             }
             Ok(_) => {
@@ -324,6 +328,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     ui.on_session_reboot(|| {
         night_core::exec::spawn_shell("systemctl reboot");
+    });
+
+    ui.on_set_gamma_temp(move |temp| {
+        let t = temp.max(1000.0) as u32;
+        tokio::spawn(async move {
+            let _ = send_command(&IpcCommand::SetGamma(t)).await;
+        });
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_toggle_inhibit(move || {
+        let ui_weak = ui_weak.clone();
+        tokio::spawn(async move {
+            if let Ok(IpcResponse::Inhibited(val)) = send_command(&IpcCommand::ToggleInhibit).await {
+                let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                    u.set_is_inhibited(val);
+                    let msg = if val {
+                        "Idle inhibition enabled (Presentation Mode)"
+                    } else {
+                        "Idle inhibition disabled (Normal power saving)"
+                    };
+                    u.set_notification_msg(msg.into());
+                });
+            }
+        });
     });
 
     // Run Slint Event Loop
