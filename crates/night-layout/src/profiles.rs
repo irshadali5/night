@@ -93,31 +93,7 @@ impl LayoutProfile {
     }
 }
 
-/// Snapping targets for floating client windows
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SnapPosition {
-    Center,
-    TopLeft,
-    TopRight,
-    BottomLeft,
-    BottomRight,
-    LeftHalf,
-    RightHalf,
-}
-
-impl SnapPosition {
-    pub fn name(&self) -> &'static str {
-        match self {
-            Self::Center => "Center",
-            Self::TopLeft => "Top-Left",
-            Self::TopRight => "Top-Right",
-            Self::BottomLeft => "Bottom-Left",
-            Self::BottomRight => "Bottom-Right",
-            Self::LeftHalf => "Left-Half",
-            Self::RightHalf => "Right-Half",
-        }
-    }
-}
+pub use crate::floating::SnapPosition;
 
 #[cfg(test)]
 mod tests {
