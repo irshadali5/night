@@ -34,6 +34,7 @@ dirs = "5.0"                                      # Standard XDG base directory 
 interprocess = { version = "2.2", features = ["tokio"] } # Fast Unix domain socket IPC
 shell-words = "1.1"                               # Safe shell argument tokenization
 which = "7.0"                                     # Reliable PATH binary discovery
+clap = { version = "4.5", features = ["derive"] } # Declarative, typed CLI argument parsing
 
 # Serialization & Formats (Best-of-breed selection)
 serde = { version = "1.0", features = ["derive"] }
