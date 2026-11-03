@@ -1,0 +1,34 @@
+// 🌙 Project Night - Window Rules Configuration (RON Format)
+// Best used for rich, strongly-typed Rust enums and nested structures.
+// Stored at: ~/.config/night/rules.ron
+
+[
+    // Utilities to automatically float
+    Rule(
+        app_id: "satty",
+        action: Float,
+    ),
+    Rule(
+        app_id: "pavucontrol",
+        action: Float,
+    ),
+    Rule(
+        app_id: "nm-connection-editor",
+        action: Float,
+    ),
+    Rule(
+        app_id: "blueman-manager",
+        action: Float,
+    ),
+
+    // Application tag assignments
+    Rule(
+        app_id: "discord",
+        action: MoveToTag("8"),
+    ),
+    Rule(
+        app_id: "spotify",
+        action: MoveToTag("9"),
+    ),
+]
+
