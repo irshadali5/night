@@ -7,6 +7,7 @@ use pinnacle_api::layout::generators::{Dwindle, Fair, MasterSide, MasterStack, S
 use pinnacle_api::layout::{Gaps, LayoutGenerator, LayoutRequester, LayoutResponse};
 use pinnacle_api::util::Axis;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 use tracing::info;
 
@@ -44,7 +45,8 @@ impl LayoutKind {
 }
 
 pub struct LayoutState {
-    pub current_kind: LayoutKind,
+    pub default_kind: LayoutKind,
+    pub tag_layouts: HashMap<String, LayoutKind>,
     pub inner_gaps: f32,
     pub outer_gaps: f32,
     pub master_factor: f32,
@@ -57,7 +59,8 @@ fn state() -> &'static Arc<Mutex<LayoutState>> {
     LAYOUT_STATE.get_or_init(|| {
         let user_cfg = UserConfig::load();
         Arc::new(Mutex::new(LayoutState {
-            current_kind: LayoutKind::MasterStack,
+            default_kind: LayoutKind::MasterStack,
+            tag_layouts: HashMap::new(),
             inner_gaps: user_cfg.general.inner_gaps,
             outer_gaps: user_cfg.general.outer_gaps,
             master_factor: 0.55,
@@ -67,13 +70,21 @@ fn state() -> &'static Arc<Mutex<LayoutState>> {
 
 /// Initializes dynamic layout management with Pinnacle
 pub fn setup_layout() {
-    info!("Initializing Night dynamic layout engine...");
+    info!("Initializing Night dynamic layout engine with per-tag memory...");
 
     let state_arc = state().clone();
 
     let requester = pinnacle_api::layout::manage(move |args| {
         let guard = state_arc.lock().unwrap();
-        let kind = guard.current_kind;
+
+        // Resolve active tag name if available
+        let active_tag_name = args.tags.first().map(|t| t.name());
+        let kind = if let Some(ref name) = active_tag_name {
+            *guard.tag_layouts.get(name).unwrap_or(&guard.default_kind)
+        } else {
+            guard.default_kind
+        };
+
         let inner = Gaps::from(guard.inner_gaps);
         let outer = Gaps::from(guard.outer_gaps);
         let master_factor = guard.master_factor;
@@ -121,20 +132,41 @@ pub fn setup_layout() {
     });
 
     let _ = LAYOUT_REQUESTER.set(requester);
-    info!("Dynamic layout engine initialized with MasterStack as default.");
+    info!("Dynamic layout engine initialized with per-tag memory.");
 }
 
-/// Cycles to the next layout algorithm and re-layouts the focused display
+/// Cycles to the next layout algorithm for the active tag and re-layouts the focused display
 pub fn cycle_layout() -> LayoutKind {
+    let active_tag = night_core::SessionState::load()
+        .map(|s| s.active_tag)
+        .unwrap_or_else(|| "1".to_string());
+
     let next = {
         let mut guard = state().lock().unwrap();
-        guard.current_kind = guard.current_kind.next();
-        guard.current_kind
+        let current = *guard.tag_layouts.get(&active_tag).unwrap_or(&guard.default_kind);
+        let next = current.next();
+        guard.tag_layouts.insert(active_tag.clone(), next);
+        next
     };
 
-    info!(layout = %next.name(), "Cycled to next window layout");
+    info!(tag = %active_tag, layout = %next.name(), "Cycled window layout for active workspace");
     request_relayout();
     next
+}
+
+/// Sets layout for a specific tag
+pub fn set_layout_for_tag(tag: &str, layout: LayoutKind) {
+    {
+        let mut guard = state().lock().unwrap();
+        guard.tag_layouts.insert(tag.to_string(), layout);
+    }
+    request_relayout();
+}
+
+/// Gets layout for a specific tag
+pub fn get_layout_for_tag(tag: &str) -> LayoutKind {
+    let guard = state().lock().unwrap();
+    *guard.tag_layouts.get(tag).unwrap_or(&guard.default_kind)
 }
 
 /// Adjusts gaps in real-time
@@ -150,7 +182,11 @@ pub fn adjust_gaps(delta: f32) {
 
 /// Returns the current active layout kind
 pub fn current_layout() -> LayoutKind {
-    state().lock().unwrap().current_kind
+    let active_tag = night_core::SessionState::load()
+        .map(|s| s.active_tag)
+        .unwrap_or_else(|| "1".to_string());
+    let guard = state().lock().unwrap();
+    *guard.tag_layouts.get(&active_tag).unwrap_or(&guard.default_kind)
 }
 
 /// Returns current (inner_gaps, outer_gaps)
