@@ -8,6 +8,42 @@ use pinnacle_api::{output, tag, window};
 use tracing::info;
 
 pub const DEFAULT_TAG_NAMES: [&str; 9] = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+pub const DEFAULT_TAG_GLYPHS: [&str; 9] = ["󰣆", "󰈹", "󰉋", "󰎆", "󰙯", "󰌨", "󰈙", "󰭹", "󰝰"];
+pub const DEFAULT_TAG_LABELS: [&str; 9] = [
+    "Code", "Web", "Files", "Media", "Chat", "Dev", "Docs", "Comm", "Misc",
+];
+
+/// Returns the nerd font glyph corresponding to a tag name
+pub fn tag_glyph(name: &str) -> &'static str {
+    match name {
+        "1" => DEFAULT_TAG_GLYPHS[0],
+        "2" => DEFAULT_TAG_GLYPHS[1],
+        "3" => DEFAULT_TAG_GLYPHS[2],
+        "4" => DEFAULT_TAG_GLYPHS[3],
+        "5" => DEFAULT_TAG_GLYPHS[4],
+        "6" => DEFAULT_TAG_GLYPHS[5],
+        "7" => DEFAULT_TAG_GLYPHS[6],
+        "8" => DEFAULT_TAG_GLYPHS[7],
+        "9" => DEFAULT_TAG_GLYPHS[8],
+        _ => "󰝰",
+    }
+}
+
+/// Returns the semantic label corresponding to a tag name
+pub fn tag_label(name: &str) -> &'static str {
+    match name {
+        "1" => DEFAULT_TAG_LABELS[0],
+        "2" => DEFAULT_TAG_LABELS[1],
+        "3" => DEFAULT_TAG_LABELS[2],
+        "4" => DEFAULT_TAG_LABELS[3],
+        "5" => DEFAULT_TAG_LABELS[4],
+        "6" => DEFAULT_TAG_LABELS[5],
+        "7" => DEFAULT_TAG_LABELS[6],
+        "8" => DEFAULT_TAG_LABELS[7],
+        "9" => DEFAULT_TAG_LABELS[8],
+        _ => "Workspace",
+    }
+}
 
 /// Initializes dynamic desktop tags across all connected outputs, applying RON monitor profiles.
 pub fn setup_tags() {
