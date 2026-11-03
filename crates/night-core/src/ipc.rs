@@ -56,6 +56,22 @@ impl DesktopStatus {
     }
 }
 
+/// DPMS Display Power Action
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum DpmsAction {
+    On,
+    Off,
+    Toggle,
+}
+
+/// Output Navigation Direction or Target
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum OutputNav {
+    Next,
+    Prev,
+    Name(String),
+}
+
 /// Desktop IPC Request Commands
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IpcCommand {
@@ -85,6 +101,12 @@ pub enum IpcCommand {
     ShowQuit,
     /// Subscribes to real-time status updates (persistent event stream)
     Subscribe,
+    /// Changes focus to an output monitor
+    FocusOutput(OutputNav),
+    /// Moves currently focused window to an output monitor
+    MoveWindowToOutput(OutputNav),
+    /// Manages DPMS display power
+    Dpms(DpmsAction),
 }
 
 /// Desktop IPC Response
