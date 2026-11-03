@@ -21,3 +21,9 @@ browser = "zen-browser"
 alt_browser = "brave"
 lock_cmd = "veila"
 
+[gamma]
+enabled = false
+day_temp = 6500
+night_temp = 3800
+
+

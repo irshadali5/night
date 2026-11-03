@@ -12,6 +12,8 @@ pub struct UserConfig {
     pub general: GeneralConfig,
     #[serde(default)]
     pub apps: AppsConfig,
+    #[serde(default)]
+    pub gamma: GammaConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,11 +68,29 @@ impl Default for AppsConfig {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GammaConfig {
+    pub enabled: bool,
+    pub day_temp: u32,
+    pub night_temp: u32,
+}
+
+impl Default for GammaConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            day_temp: 6500,
+            night_temp: 3800,
+        }
+    }
+}
+
 impl Default for UserConfig {
     fn default() -> Self {
         Self {
             general: GeneralConfig::default(),
             apps: AppsConfig::default(),
+            gamma: GammaConfig::default(),
         }
     }
 }
