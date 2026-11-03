@@ -10,8 +10,10 @@ use pinnacle_api::{output, pinnacle, window};
 use tracing::info;
 
 pub mod clipboard_ui;
+pub mod snipping;
 pub mod switcher;
 pub use clipboard_ui::show_clipboard_modal;
+pub use snipping::show_snipping_modal;
 pub use switcher::show_window_switcher;
 
 /// Registers all user keybindings and interactive mouse bindings with the Pinnacle compositor
@@ -266,6 +268,11 @@ pub fn register_all() {
     // -------------------------------------------------------------------------
     // 5. Screenshots & Screen Recording
     // -------------------------------------------------------------------------
+
+    // Super + Shift + s -> Interactive Tokyo Night Snipping Modal
+    input::keybind(Mod::SUPER | Mod::SHIFT, 's').on_press(|| {
+        show_snipping_modal();
+    });
 
     // PrintScreen -> Interactive Area Screenshot to Satty
     input::keybind(Mod::empty(), "Print").on_press(|| {
