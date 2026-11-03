@@ -1,0 +1,14 @@
+[package]
+name = "night-daemons"
+description = "Autostart manager and process supervisor for Night desktop environment daemons"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+night-core.workspace = true
+pinnacle-api.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+which.workspace = true
