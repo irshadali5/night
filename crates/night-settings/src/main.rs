@@ -145,6 +145,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         u.set_volume_level(vol.percentage as f32);
                         u.set_audio_volume(vol.display_string().into());
                     }
+                    if let Some(ref bl) = status.backlight {
+                        u.set_brightness_level(bl.percentage as f32);
+                        u.set_brightness_label(bl.display_string().into());
+                    }
+                    u.set_dnd_active(status.dnd);
                 });
             }
             Ok(_) => {
@@ -425,6 +430,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Ok(IpcResponse::Volume(Some(vol))) = send_command(&IpcCommand::Volume(night_core::audio::VolumeAction::Set(pct))).await {
                 let _ = ui_weak.upgrade_in_event_loop(move |u| {
                     u.set_audio_volume(vol.display_string().into());
+                });
+            }
+        });
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_set_brightness(move |val| {
+        let pct = val.clamp(0.0, 100.0).round() as u8;
+        let ui_weak = ui_weak.clone();
+        tokio::spawn(async move {
+            if let Ok(IpcResponse::Backlight(Some(bl))) = send_command(&IpcCommand::Backlight(night_core::backlight::BacklightAction::Set(pct))).await {
+                let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                    u.set_brightness_label(bl.display_string().into());
+                });
+            }
+        });
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_toggle_dnd(move || {
+        let ui_weak = ui_weak.clone();
+        tokio::spawn(async move {
+            if let Ok(IpcResponse::Dnd(dnd)) = send_command(&IpcCommand::ToggleDnd).await {
+                let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                    u.set_dnd_active(dnd);
+                    let msg = if dnd {
+                        "Do Not Disturb (DND) Enabled"
+                    } else {
+                        "Do Not Disturb (DND) Disabled"
+                    };
+                    u.set_notification_msg(msg.into());
                 });
             }
         });

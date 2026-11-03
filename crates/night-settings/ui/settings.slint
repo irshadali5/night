@@ -125,6 +125,9 @@ export component SettingsWindow inherits Window {
     in-out property <string> mem-label: "0 / 0 GiB";
     in-out property <string> audio-volume: "50%";
     in-out property <float> volume-level: 50.0;
+    in-out property <float> brightness-level: 50.0;
+    in-out property <string> brightness-label: "50%";
+    in-out property <bool> dnd-active: false;
 
     // Callbacks to Rust backend
     callback apply-gaps-preview(float, float);
@@ -142,6 +145,8 @@ export component SettingsWindow inherits Window {
     callback set-theme(string);
     callback trigger-snipping();
     callback set-volume(float);
+    callback set-brightness(float);
+    callback toggle-dnd();
 
     HorizontalLayout {
         padding: 0px;
@@ -1087,6 +1092,59 @@ export component SettingsWindow inherits Window {
                                         changed(val) => {
                                             root.volume-level = val;
                                             root.set-volume(val);
+                                        }
+                                    }
+                                }
+
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    HorizontalLayout {
+                                        Text {
+                                            text: "Display Backlight:";
+                                            color: #c0caf5;
+                                            font-size: 13px;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text {
+                                            text: root.brightness-label;
+                                            color: #ff9e64;
+                                            font-weight: 600;
+                                            font-size: 13px;
+                                        }
+                                    }
+                                    Slider {
+                                        minimum: 5;
+                                        maximum: 100;
+                                        value: root.brightness-level;
+                                        changed(val) => {
+                                            root.brightness-level = val;
+                                            root.set-brightness(val);
+                                        }
+                                    }
+                                }
+
+                                HorizontalLayout {
+                                    Text {
+                                        text: "Do Not Disturb (DND):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                    }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    TouchArea {
+                                        width: 140px;
+                                        height: 30px;
+                                        clicked => { root.toggle-dnd(); }
+                                        Rectangle {
+                                            background: root.dnd-active ? #f7768e : #414868;
+                                            border-radius: 6px;
+                                            Text {
+                                                text: root.dnd-active ? "󰂛 Muted (ON)" : "󰂚 Normal (OFF)";
+                                                color: #ffffff;
+                                                font-size: 12px;
+                                                font-weight: 600;
+                                                x: (parent.width - self.width) / 2;
+                                                y: (parent.height - self.height) / 2;
+                                            }
                                         }
                                     }
                                 }
