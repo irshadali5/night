@@ -184,6 +184,34 @@ async fn config() {
                     night_binds::show_quit_prompt();
                     IpcResponse::Ok
                 }
+                IpcCommand::ShowSessionMenu => {
+                    night_binds::show_session_menu();
+                    IpcResponse::Ok
+                }
+                IpcCommand::WindowOp(op) => {
+                    match op {
+                        night_core::ipc::WindowAction::Sticky => night_binds::toggle_sticky(),
+                        night_core::ipc::WindowAction::Pip => night_binds::toggle_pip(),
+                        night_core::ipc::WindowAction::Center => night_binds::center_focused_window(),
+                        night_core::ipc::WindowAction::ToggleFloat => {
+                            if let Some(focused) = pinnacle_api::window::get_focused() {
+                                focused.toggle_floating();
+                            }
+                        }
+                        night_core::ipc::WindowAction::ToggleFullscreen => {
+                            if let Some(focused) = pinnacle_api::window::get_focused() {
+                                focused.toggle_fullscreen();
+                            }
+                        }
+                        night_core::ipc::WindowAction::ToggleMaximize => {
+                            if let Some(focused) = pinnacle_api::window::get_focused() {
+                                focused.toggle_maximized();
+                            }
+                        }
+                    }
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Ok
+                }
                 IpcCommand::FocusOutput(nav) => {
                     match nav {
                         night_core::ipc::OutputNav::Next => night_tags::focus_next_output(),
