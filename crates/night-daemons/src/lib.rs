@@ -58,12 +58,21 @@ pub async fn start_all() {
     }
 
     // Launch Wayland idle monitor (wayidle) if installed
+    let user_cfg = night_core::UserConfig::load();
     if which::which("wayidle").is_ok() {
-        let user_cfg = night_core::UserConfig::load();
-        let lock_cmd = user_cfg.apps.lock_cmd;
+        let lock_cmd = &user_cfg.apps.lock_cmd;
         let idle_cmd = format!("wayidle -t 300 -s \"{lock_cmd}\" 2>/dev/null || ~/.config/wayidle/wayidle.sh 2>/dev/null");
         info!(command = %idle_cmd, "Starting wayidle session watcher");
         spawn_shell(&idle_cmd);
+    }
+
+    // Initialize Night Light / Gamma temperature if enabled in night.toml
+    if user_cfg.gamma.enabled {
+        info!(
+            night_temp = user_cfg.gamma.night_temp,
+            "Initializing automated night light gamma schedule"
+        );
+        night_core::gamma::set_temperature(user_cfg.gamma.night_temp);
     }
 
     info!("Night daemon supervisor initialization finished.");
