@@ -120,6 +120,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(media) = status.media_info {
                         u.set_media_track(media.into());
                     }
+                    if let Some(ref bat) = status.battery {
+                        u.set_battery_status(bat.display_string().into());
+                    } else {
+                        u.set_battery_status("AC Power".into());
+                    }
+                    if let Some(ref vol) = status.volume {
+                        u.set_volume_level(vol.percentage as f32);
+                        u.set_audio_volume(vol.display_string().into());
+                    }
                 });
             }
             Ok(_) => {
@@ -389,6 +398,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.on_trigger_snipping(|| {
         tokio::spawn(async move {
             let _ = send_command(&IpcCommand::ShowSnipping).await;
+        });
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_set_volume(move |val| {
+        let pct = val.clamp(0.0, 100.0).round() as u8;
+        let ui_weak = ui_weak.clone();
+        tokio::spawn(async move {
+            if let Ok(IpcResponse::Volume(Some(vol))) = send_command(&IpcCommand::Volume(night_core::audio::VolumeAction::Set(pct))).await {
+                let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                    u.set_audio_volume(vol.display_string().into());
+                });
+            }
         });
     });
 

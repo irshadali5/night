@@ -116,6 +116,9 @@ export component SettingsWindow inherits Window {
     in-out property <float> gamma-temp: 6500.0;
     in-out property <bool> is-inhibited: false;
     in-out property <string> media-track: "No Media Playing";
+    in-out property <string> battery-status: "AC Power";
+    in-out property <string> audio-volume: "50%";
+    in-out property <float> volume-level: 50.0;
 
     // Callbacks to Rust backend
     callback apply-gaps-preview(float, float);
@@ -132,6 +135,7 @@ export component SettingsWindow inherits Window {
     callback toggle-inhibit();
     callback set-theme(string);
     callback trigger-snipping();
+    callback set-volume(float);
 
     HorizontalLayout {
         padding: 0px;
@@ -992,6 +996,62 @@ export component SettingsWindow inherits Window {
                                         btn-color: #7aa2f7;
                                         text-color: #1a1b26;
                                         clicked => { root.trigger-snipping(); }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Battery Power & Audio Volume
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                HorizontalLayout {
+                                    Text {
+                                        text: "⚡ Power & Audio Controls";
+                                        color: #7aa2f7;
+                                        font-size: 15px;
+                                        font-weight: 600;
+                                    }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Text {
+                                        text: "Battery: " + root.battery-status;
+                                        color: #9ece6a;
+                                        font-size: 13px;
+                                        font-weight: 600;
+                                    }
+                                }
+
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    HorizontalLayout {
+                                        Text {
+                                            text: "Master Volume Output:";
+                                            color: #c0caf5;
+                                            font-size: 13px;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text {
+                                            text: root.audio-volume;
+                                            color: #7dcfff;
+                                            font-weight: 600;
+                                            font-size: 13px;
+                                        }
+                                    }
+                                    Slider {
+                                        minimum: 0;
+                                        maximum: 100;
+                                        value: root.volume-level;
+                                        changed(val) => {
+                                            root.volume-level = val;
+                                            root.set-volume(val);
+                                        }
                                     }
                                 }
                             }
