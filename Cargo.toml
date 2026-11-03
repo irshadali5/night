@@ -10,6 +10,7 @@ members = [
     "crates/night-rules",
     "crates/night-pinnacle",
     "crates/night-ctl",
+    "crates/night-settings",
 ]
 
 [workspace.package]
@@ -41,6 +42,10 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"                                      # For human-readable, user-facing configs
 ron = "0.8"                                       # For rich, typed Rust data (rules & bindings)
 postcard = { version = "1.1", features = ["alloc", "use-std"] } # For ultra-fast binary session/IPC caching
+
+# Slint GUI Toolkit (Pure Rust, lightweight, native Wayland rendering)
+slint = "1.16"
+slint-build = "1.16"
 
 # Internal Workspace Crates
 night-core = { path = "crates/night-core" }
