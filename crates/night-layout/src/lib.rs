@@ -153,6 +153,12 @@ pub fn current_layout() -> LayoutKind {
     state().lock().unwrap().current_kind
 }
 
+/// Returns current (inner_gaps, outer_gaps)
+pub fn get_gaps() -> (f32, f32) {
+    let guard = state().lock().unwrap();
+    (guard.inner_gaps, guard.outer_gaps)
+}
+
 /// Requests the compositor to recompute and apply the layout tree
 pub fn request_relayout() {
     if let Some(req) = LAYOUT_REQUESTER.get() {
