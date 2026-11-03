@@ -60,10 +60,14 @@ Each technology has been chosen and implemented for its ideal use case:
 ## 🚀 Workspace Tasks (`cargo xtask`)
 
 ```bash
-cargo xtask check     # Verifies all 7 crates in the workspace
+cargo xtask check     # Verifies all 8 crates in the workspace
 cargo xtask build     # Builds night-pinnacle in release mode
-cargo xtask install   # Compiles, installs binary to ~/.cargo/bin, links pinnacle.toml & sets up ~/.config/night/
+cargo xtask install   # Compiles, installs binary, links pinnacle.toml, deploys session & theme
+cargo xtask doctor    # Runs comprehensive diagnostics on all 18 tools and environment
+cargo xtask session   # Installs night.desktop for login managers (GDM, SDDM, Ly, greetd)
+cargo xtask theme     # Generates Tokyo Night styling for Alacritty, Ironbar, Anyrun, Veila
 cargo xtask run       # Builds and runs Pinnacle compositor
+cargo xtask msg <CMD> # IPC control (status, reload, switch-tag, layout, gaps, spawn, close)
 cargo xtask uninstall # Removes binary and symlink
 ```
 
