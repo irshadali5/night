@@ -228,6 +228,57 @@ pub enum OutputNav {
     Name(String),
 }
 
+/// Snapping target for floating client windows
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum SnapPosition {
+    Center,
+    LeftHalf,
+    RightHalf,
+    TopHalf,
+    BottomHalf,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    Pip,
+    Maximize,
+}
+
+impl SnapPosition {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Center => "Center",
+            Self::LeftHalf => "Left-Half",
+            Self::RightHalf => "Right-Half",
+            Self::TopHalf => "Top-Half",
+            Self::BottomHalf => "Bottom-Half",
+            Self::TopLeft => "Top-Left",
+            Self::TopRight => "Top-Right",
+            Self::BottomLeft => "Bottom-Left",
+            Self::BottomRight => "Bottom-Right",
+            Self::Pip => "Picture-in-Picture",
+            Self::Maximize => "Maximize",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim().to_lowercase().as_str() {
+            "center" | "mid" | "c" => Some(Self::Center),
+            "left" | "left-half" | "l" => Some(Self::LeftHalf),
+            "right" | "right-half" | "r" => Some(Self::RightHalf),
+            "top" | "top-half" | "t" => Some(Self::TopHalf),
+            "bottom" | "bottom-half" | "b" => Some(Self::BottomHalf),
+            "top-left" | "topleft" | "tl" => Some(Self::TopLeft),
+            "top-right" | "topright" | "tr" => Some(Self::TopRight),
+            "bottom-left" | "bottomleft" | "bl" => Some(Self::BottomLeft),
+            "bottom-right" | "bottomright" | "br" => Some(Self::BottomRight),
+            "pip" | "picture-in-picture" | "p" => Some(Self::Pip),
+            "max" | "maximize" | "fullscreen-float" => Some(Self::Maximize),
+            _ => None,
+        }
+    }
+}
+
 /// Window Operations for focused window
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum WindowAction {
@@ -237,6 +288,7 @@ pub enum WindowAction {
     ToggleFloat,
     ToggleFullscreen,
     ToggleMaximize,
+    Snap(SnapPosition),
 }
 
 /// Desktop IPC Request Commands
@@ -345,6 +397,12 @@ pub enum IpcCommand {
     SetLayoutProfile(String),
     /// Triggers an on-screen display overlay (volume, brightness, dnd, gamma, layout)
     ShowOsd(String),
+    /// Snaps focused window according to geometric position
+    SnapWindow(SnapPosition),
+    /// Triggers the Snowcap Tokyo Night command palette modal
+    ShowPalette,
+    /// Triggers the Snowcap Tokyo Night window overview switcher modal
+    ShowOverview,
 }
 
 /// Desktop IPC Response
