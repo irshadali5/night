@@ -100,6 +100,9 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Shift + [h/j/k/l]` $\rightarrow$ Swap Window with Neighbor in Direction
 * `Super + f` $\rightarrow$ Toggle Fullscreen Mode
 * `Super + Shift + Space` $\rightarrow$ Toggle Floating Mode
+* `Super + s` $\rightarrow$ Toggle Sticky Window (pin across all workspace tags)
+* `Super + p` $\rightarrow$ Toggle Picture-in-Picture (PiP) Floating Overlay Mode
+* `Super + c` $\rightarrow$ Center Focused Floating Window on Active Display
 * `Super + Shift + q` $\rightarrow$ Close Focused Window
 * `Super + Left-Click + Drag` $\rightarrow$ Interactive Floating Window Move
 * `Super + Right-Click + Drag` $\rightarrow$ Interactive Floating Window Resize
@@ -117,6 +120,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 
 ### Multimedia, Screenshots & Session
 * `Super + /` $\rightarrow$ Open **Snowcap** Keybinds Cheatsheet Overlay (Tokyo Night themed)
+* `Super + BackSpace` $\rightarrow$ Open **Snowcap** Tokyo Night Session Flyout Menu (Lock, Sleep, Reboot, Power Off)
 * `Super + Shift + e` $\rightarrow$ Open **Snowcap** Quit Confirmation Prompt
 * `Super + Shift + r` $\rightarrow$ Reload Pinnacle Configuration
 * `Super + Shift + x` $\rightarrow$ Instant Exit Pinnacle Session
@@ -157,10 +161,17 @@ nightctl dpms toggle
 nightctl dpms off
 nightctl dpms on
 
+# Advanced window operations (sticky across tags, picture-in-picture, center)
+nightctl window sticky
+nightctl window pip
+nightctl window center
+nightctl window float
+
 # Toggle dropdown scratchpad terminal and Snowcap modals
 nightctl scratchpad
 nightctl overlay
 nightctl quit-prompt
+nightctl session-menu
 ```
 
 Alternatively, remote commands can be delivered via `cargo xtask msg <CMD>`:
