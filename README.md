@@ -68,6 +68,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Alternative Terminal**| [Rio](https://github.com/raphamorim/rio) | Rust + WebGPU | Bound to `Super + Shift + Return`. |
 | **GUI File Manager** | [Favnyr](https://github.com/GlitchAwakened/Favnyr) | Rust + Slint UI | Modern, lightweight native file manager bound to `Super + e`. |
 | **Terminal File Manager**| [Yazi](https://github.com/sxyazi/yazi) | Rust + Tokio | Blazingly fast async TUI file manager bound to `Super + y`. |
+| **Media Player** | [Vivi](https://github.com/Loafer19/vivi) | Rust + Slint UI + `libmpv` | Modern, lightweight native media player bound to `Super + Shift + m`. |
 | **Primary Web Browser** | [Zen Browser](https://zen-browser.app/) | Gecko / Fast & Modern | Focused, privacy-conscious browser bound to `Super + b`. |
 | **Alternative Browser** | [Brave](https://brave.com/) | Chromium | Privacy browser bound to `Super + Shift + b`. |
 | **Notifications** | [Wired](https://github.com/Toqozz/wired-notify) | Pure Rust | Launched by `night-daemons` on startup. |
@@ -78,6 +79,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Idle Management** | [wayidle](https://github.com/hirsch-conner/wayidle) | Pure Rust | Screen lock & DPMS monitor started by `night-daemons`. |
 | **Screen Locker** | [Veila](https://github.com/naurissteins/Veila) | Pure Rust (`ext-session-lock-v1`) | Fast, modern PAM screen locker triggered on idle or via `Super + Escape`. |
 | **Night Light (Gamma)** | [wlsunset](https://github.com/kennylevinsen/wlsunset) | Pure Wayland Gamma | Smooth color temperature transitions for late-night ergonomics. |
+| **Clipboard Manager** | [rsclip](https://github.com/jR4dh3y/rsclip) | Pure Rust + GTK4 / Wayland | Pure-Rust clipboard daemon (`rsclipd`) & resident UI (`rsclip`) bound to `Super + Shift + v`. |
 | **Settings & Control Center** | [`night-settings`](./crates/night-settings) | Pure Rust + Slint UI | Tokyo Night GUI settings & live preview bound to `Super + i`. |
 
 ---
@@ -95,7 +97,9 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Shift + b` $\rightarrow$ Launch **Brave Browser** (Alternative Browser)
 * `Super + i` $\rightarrow$ Launch **Night Settings** (Tokyo Night Slint Control Center)
 * `Super + v` $\rightarrow$ Open **Clipboard History** Modal (Wayland Ring Buffer)
+* `Super + Shift + v` $\rightarrow$ Launch **rsclip** (Pure-Rust Wayland Clipboard Overlay)
 * `Super + m` $\rightarrow$ Toggle **Music** Scratchpad Drawer
+* `Super + Shift + m` $\rightarrow$ Launch **Vivi** (Pure-Rust+Slint Media Player)
 * `Super + n` $\rightarrow$ Toggle **Notes** Scratchpad Drawer
 * `Super + ` ` ` (tilde) $\rightarrow$ Toggle **Terminal** Dropdown Scratchpad
 * `Super + Escape` $\rightarrow$ Lock Session (**Veila** - Pure Rust Locker)
