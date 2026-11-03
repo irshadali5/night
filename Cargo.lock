@@ -3349,7 +3349,11 @@ dependencies = [
 name = "night-session"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "dirs",
+ "night-core",
+ "tokio",
+ "tracing",
  "which",
 ]
 
