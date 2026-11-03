@@ -304,6 +304,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Rotate180" => MonitorTransform::Rotate180,
             "Rotate270" => MonitorTransform::Rotate270,
             "Flipped" => MonitorTransform::Flipped,
+            "Flipped90" => MonitorTransform::Flipped90,
+            "Flipped180" => MonitorTransform::Flipped180,
+            "Flipped270" => MonitorTransform::Flipped270,
             _ => MonitorTransform::Normal,
         };
 
