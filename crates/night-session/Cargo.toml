@@ -1,0 +1,16 @@
+[package]
+name = "night-session"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "night-session"
+path = "src/main.rs"
+
+[dependencies]
+dirs.workspace = true
+which.workspace = true
+

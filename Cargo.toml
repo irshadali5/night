@@ -11,6 +11,7 @@ members = [
     "crates/night-pinnacle",
     "crates/night-ctl",
     "crates/night-settings",
+    "crates/night-session",
 ]
 
 [workspace.package]
