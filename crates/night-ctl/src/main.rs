@@ -3,6 +3,7 @@
 //! Connects directly to the Night Wayland Compositor via Unix domain sockets.
 
 use clap::{Parser, Subcommand, ValueEnum};
+use night_core::audio::VolumeAction;
 use night_core::ipc::{
     send_command, subscribe_status, DesktopStatus, DpmsAction, IpcCommand, IpcResponse, OutputNav,
 };
@@ -167,6 +168,35 @@ enum Commands {
         #[command(subcommand)]
         action: Option<ThemeCommand>,
     },
+
+    /// Manage audio volume and mute status (PipeWire / PulseAudio)
+    Volume {
+        #[command(subcommand)]
+        action: Option<VolumeCommand>,
+    },
+
+    /// Query battery capacity and charging status
+    Power,
+
+    /// Query or set Tokyo Night desktop wallpaper
+    Wallpaper {
+        /// Optional path to wallpaper image file
+        path: Option<String>,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum VolumeCommand {
+    /// Raise volume by delta percentage (default 5%)
+    Raise { delta: Option<u8> },
+    /// Lower volume by delta percentage (default 5%)
+    Lower { delta: Option<u8> },
+    /// Set explicit volume percentage (0..100)
+    Set { percentage: u8 },
+    /// Toggle mute state
+    Mute,
+    /// Query current volume and mute state
+    Status,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
@@ -648,6 +678,64 @@ async fn main() {
                 Err(e) => fatal(e),
             },
         },
+
+        Commands::Volume { action } => {
+            let act = match action {
+                None | Some(VolumeCommand::Status) => VolumeAction::Query,
+                Some(VolumeCommand::Raise { delta }) => VolumeAction::Raise(delta.unwrap_or(5)),
+                Some(VolumeCommand::Lower { delta }) => VolumeAction::Lower(delta.unwrap_or(5)),
+                Some(VolumeCommand::Set { percentage }) => VolumeAction::Set(percentage),
+                Some(VolumeCommand::Mute) => VolumeAction::MuteToggle,
+            };
+
+            match send_command(&IpcCommand::Volume(act)).await {
+                Ok(IpcResponse::Volume(Some(vol))) => {
+                    println!("🔊 Audio Volume: {}", vol.display_string());
+                }
+                Ok(IpcResponse::Volume(None)) => {
+                    println!("🔊 Audio service query returned no active default sink.");
+                }
+                Ok(other) => println!("{other:?}"),
+                Err(e) => fatal(e),
+            }
+        }
+
+        Commands::Power => match send_command(&IpcCommand::GetBattery).await {
+            Ok(IpcResponse::Battery(Some(bat))) => {
+                println!("⚡ Battery Status: {} ({})", bat.display_string(), bat.status);
+            }
+            Ok(IpcResponse::Battery(None)) => {
+                println!("⚡ Running on AC Power (no battery detected).");
+            }
+            Ok(other) => println!("{other:?}"),
+            Err(e) => fatal(e),
+        },
+
+        Commands::Wallpaper { path } => {
+            if let Some(p) = path {
+                let cmd = format!("swww img \"{p}\" --transition-type wipe --transition-angle 30 --transition-duration 1.5");
+                run_cmd(IpcCommand::Spawn(cmd)).await;
+                println!("🖼️ Wallpaper updated to: {p}");
+            } else {
+                let current = std::process::Command::new("swww")
+                    .arg("query")
+                    .output()
+                    .ok()
+                    .and_then(|out| {
+                        if out.status.success() {
+                            Some(String::from_utf8_lossy(&out.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    });
+
+                if let Some(c) = current {
+                    println!("🖼️ Current Wallpaper: {c}");
+                } else {
+                    println!("🖼️ swww daemon not responding or no wallpaper set.");
+                }
+            }
+        }
     }
 }
 
@@ -674,6 +762,12 @@ fn print_status_table(status: &DesktopStatus) {
     println!("  Gaps (Inner / Outer) : {:.0}px / {:.0}px", status.inner_gaps, status.outer_gaps);
     println!("  Connected Monitors   : {}", status.output_count);
     println!("  Focused Window       : {}", status.active_window.as_deref().unwrap_or("None"));
+    if let Some(ref v) = status.volume {
+        println!("  Audio Volume         : {}", v.display_string());
+    }
+    if let Some(ref b) = status.battery {
+        println!("  Battery Power        : {} ({})", b.display_string(), b.status);
+    }
     println!("  Night Light (Gamma)  : {}K", status.gamma_temp.unwrap_or(6500));
     println!("  Idle Inhibition Mode : {}", if status.inhibited { "☕ Enabled (Sleep Suspended)" } else { "🌙 Normal Power Saving" });
     if let Some(ref m) = status.media_info {
