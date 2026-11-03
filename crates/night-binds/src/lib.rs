@@ -9,6 +9,9 @@ use pinnacle_api::util::Direction;
 use pinnacle_api::{output, pinnacle, window};
 use tracing::info;
 
+pub mod switcher;
+pub use switcher::show_window_switcher;
+
 /// Registers all user keybindings and interactive mouse bindings with the Pinnacle compositor
 pub fn register_all() {
     info!("Registering desktop keybindings and interactive mouse controls...");
@@ -125,6 +128,26 @@ pub fn register_all() {
     // Super + c -> Center Focused Floating Window
     input::keybind(Mod::SUPER, 'c').on_press(|| {
         center_focused_window();
+    });
+
+    // Super + w -> Interactive Visual Window Switcher
+    input::keybind(Mod::SUPER, 'w').on_press(|| {
+        show_window_switcher();
+    });
+
+    // Alt + Tab -> Interactive Visual Window Switcher
+    input::keybind(Mod::ALT, "Tab").on_press(|| {
+        show_window_switcher();
+    });
+
+    // Super + Shift + g -> Toggle Night Light / Blue Light Filter
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'g').on_press(|| {
+        night_core::gamma::toggle_night_light();
+    });
+
+    // Super + Shift + p -> Toggle Idle Inhibit / Presentation Mode
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'p').on_press(|| {
+        night_core::gamma::toggle_inhibit();
     });
 
     // Directional Window Navigation (Vim Keys: h/j/k/l)
@@ -488,8 +511,8 @@ impl Default for SessionFlyout {
             background_color: [0.10, 0.11, 0.15, 0.96],
             border_color: [0.48, 0.64, 0.97, 1.0],
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
-            width: 560,
-            height: 240,
+            width: 580,
+            height: 270,
         }
     }
 }
@@ -540,6 +563,16 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
         )
         .into()]);
 
+        let actions_row3 = Row::new_with_children([Text::new(
+            "  [G] Night Light      [I] Inhibit Mode      [W] Window Switcher",
+        )
+        .style(
+            text::Style::new()
+                .font(self.font.clone().weight(Weight::Bold))
+                .pixels(14.0),
+        )
+        .into()]);
+
         let hint = Text::new("Press ESCAPE to cancel")
             .style(text::Style::new().font(self.font.clone()).pixels(12.0));
 
@@ -551,6 +584,8 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
             actions_row1.into(),
             Text::new("").style(text::Style::new().pixels(8.0)).into(),
             actions_row2.into(),
+            Text::new("").style(text::Style::new().pixels(8.0)).into(),
+            actions_row3.into(),
             Text::new("").style(text::Style::new().pixels(14.0)).into(),
             hint.into(),
         ]))
@@ -621,6 +656,18 @@ pub fn show_session_menu() {
             Keysym::b | Keysym::B => {
                 spawn_shell("systemctl reboot");
                 h.close();
+            }
+            Keysym::g | Keysym::G => {
+                night_core::gamma::toggle_night_light();
+                h.close();
+            }
+            Keysym::i | Keysym::I => {
+                night_core::gamma::toggle_inhibit();
+                h.close();
+            }
+            Keysym::w | Keysym::W => {
+                h.close();
+                show_window_switcher();
             }
             _ => {
                 h.close();
