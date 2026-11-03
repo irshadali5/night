@@ -26,6 +26,10 @@ pub struct Rule {
 pub fn default_rules() -> Vec<Rule> {
     vec![
         Rule {
+            app_id: "night-scratchpad".to_string(),
+            action: WindowAction::Float,
+        },
+        Rule {
             app_id: "satty".to_string(),
             action: WindowAction::Float,
         },

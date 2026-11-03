@@ -5,6 +5,10 @@
 [
     // Utilities to automatically float
     Rule(
+        app_id: "night-scratchpad",
+        action: Float,
+    ),
+    Rule(
         app_id: "satty",
         action: Float,
     ),
