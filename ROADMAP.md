@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit]
 ```
 
 ---
@@ -234,6 +234,31 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Bound `Super + i` in `crates/night-binds` to open `night-settings`.
   * [x] Added `nightctl settings` command.
   * [x] Updated `xtask` to build and install `night-settings` to `~/.cargo/bin`.
+
+---
+
+### Phase 14: Visual Window Switcher, Late-Night Ergonomics (Night Light) & Idle Inhibition
+* [x] **Snowcap Tokyo Night Visual Window Switcher (`crates/night-binds/src/switcher.rs`)**:
+  * [x] Layer-shell interactive window picker modal displaying all open windows across workspace tags and monitor outputs.
+  * [x] Displays application badges (`[Alacritty]`, `[Zen]`, `[Favnyr]`), titles, tag identifiers, and display connectors.
+  * [x] Direct single-key jump (`[1]..[9]`), `[Enter]` focus & raise, `[D]` close window, `[Esc]` cancel.
+  * [x] Automatic cross-output tag activation and window focus.
+  * [x] Keybindings: `Super + w` and `Alt + Tab`.
+* [x] **Late-Night Ergonomics: Pure-Rust Gamma & Night Light Control (`crates/night-core/src/gamma.rs`)**:
+  * [x] Screen color temperature adjustments (2500K–6500K) via Wayland protocols (`wlsunset`, `gammastep`, `hyprsunset`).
+  * [x] TOML configuration schema under `[gamma]` in `config/night.toml`.
+  * [x] Keybinding: `Super + Shift + g` toggles between neutral daylight (6500K) and warm amber (3800K).
+  * [x] `nightctl gamma <toggle|set <temp>|day|night|status>` commands.
+  * [x] Slint GUI integration: Live temperature slider and quick presets in `night-settings`.
+* [x] **Presentation & Compile Mode: Idle Inhibition**:
+  * [x] Inhibit power-saving idle watcher (`wayidle`) to prevent screen lock or DPMS sleep during long compilations, presentations, or video playback.
+  * [x] Keybinding: `Super + Shift + p` toggles idle inhibition.
+  * [x] `nightctl inhibit` command and real-time status reflection in `DesktopStatus`.
+  * [x] Slint GUI toggle button with active state badge.
+* [x] **Session Menu & Cheatsheet Synchronization**:
+  * [x] Added `[W]` Window Switcher, `[G]` Night Light, and `[I]` Inhibit Mode shortcuts into the `Super + BackSpace` Snowcap Session Flyout.
+  * [x] Added `wlsunset` to `cargo xtask doctor`.
+
 
 
 
