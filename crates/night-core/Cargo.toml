@@ -1,0 +1,20 @@
+[package]
+name = "night-core"
+description = "Core constants, theme definitions, defaults, TOML config, dirs, interprocess IPC, and postcard session caching"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+pinnacle-api.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+toml.workspace = true
+postcard.workspace = true
+dirs.workspace = true
+interprocess.workspace = true
+shell-words.workspace = true
+which.workspace = true
