@@ -21,7 +21,7 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17
 [Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS]
 ```
 
@@ -317,6 +317,32 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 * [x] **Slint Settings Control Center Theme & Snipping Integration (`crates/night-settings`)**:
   * [x] Interactive theme variant selector buttons (`Night`, `Storm`, `Moon`, `Day`) in Tab 0 (Appearance) with live IPC updating and persistent disk saving.
   * [x] Quick launch button for Tokyo Night Snipping Modal in Tab 3 (System & Session).
+
+---
+
+### Phase 17: Pure-Rust Battery & Power Monitor, Audio Controls, Dynamic Wallpaper-Theme Engine & Auto-Reloading
+* [x] **Pure-Rust Battery & Power Supply Monitor (`crates/night-core/src/power.rs` & `crates/night-daemons/src/power_watcher.rs`)**:
+  * [x] Zero-dependency sysfs reader for Linux `/sys/class/power_supply` (`BAT0`, `BAT1`, `ADP1`).
+  * [x] Dynamic Nerd Font icons (`󰂄` charging, `󰁹`, `󰂂`, `󰂀`, `󰁾`, `󰁼`, `󰁺`).
+  * [x] Background supervisor emitting desktop notification alerts at low (<=15%) and critical (<=5%) battery levels via `notify-send` / `wired`.
+  * [x] Integrated into `DesktopStatus::battery`, JSON output, and template placeholders `{battery}`, `{battery_pct}`, `{battery_icon}`.
+  * [x] `nightctl power` command to query battery state.
+* [x] **Audio Volume Management & SwayOSD Synchronization (`crates/night-core/src/audio.rs`)**:
+  * [x] Direct volume control via PipeWire (`wpctl`) and PulseAudio (`pactl`).
+  * [x] `VolumeAction`: `Raise(delta)`, `Lower(delta)`, `Set(percentage)`, `MuteToggle`, `Query`.
+  * [x] Automatic on-screen display (OSD) feedback via `swayosd-client`.
+  * [x] Hardware multimedia keys (`XF86AudioRaiseVolume`, `XF86AudioLowerVolume`, `XF86AudioMute`) mapped in `night-binds` with real-time IPC broadcast.
+  * [x] Integrated into `DesktopStatus::volume`, template placeholders `{volume}`, `{volume_pct}`, `{volume_icon}`.
+  * [x] `nightctl volume <raise|lower|set|mute|status>` CLI suite.
+* [x] **Dynamic Wallpaper-Theme Engine (`crates/night-daemons/src/wallpaper.rs`)**:
+  * [x] Synchronizes active Tokyo Night theme variant (`Night`, `Storm`, `Moon`, `Day`) with `swww` wallpaper transitions.
+  * [x] Smooth wipe transitions (`--transition-type wipe --transition-duration 1.5 --transition-angle 30`).
+  * [x] `nightctl wallpaper [path]` to inspect or apply desktop wallpapers.
+* [x] **Live Configuration File Auto-Reloading (`crates/night-daemons/src/config_watcher.rs`)**:
+  * [x] Background watcher polling `rules.ron`, `monitors.ron`, and `night.toml` file timestamps.
+  * [x] Dynamically hot-reloads window placement rules, display profiles, and theme preferences without restarting Pinnacle.
+* [x] **Slint Control Center System Integration (`crates/night-settings`)**:
+  * [x] Tab 3 (System & Power): Added live battery status badge and interactive master volume slider.
 
 
 
