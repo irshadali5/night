@@ -18,4 +18,4 @@ pub use exec::{spawn, spawn_shell};
 pub use ipc::{DpmsAction, IpcCommand, IpcResponse, OutputNav, WindowAction};
 pub use monitors::{MonitorMode, MonitorPosition, MonitorProfile, MonitorTransform, MonitorVrr};
 pub use state::SessionState;
-pub use theme::Palette;
+pub use theme::{Palette, ThemeVariant};
