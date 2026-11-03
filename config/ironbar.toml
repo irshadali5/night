@@ -1,0 +1,17 @@
+# 🌙 Tokyo Night status bar configuration for Ironbar (GTK4-layer-shell)
+position = "top"
+height = 34
+icon_theme = "Papirus-Dark"
+
+[start]
+workspaces = { type = "workspaces", all_monitors = false }
+layout = { type = "custom", bar = ["label"], exec = "nightctl stream --format '󰕰 {layout}'", on_click_left = "nightctl layout next" }
+focused = { type = "focused", show_icon = true, max_length = 40 }
+
+[center]
+clock = { type = "clock", format = "%a %d %b  %H:%M" }
+
+[end]
+sys_info = { type = "sys_info", interval = 3 }
+volume = { type = "volume", format = "{icon} {percentage}%", max_volume = 100 }
+tray = { type = "tray", icon_size = 16 }
