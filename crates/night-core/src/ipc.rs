@@ -21,13 +21,17 @@ pub struct DesktopStatus {
     pub active_window: Option<String>,
     pub output_count: usize,
     pub last_reload: u64,
+    #[serde(default)]
+    pub inhibited: bool,
+    #[serde(default)]
+    pub gamma_temp: Option<u32>,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -37,7 +41,12 @@ impl DesktopStatus {
                 None => "null".to_string(),
             },
             self.output_count,
-            self.last_reload
+            self.last_reload,
+            self.inhibited,
+            match self.gamma_temp {
+                Some(t) => t.to_string(),
+                None => "null".to_string(),
+            }
         )
     }
 
@@ -53,6 +62,8 @@ impl DesktopStatus {
             .replace("{inner_gaps}", &format!("{:.0}", self.inner_gaps))
             .replace("{outer_gaps}", &format!("{:.0}", self.outer_gaps))
             .replace("{output_count}", &self.output_count.to_string())
+            .replace("{inhibited}", if self.inhibited { "󰈈 Inhibited" } else { "󰈉 Normal" })
+            .replace("{gamma}", &self.gamma_temp.map(|t| format!("{t}K")).unwrap_or_else(|| "6500K".into()))
     }
 }
 
@@ -117,6 +128,14 @@ pub enum IpcCommand {
     ShowQuit,
     /// Triggers the Snowcap Tokyo Night session flyout menu
     ShowSessionMenu,
+    /// Triggers the Snowcap Tokyo Night visual window switcher modal
+    ShowSwitcher,
+    /// Toggles night light / gamma color temperature
+    ToggleGamma,
+    /// Sets night light color temperature in Kelvin (e.g. 3800, 6500)
+    SetGamma(u32),
+    /// Toggles idle inhibition (presentation/compile mode)
+    ToggleInhibit,
     /// Subscribes to real-time status updates (persistent event stream)
     Subscribe,
     /// Changes focus to an output monitor
@@ -136,6 +155,8 @@ pub enum IpcResponse {
     State(SessionState),
     Layout(String),
     Status(DesktopStatus),
+    Gamma(u32),
+    Inhibited(bool),
     Error(String),
 }
 
