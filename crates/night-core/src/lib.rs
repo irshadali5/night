@@ -2,6 +2,7 @@
 //! Shared types, defaults, TOML user config, dirs path resolution,
 //! interprocess IPC, and postcard session caching.
 
+pub mod clipboard;
 pub mod config;
 pub mod defaults;
 pub mod exec;
