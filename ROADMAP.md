@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18 ──> Phase 19
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync] [Sysinfo/Bluetooth/Audio Sinks]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18 ──> Phase 19 ──> Phase 20
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync] [Sysinfo/Bluetooth/Audio Sinks] [Backlight/DND/Notifications/Session Restore]
 ```
 
 ---
@@ -392,6 +392,32 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 * [x] **Slint Settings Control Center Hardware & Peripheral Integration (`crates/night-settings`)**:
   * [x] Tab 3 (System & Power): Added live Bluetooth wireless peripheral status badge.
   * [x] Tab 3 (System & Power): Added live CPU utilization and Memory (RAM) Tokyo Night progress meters.
+
+---
+
+### Phase 20: Display Backlight Engine, Do-Not-Disturb (DND) Center, Notification History Modal & Session Restore Engine
+* [x] **Pure-Rust Display Backlight Control Engine (`crates/night-core/src/backlight.rs`)**:
+  * [x] Zero-dependency `/sys/class/backlight` reader discovering hardware brightness devices (`intel_backlight`, `amdgpu_bl0`, etc.).
+  * [x] Seamless adjustment via `brightnessctl` and `swayosd-client` on-screen feedback.
+  * [x] Dynamic Nerd Font glyphs: `󰃠` (75-100%), `󰃟` (50-74%), `󰃞` (25-49%), `󰃝` (0-24%).
+  * [x] Hardware brightness keys (`XF86MonBrightnessUp`, `XF86MonBrightnessDown`) mapped to direct backlight control in `night-binds`.
+  * [x] Integrated into `DesktopStatus::backlight`, JSON output, and template placeholders `{brightness}`, `{brightness_pct}`, `{brightness_icon}`.
+  * [x] `nightctl brightness [raise|lower|set <pct>|status]` CLI suite.
+* [x] **Notification Center & Do Not Disturb (DND) Daemon (`crates/night-core/src/notifications.rs` & `crates/night-binds/src/notifications_ui.rs`)**:
+  * [x] Postcard binary ring-buffer caching up to 30 notification records in `$XDG_RUNTIME_DIR/night-notifications.bin`.
+  * [x] Do Not Disturb (DND) state toggle suppressing and dropping desktop notifications via `wired --dnd`.
+  * [x] Snowcap layer-shell Notification Center Modal (`Super + Shift + n`) showing recent notifications, timestamps, and app tags.
+  * [x] Single-key actions: `[D]` Toggle DND, `[C]` Clear History, `[Esc]` Cancel.
+  * [x] Session flyout integration: Added `[N] Notifications` to `Super + BackSpace`.
+  * [x] Integrated into `DesktopStatus::dnd`, template placeholders `{dnd}`, `{dnd_icon}` (`󰂛` / `󰂚`).
+  * [x] `nightctl dnd [toggle|on|off|status]` and `nightctl notify [list|clear|menu]`.
+* [x] **Session State Persistence & Workspace Window Restoration (`crates/night-core/src/session_restore.rs`)**:
+  * [x] Serializes running window layout, app IDs, titles, assigned tags, and floating states into `$XDG_RUNTIME_DIR/night-saved-session.bin` via `postcard`.
+  * [x] `nightctl session <save|restore|clear>` CLI controls.
+* [x] **Slint Settings Control Center Backlight & DND Integration (`crates/night-settings`)**:
+  * [x] Tab 3 (System & Power): Added interactive Display Backlight slider with real-time percentage feedback.
+  * [x] Tab 3 (System & Power): Added interactive Do Not Disturb (DND) toggle button with visual state changes.
+
 
 
 
