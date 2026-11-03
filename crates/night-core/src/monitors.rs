@@ -90,6 +90,19 @@ impl MonitorProfile {
         Self::defaults()
     }
 
+    /// Saves all configured monitor profiles to RON
+    pub fn save_all(profiles: &[Self]) -> Result<(), std::io::Error> {
+        let path = Self::config_path();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let content = ron::ser::to_string_pretty(profiles, ron::ser::PrettyConfig::default())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        fs::write(&path, content)?;
+        info!(path = %path.display(), count = profiles.len(), "Saved monitor profiles to RON");
+        Ok(())
+    }
+
     /// Returns standard default profiles (wildcard fallback)
     pub fn defaults() -> Vec<Self> {
         vec![MonitorProfile {
