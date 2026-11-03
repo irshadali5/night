@@ -284,7 +284,11 @@ fn task_install(root: &Path) {
         .join("pinnacle");
     let _ = fs::create_dir_all(&config_dir);
 
-    let source_toml = root.join("pinnacle.toml");
+    let source_toml = if root.join("config/pinnacle.toml").exists() {
+        root.join("config/pinnacle.toml")
+    } else {
+        root.join("pinnacle.toml")
+    };
     let target_toml = config_dir.join("pinnacle.toml");
 
     if target_toml.exists() || fs::symlink_metadata(&target_toml).is_ok() {
@@ -1174,9 +1178,12 @@ fn task_screenshot(mode: &str) {
                 .args(["-f", target_file.to_str().unwrap()])
                 .status();
 
-            if which::which("wl-copy").is_ok() {
+            if which::which("rsclipd").is_ok() {
                 if let Ok(file) = fs::File::open(&target_file) {
-                    let _ = Command::new("wl-copy").stdin(file).status();
+                    let _ = Command::new("rsclipd")
+                        .args(["store", "--mime", "image/png"])
+                        .stdin(file)
+                        .status();
                 }
             }
 
