@@ -9,7 +9,9 @@ use pinnacle_api::util::Direction;
 use pinnacle_api::{output, pinnacle, window};
 use tracing::info;
 
+pub mod clipboard_ui;
 pub mod switcher;
+pub use clipboard_ui::show_clipboard_modal;
 pub use switcher::show_window_switcher;
 
 /// Registers all user keybindings and interactive mouse bindings with the Pinnacle compositor
@@ -80,6 +82,21 @@ pub fn register_all() {
     // Super + grave (tilde) -> Toggle Quake-style Dropdown Scratchpad Terminal
     input::keybind(Mod::SUPER, "grave").on_press(|| {
         toggle_scratchpad();
+    });
+
+    // Super + v -> Tokyo Night Wayland Clipboard History Modal
+    input::keybind(Mod::SUPER, 'v').on_press(|| {
+        show_clipboard_modal();
+    });
+
+    // Super + m -> Toggle Music / Media Scratchpad Drawer
+    input::keybind(Mod::SUPER, 'm').on_press(|| {
+        toggle_named_scratchpad("music");
+    });
+
+    // Super + n -> Toggle Notes / Editor Scratchpad Drawer
+    input::keybind(Mod::SUPER, 'n').on_press(|| {
+        toggle_named_scratchpad("notes");
     });
 
     // -------------------------------------------------------------------------
@@ -294,6 +311,23 @@ pub fn register_all() {
         spawn(Defaults::OSD_CLIENT, &["--brightness", "lower"]);
     });
 
+    // MPRIS Media Controls
+    input::keybind(Mod::empty(), "XF86AudioPlay").on_press(|| {
+        spawn_shell("playerctl play-pause 2>/dev/null");
+    });
+    input::keybind(Mod::empty(), "XF86AudioPause").on_press(|| {
+        spawn_shell("playerctl play-pause 2>/dev/null");
+    });
+    input::keybind(Mod::empty(), "XF86AudioNext").on_press(|| {
+        spawn_shell("playerctl next 2>/dev/null");
+    });
+    input::keybind(Mod::empty(), "XF86AudioPrev").on_press(|| {
+        spawn_shell("playerctl previous 2>/dev/null");
+    });
+    input::keybind(Mod::empty(), "XF86AudioStop").on_press(|| {
+        spawn_shell("playerctl stop 2>/dev/null");
+    });
+
     // -------------------------------------------------------------------------
     // 7. Dynamic Tag Navigation (AwesomeWM Style: Super + [1..9])
     // -------------------------------------------------------------------------
@@ -356,25 +390,100 @@ pub fn register_all() {
     info!("All keybindings and interactive mouse controls registered successfully.");
 }
 
-/// Toggles the interactive Quake-style dropdown scratchpad terminal
-pub fn toggle_scratchpad() {
-    let all_windows = window::get_all().collect::<Vec<_>>();
-    let scratch = all_windows
-        .into_iter()
-        .find(|w| w.app_id().to_lowercase() == "night-scratchpad");
+/// Toggles a named scratchpad drawer (term, music, notes, fm)
+pub fn toggle_named_scratchpad(name: &str) {
+    let (app_id, cmd, args, (w_pct, h_pct, is_top_anchor)) = match name.to_lowercase().as_str() {
+        "music" | "media" => (
+            "night-scratchpad-music",
+            "alacritty",
+            vec!["--class", "night-scratchpad-music"],
+            (0.60, 0.55, false),
+        ),
+        "notes" | "note" => (
+            "night-scratchpad-notes",
+            "alacritty",
+            vec!["--class", "night-scratchpad-notes"],
+            (0.65, 0.65, false),
+        ),
+        "fm" | "files" => (
+            "night-scratchpad-fm",
+            "alacritty",
+            vec!["--class", "night-scratchpad-fm", "-e", "yazi"],
+            (0.70, 0.65, false),
+        ),
+        _ => (
+            "night-scratchpad-term",
+            "alacritty",
+            vec!["--class", "night-scratchpad-term"],
+            (0.96, 0.42, true),
+        ),
+    };
 
-    if let Some(scratch_win) = scratch {
-        if let Some(active_tag) = output::get_focused().and_then(|op| op.active_tags().next()) {
-            if scratch_win.is_on_active_tag() {
-                scratch_win.set_tag(&active_tag, false);
-            } else {
-                scratch_win.set_tag(&active_tag, true);
-                scratch_win.raise();
-                scratch_win.set_focused(true);
+    let all_windows = window::get_all().collect::<Vec<_>>();
+    let target_win = all_windows
+        .into_iter()
+        .find(|w| {
+            let wid = w.app_id().to_lowercase();
+            wid == app_id || (app_id == "night-scratchpad-term" && wid == "night-scratchpad")
+        });
+
+    if let Some(scratch_win) = target_win {
+        if let Some(active_op) = output::get_focused() {
+            if let Some(active_tag) = active_op.active_tags().next() {
+                if scratch_win.is_on_active_tag() {
+                    scratch_win.set_tag(&active_tag, false);
+                    info!(app_id, "Concealed scratchpad drawer");
+                } else {
+                    scratch_win.set_floating(true);
+                    scratch_win.set_tag(&active_tag, true);
+
+                    // Compute responsive placement on focused monitor
+                    if let (Some(op_loc), Some(op_size)) = (active_op.loc(), active_op.logical_size()) {
+                        let width = (op_size.w as f32 * w_pct) as u32;
+                        let height = (op_size.h as f32 * h_pct) as u32;
+                        let x = op_loc.x + ((op_size.w - width) / 2) as i32;
+                        let y = if is_top_anchor {
+                            op_loc.y + 12
+                        } else {
+                            op_loc.y + ((op_size.h - height) / 2) as i32
+                        };
+                        scratch_win.set_geometry(x, y, width, height);
+                    }
+
+                    scratch_win.raise();
+                    scratch_win.set_focused(true);
+                    info!(app_id, "Revealed scratchpad drawer");
+                }
             }
         }
     } else {
-        spawn("alacritty", &["--class", "night-scratchpad"]);
+        info!(app_id, cmd, "Spawning new scratchpad drawer instance");
+        spawn(cmd, &args);
+    }
+}
+
+/// Toggles the interactive Quake-style dropdown scratchpad terminal
+pub fn toggle_scratchpad() {
+    toggle_named_scratchpad("term");
+}
+
+/// Handles an MPRIS media player operation
+pub fn handle_media_action(action: night_core::ipc::MediaAction) {
+    use night_core::ipc::MediaAction;
+    match action {
+        MediaAction::PlayPause => {
+            spawn_shell("playerctl play-pause 2>/dev/null");
+        }
+        MediaAction::Next => {
+            spawn_shell("playerctl next 2>/dev/null");
+        }
+        MediaAction::Previous => {
+            spawn_shell("playerctl previous 2>/dev/null");
+        }
+        MediaAction::Stop => {
+            spawn_shell("playerctl stop 2>/dev/null");
+        }
+        MediaAction::Query => {}
     }
 }
 
@@ -668,6 +777,10 @@ pub fn show_session_menu() {
             Keysym::w | Keysym::W => {
                 h.close();
                 show_window_switcher();
+            }
+            Keysym::v | Keysym::V => {
+                h.close();
+                show_clipboard_modal();
             }
             _ => {
                 h.close();
