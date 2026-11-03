@@ -192,7 +192,7 @@ fn task_install(root: &Path) {
 
     let default_config_dir = root.join("config");
     if default_config_dir.exists() {
-        for file in ["night.toml", "rules.ron"] {
+        for file in ["night.toml", "rules.ron", "monitors.ron"] {
             let src = default_config_dir.join(file);
             let dst = night_user_dir.join(file);
             if src.exists() && !dst.exists() {
@@ -518,6 +518,7 @@ fn task_doctor() {
         let configs = [
             ("Night Settings (TOML)", cfg.join("night/night.toml")),
             ("Window Rules (RON)", cfg.join("night/rules.ron")),
+            ("Monitor Profiles (RON)", cfg.join("night/monitors.ron")),
             ("Pinnacle Manifest", cfg.join("pinnacle/pinnacle.toml")),
         ];
 
