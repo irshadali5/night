@@ -10,7 +10,7 @@ Each technology has been chosen and implemented for its ideal use case:
 
 | Technology | Implementation & Target | Purpose & Why It Fits Best |
 | :--- | :--- | :--- |
-| 🦀 **`cargo xtask`** | [`crates/xtask`](./crates/xtask), `.cargo/config.toml` | **Workspace Automation:** Pure Rust CLI task runner replacing Makefiles and shell scripts (`cargo xtask install`, `check`, `build`, `run`, `uninstall`). |
+| 🦀 **`cargo xtask`** | [`xtask/`](./xtask), `.cargo/config.toml` | **Workspace Automation:** Pure Rust CLI task runner replacing Makefiles and shell scripts (`cargo xtask install`, `check`, `build`, `run`, `uninstall`). |
 | 📄 **TOML** | [`config/night.toml`](./config/night.toml), `night-core::config` | **Human-Editable Preferences:** Clean, readable key-value format for top-level desktop settings, default terminals, launchers, and borders. |
 | 🦀 **RON** | [`config/rules.ron`](./config/rules.ron), `night-rules` | **Rich Rust Types & Enums:** Strongly-typed representation for complex window matching rules and actions (`Float`, `MoveToTag("8")`) without string hacks. |
 | ⚡ **`postcard`** | `night-core::state` $\rightarrow$ `$XDG_RUNTIME_DIR/night-session.bin` | **Ultra-Fast Binary Session Caching:** Zero-allocation binary serde format for instant state preservation/restoration across reloads. |
