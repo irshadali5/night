@@ -1,0 +1,7 @@
+# Cargo build artifacts
+**/target/
+target/
+
+# Keep Cargo.lock for deterministic builds
+!Cargo.lock
+
