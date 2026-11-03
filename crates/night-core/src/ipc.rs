@@ -9,7 +9,7 @@ use tokio::net::{UnixListener, UnixStream};
 use tracing::{error, info, warn};
 
 /// Desktop IPC Request Commands
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IpcCommand {
     /// Reloads the compositor configuration
     ReloadConfig,
@@ -21,6 +21,12 @@ pub enum IpcCommand {
     Spawn(String),
     /// Closes the focused window
     CloseFocused,
+    /// Cycles to the next tiling layout algorithm
+    CycleLayout,
+    /// Adjusts layout gaps by a delta value
+    AdjustGaps(f32),
+    /// Queries current active layout name
+    GetLayout,
 }
 
 /// Desktop IPC Response
@@ -28,6 +34,7 @@ pub enum IpcCommand {
 pub enum IpcResponse {
     Ok,
     State(SessionState),
+    Layout(String),
     Error(String),
 }
 
