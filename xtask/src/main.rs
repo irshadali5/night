@@ -94,6 +94,11 @@ enum MsgCommand {
     },
     /// Toggles idle inhibition (presentation mode)
     Inhibit,
+    /// Triggers the Snowcap Tokyo Night clipboard history modal
+    #[command(alias = "clipboard")]
+    Clip,
+    /// Controls MPRIS media player playback
+    Media,
     /// Subscribes to real-time status updates stream
     Stream,
 }
@@ -451,6 +456,8 @@ async fn task_msg(command: MsgCommand) {
             }
         }
         MsgCommand::Inhibit => night_core::ipc::IpcCommand::ToggleInhibit,
+        MsgCommand::Clip => night_core::ipc::IpcCommand::ShowClipboard,
+        MsgCommand::Media => night_core::ipc::IpcCommand::Media(night_core::ipc::MediaAction::PlayPause),
         MsgCommand::Stream => {
             println!("📡 Subscribing to real-time Night status stream...");
             let res = night_core::ipc::subscribe_status(|s| {
@@ -514,6 +521,8 @@ fn task_doctor() {
         ("wayidle Idle Daemon", "wayidle", "wayidle"),
         ("Veila Screen Locker", "veila", "veila-bin"),
         ("wlsunset Night Light", "wlsunset", "wlsunset"),
+        ("wl-clipboard History", "wl-copy", "wl-clipboard"),
+        ("playerctl Media Control", "playerctl", "playerctl"),
     ];
 
     let mut missing = Vec::new();
