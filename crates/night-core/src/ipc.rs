@@ -27,13 +27,17 @@ pub struct DesktopStatus {
     pub gamma_temp: Option<u32>,
     #[serde(default)]
     pub media_info: Option<String>,
+    #[serde(default)]
+    pub active_tag_glyph: Option<String>,
+    #[serde(default)]
+    pub theme: Option<String>,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -52,6 +56,14 @@ impl DesktopStatus {
             match &self.media_info {
                 Some(m) => format!("\"{}\"", m.replace('\\', "\\\\").replace('"', "\\\"")),
                 None => "null".to_string(),
+            },
+            match &self.active_tag_glyph {
+                Some(g) => format!("\"{}\"", g.replace('\\', "\\\\").replace('"', "\\\"")),
+                None => "null".to_string(),
+            },
+            match &self.theme {
+                Some(t) => format!("\"{}\"", t.replace('\\', "\\\\").replace('"', "\\\"")),
+                None => "null".to_string(),
             }
         )
     }
@@ -59,9 +71,13 @@ impl DesktopStatus {
     /// Formats this status using a customizable template string
     pub fn format_template(&self, template: &str) -> String {
         let active_win = self.active_window.as_deref().unwrap_or("None");
+        let tag_glyph = self.active_tag_glyph.as_deref().unwrap_or("󰣆");
+        let theme_str = self.theme.as_deref().unwrap_or("Night");
         template
             .replace("{active_tag}", &self.active_tag)
             .replace("{tag}", &self.active_tag)
+            .replace("{tag_glyph}", tag_glyph)
+            .replace("{glyph}", tag_glyph)
             .replace("{layout}", &self.layout)
             .replace("{active_window}", active_win)
             .replace("{window}", active_win)
@@ -71,6 +87,7 @@ impl DesktopStatus {
             .replace("{inhibited}", if self.inhibited { "󰈈 Inhibited" } else { "󰈉 Normal" })
             .replace("{gamma}", &self.gamma_temp.map(|t| format!("{t}K")).unwrap_or_else(|| "6500K".into()))
             .replace("{media}", self.media_info.as_deref().unwrap_or("No Media"))
+            .replace("{theme}", theme_str)
     }
 }
 
@@ -159,6 +176,12 @@ pub enum IpcCommand {
     ShowSwitcher,
     /// Triggers the Snowcap Tokyo Night clipboard history modal
     ShowClipboard,
+    /// Triggers the Snowcap Tokyo Night interactive snipping modal
+    ShowSnipping,
+    /// Sets active Tokyo Night theme variant (Night, Storm, Moon, Day)
+    SetTheme(crate::theme::ThemeVariant),
+    /// Queries active Tokyo Night theme variant
+    GetTheme,
     /// Performs Wayland clipboard history operation
     Clipboard(ClipboardAction),
     /// Performs MPRIS media operation
@@ -194,6 +217,7 @@ pub enum IpcResponse {
     Inhibited(bool),
     Clipboard(Vec<String>),
     Media(Option<String>),
+    Theme(crate::theme::ThemeVariant),
     Error(String),
 }
 
