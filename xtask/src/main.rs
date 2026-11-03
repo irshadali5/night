@@ -23,6 +23,8 @@ async fn main() {
         "run" => task_run(&root_dir),
         "uninstall" => task_uninstall(&root_dir),
         "theme" => task_theme(&root_dir),
+        "doctor" => task_doctor(),
+        "session" => task_session(&root_dir),
         "msg" | "ctl" => task_msg(args.collect()).await,
         "help" | "--help" | "-h" => print_help(),
         other => {
@@ -140,7 +142,10 @@ fn task_install(root: &Path) {
         }
     }
 
-    println!("🎉 Night successfully installed! Launch your compositor by typing: pinnacle");
+    // 6. Install Wayland session desktop entry
+    task_session(root);
+
+    println!("🎉 Night successfully installed! Launch your compositor by typing: pinnacle (or select Night in your display manager)");
 }
 
 fn task_theme(root: &Path) {
@@ -305,6 +310,7 @@ async fn task_msg(args: Vec<String>) {
             night_core::ipc::IpcCommand::Spawn(args[1..].join(" "))
         }
         "close" => night_core::ipc::IpcCommand::CloseFocused,
+        "status" => night_core::ipc::IpcCommand::GetStatus,
         "layout" => {
             if args.len() > 1 && args[1] == "next" {
                 night_core::ipc::IpcCommand::CycleLayout
@@ -328,10 +334,132 @@ async fn task_msg(args: Vec<String>) {
 
     println!("📡 Sending IPC command to Night: {cmd:?}");
     match night_core::ipc::send_command(&cmd).await {
+        Ok(night_core::ipc::IpcResponse::Status(s)) => {
+            println!("🌙 Night Desktop Environment Status:");
+            println!("  Active Workspace Tag : {}", s.active_tag);
+            println!("  Tiling Layout        : {}", s.layout);
+            println!("  Gaps (Inner / Outer) : {}px / {}px", s.inner_gaps, s.outer_gaps);
+            println!("  Connected Monitors   : {}", s.output_count);
+            println!("  Focused Window       : {}", s.active_window.unwrap_or_else(|| "None".into()));
+            println!("  Last Reload Timestamp: {}", s.last_reload);
+        }
         Ok(resp) => println!("✅ Response: {resp:?}"),
         Err(e) => {
             eprintln!("❌ Failed to deliver command: {e}");
             exit(1);
+        }
+    }
+}
+
+fn task_doctor() {
+    println!("🩺 Running Project Night Environment & Suite Doctor...\n");
+
+    let required_tools = [
+        ("Pinnacle Compositor", "pinnacle", "pinnacle-comp-git"),
+        ("Alacritty Terminal", "alacritty", "alacritty"),
+        ("Rio Terminal", "rio", "rio"),
+        ("Anyrun Launcher", "anyrun", "anyrun-git"),
+        ("Yofi Launcher", "yofi", "yofi"),
+        ("Favnyr GUI File Manager", "favnyr", "favnyr-git"),
+        ("Yazi TUI File Manager", "yazi", "yazi"),
+        ("Zen Browser", "zen-browser", "zen-browser-bin"),
+        ("Brave Browser", "brave", "brave-bin"),
+        ("Ironbar Status Bar", "ironbar", "ironbar-bin"),
+        ("Wired Notification Daemon", "wired", "wired-notify-bin"),
+        ("SwayOSD Overlay Server", "swayosd-server", "swayosd-git"),
+        ("swww Wallpaper Daemon", "swww-daemon", "swww"),
+        ("Wayshot Screenshot CLI", "wayshot", "wayshot"),
+        ("Satty Annotation Tool", "satty", "satty-bin"),
+        ("wl-screenrec Recorder", "wl-screenrec", "wl-screenrec"),
+        ("wayidle Idle Daemon", "wayidle", "wayidle"),
+        ("Veila Screen Locker", "veila", "veila-bin"),
+    ];
+
+    let mut missing = Vec::new();
+    println!("📦 External 100% Rust-Native Desktop Suite:");
+    for (name, bin, pkg) in required_tools {
+        let found = if bin == "zen-browser" {
+            which::which("zen-browser").is_ok() || which::which("zen").is_ok()
+        } else {
+            which::which(bin).is_ok()
+        };
+
+        if found {
+            println!("  ✅ {:<28} (found `{}`)", name, bin);
+        } else {
+            println!("  ❌ {:<28} (missing `{}` -> package: {})", name, bin, pkg);
+            missing.push(pkg);
+        }
+    }
+
+    println!("\n📁 Configuration Files:");
+    if let Some(cfg) = dirs::config_dir() {
+        let configs = [
+            ("Night Settings (TOML)", cfg.join("night/night.toml")),
+            ("Window Rules (RON)", cfg.join("night/rules.ron")),
+            ("Pinnacle Manifest", cfg.join("pinnacle/pinnacle.toml")),
+        ];
+
+        for (desc, path) in configs {
+            if path.exists() {
+                println!("  ✅ {:<24} ({})", desc, path.display());
+            } else {
+                println!("  ⚠️ {:<24} (missing at {})", desc, path.display());
+            }
+        }
+    }
+
+    println!("\n🌐 Wayland Session Environment:");
+    for var in ["WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE"] {
+        match std::env::var(var) {
+            Ok(val) => println!("  ✅ {:<22} = {}", var, val),
+            Err(_) => println!("  ℹ️ {:<22} (not set in current subshell)", var),
+        }
+    }
+
+    if !missing.is_empty() {
+        println!("\n💡 To install missing desktop suite components on Arch Linux:");
+        println!("   yay -S --needed {}", missing.join(" "));
+    } else {
+        println!("\n🎉 All 100% Rust-native desktop components are installed and ready!");
+    }
+}
+
+fn task_session(root: &Path) {
+    println!("📦 Installing Wayland desktop session entry...");
+    let home = dirs::home_dir().expect("Failed to locate home directory");
+
+    // 1. Install night-session to ~/.cargo/bin/night-session
+    let bin_dir = home.join(".cargo/bin");
+    fs::create_dir_all(&bin_dir).expect("Failed to create ~/.cargo/bin");
+    let session_script_src = root.join("assets/night-session");
+    let session_script_dst = bin_dir.join("night-session");
+    if session_script_src.exists() {
+        fs::copy(&session_script_src, &session_script_dst).expect("Failed to install night-session");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(meta) = fs::metadata(&session_script_dst) {
+                let mut perms = meta.permissions();
+                perms.set_mode(0o755);
+                let _ = fs::set_permissions(&session_script_dst, perms);
+            }
+        }
+        println!("==> Installed launcher script to {}", session_script_dst.display());
+    }
+
+    // 2. Install night.desktop to ~/.local/share/wayland-sessions/night.desktop
+    let wayland_sessions_dir = home.join(".local/share/wayland-sessions");
+    if let Err(e) = fs::create_dir_all(&wayland_sessions_dir) {
+        println!("ℹ️ Note: Could not write to {} ({}).", wayland_sessions_dir.display(), e);
+        println!("   To install for your display manager, copy assets/night.desktop to /usr/share/wayland-sessions/");
+    } else {
+        let desktop_src = root.join("assets/night.desktop");
+        let desktop_dst = wayland_sessions_dir.join("night.desktop");
+        if desktop_src.exists() {
+            fs::copy(&desktop_src, &desktop_dst).expect("Failed to install night.desktop");
+            println!("==> Installed Wayland session entry to {}", desktop_dst.display());
+            println!("✨ Night is now selectable from your login display manager (GDM, SDDM, Ly, greetd)!");
         }
     }
 }
@@ -344,12 +472,14 @@ USAGE:
     cargo xtask <SUBCOMMAND>
 
 SUBCOMMANDS:
-    install      Builds release binary, copies to ~/.cargo/bin, links pinnacle.toml, deploys theme
+    install      Builds release binary, copies to ~/.cargo/bin, links pinnacle.toml, deploys session & theme
+    doctor       Performs system diagnostics on all 100% Rust-native components and environment
+    session      Installs Wayland session desktop entry for login managers (GDM, SDDM, Ly, greetd)
     theme        Generates Tokyo Night configurations for external suite (Alacritty, Ironbar, Anyrun, Veila)
     check        Runs `cargo check` across all workspace crates
     build        Builds `night-pinnacle` in release mode
     run          Builds and launches the Pinnacle compositor
-    msg <CMD>    Sends IPC command to running Night (reload, switch-tag, state, layout, gaps, spawn, close)
+    msg <CMD>    Sends IPC command to running Night (reload, switch-tag, state, layout, gaps, spawn, close, status)
     uninstall    Removes the installed binary and config symlink
     help         Prints this help message
 "#
