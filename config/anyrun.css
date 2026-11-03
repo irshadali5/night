@@ -7,20 +7,18 @@
     background-color: rgba(26, 27, 38, 0.96);
     border: 2px solid #7aa2f7;
     border-radius: 12px;
-    padding: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    padding: 10px;
 }
 
 #entry {
     background-color: #24283b;
     color: #c0caf5;
     border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 16px;
+    padding: 6px 12px;
 }
 
 #match.selected {
-    background-color: #414868;
-    color: #7dcfff;
+    background-color: #7aa2f7;
+    color: #15161e;
     border-radius: 6px;
 }

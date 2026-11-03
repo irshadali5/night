@@ -1,6 +1,16 @@
-# 🌙 Tokyo Night configuration for Veila (Pure-Rust Wayland Screen Locker)
-background_color = "#1a1b26"
-text_color = "#c0caf5"
-accent_color = "#7aa2f7"
-fail_color = "#f7768e"
-font = "JetBrainsMono Nerd Font"
+# 🌙 Tokyo Night theme for Veila Screen Locker
+[general]
+indicator = true
+indicator_radius = 45.0
+indicator_thickness = 5.0
+
+[colors]
+background = "1a1b26"
+text = "c0caf5"
+ring = "24283b"
+inside = "15161e"
+key_hl = "7aa2f7"
+bs_hl = "f7768e"
+separator = "414868"
+verify = "bb9af7"
+wrong = "f7768e"
