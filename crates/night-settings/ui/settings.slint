@@ -82,6 +82,7 @@ export component SettingsWindow inherits Window {
     in-out property <string> notification-msg: "";
 
     // Appearance properties
+    in-out property <string> active-theme: "Night";
     in-out property <float> inner-gaps: 6.0;
     in-out property <float> outer-gaps: 10.0;
     in-out property <int> border-width: 2;
@@ -128,6 +129,8 @@ export component SettingsWindow inherits Window {
     callback session-reboot();
     callback set-gamma-temp(float);
     callback toggle-inhibit();
+    callback set-theme(string);
+    callback trigger-snipping();
 
     HorizontalLayout {
         padding: 0px;
@@ -291,6 +294,85 @@ export component SettingsWindow inherits Window {
                                 text: "Configure dynamic gaps, window borders, and layout geometry in real-time.";
                                 color: #787c99;
                                 font-size: 13px;
+                            }
+                        }
+
+                        // Card: Tokyo Night Theme Engine
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                HorizontalLayout {
+                                    Text {
+                                        text: "Tokyo Night Color Variant";
+                                        color: #7aa2f7;
+                                        font-size: 15px;
+                                        font-weight: 600;
+                                    }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Text {
+                                        text: "Active: " + root.active-theme;
+                                        color: #7dcfff;
+                                        font-size: 13px;
+                                        font-weight: 600;
+                                    }
+                                }
+
+                                Text {
+                                    text: "Select your preferred official Tokyo Night palette variant:";
+                                    color: #a9b1d6;
+                                    font-size: 12px;
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+
+                                    TokyoButton {
+                                        text: "🌙 Night (Classic)";
+                                        btn-color: root.active-theme == "Night" ? #7aa2f7 : #16161e;
+                                        text-color: root.active-theme == "Night" ? #1a1b26 : #c0caf5;
+                                        clicked => {
+                                            root.active-theme = "Night";
+                                            root.set-theme("Night");
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        text: "⛈️ Storm (Slate)";
+                                        btn-color: root.active-theme == "Storm" ? #7aa2f7 : #1f2335;
+                                        text-color: root.active-theme == "Storm" ? #1a1b26 : #c0caf5;
+                                        clicked => {
+                                            root.active-theme = "Storm";
+                                            root.set-theme("Storm");
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        text: "🌔 Moon (Indigo)";
+                                        btn-color: root.active-theme == "Moon" ? #7aa2f7 : #1e2030;
+                                        text-color: root.active-theme == "Moon" ? #1a1b26 : #c0caf5;
+                                        clicked => {
+                                            root.active-theme = "Moon";
+                                            root.set-theme("Moon");
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        text: "☀️ Day (Light)";
+                                        btn-color: root.active-theme == "Day" ? #2e7de9 : #e1e2e7;
+                                        text-color: root.active-theme == "Day" ? #ffffff : #3760bf;
+                                        clicked => {
+                                            root.active-theme = "Day";
+                                            root.set-theme("Day");
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -856,6 +938,43 @@ export component SettingsWindow inherits Window {
                                         btn-color: #7aa2f7;
                                         text-color: #1a1b26;
                                         clicked => { root.lock-screen(); }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Card: Quick Screen Capture & Snipping Tool
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: "📸 Tokyo Night Snipping & Capture";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                Text {
+                                    text: "Trigger the interactive single-key capture modal (region, window, full, copy, record, gif):";
+                                    color: #a9b1d6;
+                                    font-size: 13px;
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+
+                                    TokyoButton {
+                                        text: "📸 Open Snipping Modal (Super + Shift + S)";
+                                        btn-color: #7aa2f7;
+                                        text-color: #1a1b26;
+                                        clicked => { root.trigger-snipping(); }
                                     }
                                 }
                             }

@@ -45,6 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Populate initial state from user config
     {
         let cfg = user_cfg.lock().unwrap();
+        ui.set_active_theme(cfg.general.theme.name().into());
         ui.set_inner_gaps(cfg.general.inner_gaps);
         ui.set_outer_gaps(cfg.general.outer_gaps);
         ui.set_border_width(cfg.general.border_width as i32);
@@ -109,6 +110,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     u.set_inner_gaps(status.inner_gaps);
                     u.set_outer_gaps(status.outer_gaps);
                     u.set_is_inhibited(status.inhibited);
+                    if let Some(t) = status.theme {
+                        u.set_active_theme(t.into());
+                    }
                     if let Some(temp) = status.gamma_temp {
                         u.set_gamma_temp(temp as f32);
                     }
@@ -175,6 +179,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 outer: Some(outer),
             })
             .await;
+        });
+    });
+
+    // -----------------------------------------------------------------
+    // Callbacks: Tokyo Night Theme Engine
+    // -----------------------------------------------------------------
+    let ui_weak = ui.as_weak();
+    let cfg_clone = Arc::clone(&user_cfg);
+    ui.on_set_theme(move |theme_str| {
+        let variant = night_core::theme::ThemeVariant::parse_variant(&theme_str)
+            .unwrap_or(night_core::theme::ThemeVariant::Night);
+        {
+            let mut cfg = cfg_clone.lock().unwrap();
+            cfg.general.theme = variant;
+            let _ = cfg.save();
+        }
+        let ui_weak = ui_weak.clone();
+        tokio::spawn(async move {
+            let _ = send_command(&IpcCommand::SetTheme(variant)).await;
+            let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                u.set_notification_msg(format!("Theme updated to Tokyo Night {}", variant.name()).into());
+            });
         });
     });
 
@@ -355,6 +381,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     u.set_notification_msg(msg.into());
                 });
             }
+        });
+    });
+
+    ui.on_trigger_snipping(|| {
+        tokio::spawn(async move {
+            let _ = send_command(&IpcCommand::ShowSnipping).await;
         });
     });
 
