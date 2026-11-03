@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS]
 ```
 
 ---
@@ -258,6 +258,29 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 * [x] **Session Menu & Cheatsheet Synchronization**:
   * [x] Added `[W]` Window Switcher, `[G]` Night Light, and `[I]` Inhibit Mode shortcuts into the `Super + BackSpace` Snowcap Session Flyout.
   * [x] Added `wlsunset` to `cargo xtask doctor`.
+
+---
+
+### Phase 15: Wayland Clipboard History Manager, Named Multi-Scratchpad Drawers & MPRIS Media Player Orchestration
+* [x] **Pure-Rust Wayland Clipboard History Manager (`crates/night-core/src/clipboard.rs` & `crates/night-binds/src/clipboard_ui.rs`)**:
+  * [x] Ephemeral ring buffer caching copied text snippets with `postcard` in `$XDG_RUNTIME_DIR/night-clipboard.bin`.
+  * [x] Background recorder via `wl-paste --type text --watch nightctl clip-record` supervised by `night-daemons`.
+  * [x] Snowcap Tokyo Night interactive layer-shell clipboard picker modal (`Super + v` or `nightctl clip show`).
+  * [x] Direct single-key selection `[1..9]` copies entry back to active system clipboard via `wl-copy`.
+  * [x] `[C]` clears stored clipboard history; `[Esc]` cancels.
+* [x] **Named Multi-Scratchpad Drawers (`crates/night-binds/src/lib.rs`)**:
+  * [x] Generalized scratchpad architecture supporting dedicated workflow drawers:
+    * `term`: Full-width dropdown terminal (`Super + ` ` `) anchored to monitor top.
+    * `music`: Center floating music/media player (`Super + m`).
+    * `notes`: Center floating quick notes editor (`Super + n`).
+    * `fm`: Center floating Yazi terminal file manager.
+  * [x] Declarative window auto-floating rules in `config/rules.ron`.
+  * [x] IPC & CLI control: `nightctl scratchpad [term|music|notes|fm]`.
+* [x] **MPRIS Media Player Remote Control**:
+  * [x] Hardware multimedia keys mapped in `night-binds`: `XF86AudioPlay`, `XF86AudioPause`, `XF86AudioNext`, `XF86AudioPrev`, `XF86AudioStop`.
+  * [x] CLI control: `nightctl media <play-pause|next|prev|stop|status>`.
+  * [x] Live media metadata (`{{artist}} - {{title}}`) tracked in `DesktopStatus::media_info` for status bar streaming and `night-settings` integration.
+
 
 
 
