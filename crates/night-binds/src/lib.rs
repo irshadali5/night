@@ -1,16 +1,18 @@
 //! 🌙 Night Keybindings Management
-//! Centralized registration for application shortcuts, window actions, tag switching, and media keys.
+//! Centralized registration for application shortcuts, window actions, tag switching, directional navigation, and mouse drags.
 
 use night_core::exec::{spawn, spawn_shell};
-use night_core::Defaults;
+use night_core::{Defaults, UserConfig};
 use night_tags::DEFAULT_TAG_NAMES;
-use pinnacle_api::input::{self, Mod};
+use pinnacle_api::input::{self, Mod, MouseButton};
+use pinnacle_api::util::Direction;
 use pinnacle_api::{pinnacle, tag, window};
 use tracing::info;
 
-/// Registers all user keybindings with the Pinnacle compositor
+/// Registers all user keybindings and interactive mouse bindings with the Pinnacle compositor
 pub fn register_all() {
-    info!("Registering desktop keybindings...");
+    info!("Registering desktop keybindings and interactive mouse controls...");
+    let user_cfg = UserConfig::load();
 
     // -------------------------------------------------------------------------
     // 1. Application Launchers & Terminals
@@ -41,8 +43,92 @@ pub fn register_all() {
         spawn(Defaults::TERMINAL, &["-e", Defaults::FILE_MANAGER]);
     });
 
+    // Super + Escape -> Lock Session (Veila - Pure Rust Wayland Screen Locker)
+    let lock_cmd = user_cfg.apps.lock_cmd.clone();
+    input::keybind(Mod::SUPER, "Escape").on_press(move || {
+        spawn_shell(&lock_cmd);
+    });
+
     // -------------------------------------------------------------------------
-    // 2. Window Management & Session
+    // 2. Window Layout, Navigation & Directional Focus
+    // -------------------------------------------------------------------------
+
+    // Super + f -> Toggle Fullscreen
+    input::keybind(Mod::SUPER, 'f').on_press(|| {
+        if let Some(focused) = window::get_focused() {
+            focused.toggle_fullscreen();
+        }
+    });
+
+    // Super + Shift + Space -> Toggle Floating Mode
+    input::keybind(Mod::SUPER | Mod::SHIFT, "space").on_press(|| {
+        if let Some(focused) = window::get_focused() {
+            focused.toggle_floating();
+        }
+    });
+
+    // Directional Window Navigation (Vim Keys: h/j/k/l)
+    let nav_keys = [
+        ('h', Direction::Left),
+        ('j', Direction::Down),
+        ('k', Direction::Up),
+        ('l', Direction::Right),
+    ];
+
+    for (key, dir) in nav_keys {
+        // Super + <key>: Move focus in direction
+        input::keybind(Mod::SUPER, key).on_press(move || {
+            if let Some(win) = window::get_focused() {
+                if let Some(target) = win.in_direction(dir).next() {
+                    target.set_focused(true);
+                }
+            }
+        });
+
+        // Super + Shift + <key>: Swap window with neighbor in direction
+        input::keybind(Mod::SUPER | Mod::SHIFT, key).on_press(move || {
+            if let Some(win) = window::get_focused() {
+                if let Some(target) = win.in_direction(dir).next() {
+                    win.swap(&target);
+                }
+            }
+        });
+    }
+
+    // Directional Arrow Keys Support
+    let arrow_keys = [
+        ("Left", Direction::Left),
+        ("Down", Direction::Down),
+        ("Up", Direction::Up),
+        ("Right", Direction::Right),
+    ];
+
+    for (key_name, dir) in arrow_keys {
+        input::keybind(Mod::SUPER, key_name).on_press(move || {
+            if let Some(win) = window::get_focused() {
+                if let Some(target) = win.in_direction(dir).next() {
+                    target.set_focused(true);
+                }
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. Interactive Mouse Controls (Super + Drag / Super + Right-Drag)
+    // -------------------------------------------------------------------------
+
+    // Super + Left Mouse Button -> Interactive Window Move
+    input::mousebind(Mod::SUPER, MouseButton::Left).on_press(|| {
+        window::begin_move(MouseButton::Left);
+    });
+
+    // Super + Right Mouse Button -> Interactive Window Resize
+    input::mousebind(Mod::SUPER, MouseButton::Right).on_press(|| {
+        window::begin_resize(MouseButton::Right);
+    });
+
+    // -------------------------------------------------------------------------
+    // 4. Window Management & Session
     // -------------------------------------------------------------------------
 
     // Super + Shift + q -> Close focused window
@@ -63,7 +149,7 @@ pub fn register_all() {
     });
 
     // -------------------------------------------------------------------------
-    // 3. Screenshots & Screen Recording
+    // 5. Screenshots & Screen Recording
     // -------------------------------------------------------------------------
 
     // PrintScreen -> Interactive Area Screenshot to Satty
@@ -82,7 +168,7 @@ pub fn register_all() {
     });
 
     // -------------------------------------------------------------------------
-    // 4. Hardware Multimedia Keys (SwayOSD)
+    // 6. Hardware Multimedia Keys (SwayOSD)
     // -------------------------------------------------------------------------
 
     // Volume Up
@@ -111,7 +197,7 @@ pub fn register_all() {
     });
 
     // -------------------------------------------------------------------------
-    // 5. Dynamic Tag Navigation (AwesomeWM Style: Super + [1..9])
+    // 7. Dynamic Tag Navigation (AwesomeWM Style: Super + [1..9])
     // -------------------------------------------------------------------------
     for (i, name) in DEFAULT_TAG_NAMES.iter().enumerate() {
         let key_char = char::from_digit((i + 1) as u32, 10).unwrap();
@@ -134,5 +220,5 @@ pub fn register_all() {
         });
     }
 
-    info!("All keybindings registered successfully.");
+    info!("All keybindings and interactive mouse controls registered successfully.");
 }
