@@ -91,9 +91,20 @@ pub fn register_all() {
         show_clipboard_modal();
     });
 
+    // Super + Shift + v -> Launch rsclip (Pure-Rust Wayland Clipboard Manager)
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'v').on_press(|| {
+        spawn("rsclip", &[]);
+    });
+
     // Super + m -> Toggle Music / Media Scratchpad Drawer
     input::keybind(Mod::SUPER, 'm').on_press(|| {
         toggle_named_scratchpad("music");
+    });
+
+    // Super + Shift + m -> Launch Vivi (Pure-Rust + Slint Media Player)
+    let media_player = user_cfg.apps.media_player.clone();
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'm').on_press(move || {
+        spawn(&media_player, &[]);
     });
 
     // Super + n -> Toggle Notes / Editor Scratchpad Drawer
@@ -400,12 +411,23 @@ pub fn register_all() {
 /// Toggles a named scratchpad drawer (term, music, notes, fm)
 pub fn toggle_named_scratchpad(name: &str) {
     let (app_id, cmd, args, (w_pct, h_pct, is_top_anchor)) = match name.to_lowercase().as_str() {
-        "music" | "media" => (
-            "night-scratchpad-music",
-            "alacritty",
-            vec!["--class", "night-scratchpad-music"],
-            (0.60, 0.55, false),
-        ),
+        "music" | "media" => {
+            if which::which("vivi").is_ok() {
+                (
+                    "vivi",
+                    "vivi",
+                    vec![],
+                    (0.65, 0.60, false),
+                )
+            } else {
+                (
+                    "night-scratchpad-music",
+                    "alacritty",
+                    vec!["--class", "night-scratchpad-music"],
+                    (0.60, 0.55, false),
+                )
+            }
+        }
         "notes" | "note" => (
             "night-scratchpad-notes",
             "alacritty",

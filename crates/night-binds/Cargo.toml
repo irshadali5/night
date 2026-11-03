@@ -13,4 +13,5 @@ night-layout.workspace = true
 pinnacle-api.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+which.workspace = true
 
