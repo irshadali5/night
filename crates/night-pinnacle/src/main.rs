@@ -26,6 +26,8 @@ fn current_desktop_status() -> DesktopStatus {
         active_window: active_win,
         output_count,
         last_reload: state.last_reload_timestamp,
+        inhibited: night_core::gamma::is_inhibited(),
+        gamma_temp: Some(night_core::gamma::current_temperature()),
     }
 }
 
@@ -192,6 +194,25 @@ async fn config() {
                 IpcCommand::ShowSessionMenu => {
                     night_binds::show_session_menu();
                     IpcResponse::Ok
+                }
+                IpcCommand::ShowSwitcher => {
+                    night_binds::show_window_switcher();
+                    IpcResponse::Ok
+                }
+                IpcCommand::ToggleGamma => {
+                    let temp = night_core::gamma::toggle_night_light();
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Gamma(temp)
+                }
+                IpcCommand::SetGamma(temp) => {
+                    night_core::gamma::set_temperature(temp);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Gamma(temp)
+                }
+                IpcCommand::ToggleInhibit => {
+                    let inh = night_core::gamma::toggle_inhibit();
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Inhibited(inh)
                 }
                 IpcCommand::WindowOp(op) => {
                     match op {
