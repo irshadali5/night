@@ -11,6 +11,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 use tracing::info;
 
+pub mod profiles;
+pub use profiles::{LayoutProfile, SnapPosition};
+
 /// Available tiling layout algorithms
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LayoutKind {
