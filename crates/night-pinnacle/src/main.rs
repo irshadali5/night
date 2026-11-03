@@ -59,6 +59,8 @@ fn current_desktop_status() -> DesktopStatus {
         battery: night_core::power::read_battery(),
         volume: night_core::audio::get_volume(),
         network: night_core::network::read_network(),
+        system: Some(night_core::sysinfo::read_system_stats()),
+        bluetooth: night_core::bluetooth::read_bluetooth(),
     }
 }
 
@@ -368,6 +370,29 @@ async fn config() {
                 }
                 IpcCommand::GetNetwork => {
                     IpcResponse::Network(night_core::network::read_network())
+                }
+                IpcCommand::GetSystemStats => {
+                    IpcResponse::SystemStats(night_core::sysinfo::read_system_stats())
+                }
+                IpcCommand::GetBluetooth => {
+                    IpcResponse::Bluetooth(night_core::bluetooth::read_bluetooth())
+                }
+                IpcCommand::GetAudioSinks => {
+                    IpcResponse::AudioSinks(night_core::audio::list_sinks())
+                }
+                IpcCommand::SetAudioSink(id) => {
+                    night_core::audio::set_default_sink(id);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Ok
+                }
+                IpcCommand::CycleAudioSink => {
+                    night_core::audio::cycle_sink();
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Ok
+                }
+                IpcCommand::ShowAudioSinkMenu => {
+                    night_binds::show_audio_sink_modal();
+                    IpcResponse::Ok
                 }
                 IpcCommand::Subscribe => {
                     IpcResponse::Status(current_desktop_status())
