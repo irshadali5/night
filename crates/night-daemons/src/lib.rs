@@ -5,7 +5,9 @@ use night_core::exec::{spawn, spawn_shell};
 use tracing::{info, warn};
 
 pub mod config_watcher;
+pub mod idle_watcher;
 pub mod power_watcher;
+pub mod sleep_watcher;
 pub mod wallpaper;
 
 /// Background daemon specification
@@ -101,6 +103,16 @@ pub async fn start_all() {
     // Spawn background configuration file auto-reloader (rules.ron, monitors.ron, night.toml)
     tokio::spawn(async {
         config_watcher::supervise_config_watcher().await;
+    });
+
+    // Spawn background systemd-logind sleep and session lock supervisor
+    tokio::spawn(async {
+        sleep_watcher::supervise_sleep_signals().await;
+    });
+
+    // Spawn background smart idle & staged power reduction supervisor
+    tokio::spawn(async {
+        idle_watcher::supervise_idle().await;
     });
 
     info!("Night daemon supervisor initialization finished.");
