@@ -28,7 +28,8 @@ night/
 │
 ├── config/                       # User-facing default configurations
 │   ├── night.toml                # TOML: Human-editable settings & default apps
-│   └── rules.ron                 # RON: Strongly-typed window rules & enum actions
+│   ├── rules.ron                 # RON: Strongly-typed window rules & enum actions
+│   └── monitors.ron              # RON: Display connectors, HiDPI scaling, modes & VRR
 │
 ├── xtask/                        # Pure-Rust workspace task runner (`cargo xtask`)
 │   ├── Cargo.toml
@@ -103,9 +104,16 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Left-Click + Drag` $\rightarrow$ Interactive Floating Window Move
 * `Super + Right-Click + Drag` $\rightarrow$ Interactive Floating Window Resize
 
-### Dynamic Workspaces (AwesomeWM Style)
-* `Super + [1..9]` $\rightarrow$ View Tag 1–9
-* `Super + Shift + [1..9]` $\rightarrow$ Move Window to Tag 1–9
+### Dynamic Workspaces (AwesomeWM Style with Per-Output Isolation)
+* `Super + [1..9]` $\rightarrow$ View Tag 1–9 on Focused Monitor
+* `Super + Shift + [1..9]` $\rightarrow$ Move Window to Tag 1–9 on Focused Monitor
+
+### Multi-Monitor Navigation & Screen Power
+* `Super + o` or `Super + .` (period) $\rightarrow$ Focus Next Connected Monitor
+* `Super + ,` (comma) $\rightarrow$ Focus Previous Connected Monitor
+* `Super + Shift + o` or `Super + Shift + .` $\rightarrow$ Move Focused Window to Next Monitor
+* `Super + Shift + ,` $\rightarrow$ Move Focused Window to Previous Monitor
+* `Super + Shift + Escape` $\rightarrow$ Toggle DPMS Screen Power (Screen Sleep / Wake)
 
 ### Multimedia, Screenshots & Session
 * `Super + /` $\rightarrow$ Open **Snowcap** Keybinds Cheatsheet Overlay (Tokyo Night themed)
@@ -137,6 +145,17 @@ nightctl tag 2
 nightctl layout next
 nightctl gaps +2
 nightctl gaps -2
+
+# Multi-monitor display management & window moving
+nightctl output next
+nightctl output prev
+nightctl output focus DP-1
+nightctl output move-window next
+
+# DPMS display power management
+nightctl dpms toggle
+nightctl dpms off
+nightctl dpms on
 
 # Toggle dropdown scratchpad terminal and Snowcap modals
 nightctl scratchpad
