@@ -261,17 +261,25 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 
 ---
 
-### Phase 15: Wayland Clipboard History Manager, Named Multi-Scratchpad Drawers & MPRIS Media Player Orchestration
+### Phase 15: Pure-Rust Wayland Clipboard (`rsclip`), Named Multi-Scratchpad Drawers & Modern Media Player (`vivi`)
 * [x] **Pure-Rust Wayland Clipboard History Manager (`crates/night-core/src/clipboard.rs` & `crates/night-binds/src/clipboard_ui.rs`)**:
+  * [x] Adopted 100% Rust-native `rsclip` (`jR4dh3y/rsclip`) replacing C-native `wl-clipboard`.
+  * [x] Daemon management: `rsclipd watch` supervised by `night-daemons` (with fallback to `wl-paste` if `rsclipd` not present).
   * [x] Ephemeral ring buffer caching copied text snippets with `postcard` in `$XDG_RUNTIME_DIR/night-clipboard.bin`.
-  * [x] Background recorder via `wl-paste --type text --watch nightctl clip-record` supervised by `night-daemons`.
+  * [x] `copy_to_system_clipboard` uses `rsclipd store --mime text/plain` with fallback to `wl-copy`.
   * [x] Snowcap Tokyo Night interactive layer-shell clipboard picker modal (`Super + v` or `nightctl clip show`).
-  * [x] Direct single-key selection `[1..9]` copies entry back to active system clipboard via `wl-copy`.
+  * [x] Direct launcher for `rsclip` resident GTK4 overlay (`Super + Shift + v`).
+  * [x] Direct single-key selection `[1..9]` copies entry back to active system clipboard.
   * [x] `[C]` clears stored clipboard history; `[Esc]` cancels.
+* [x] **Modern Pure-Rust Media Player (`vivi` by `Loafer19/vivi`)**:
+  * [x] Adopted `vivi` (Rust + Slint UI + `libmpv`) as the official/default media player in `night.toml` (`[apps] media_player = "vivi"`).
+  * [x] Bound to `Super + Shift + m` in `night-binds` and designated as the default music scratchpad drawer (`Super + m`).
+  * [x] Integrated into Slint Settings GUI Control Center (`night-settings`) in Tab 1 (Applications).
+  * [x] Window auto-floating and tag assignment rules configured in `config/rules.ron`.
 * [x] **Named Multi-Scratchpad Drawers (`crates/night-binds/src/lib.rs`)**:
   * [x] Generalized scratchpad architecture supporting dedicated workflow drawers:
     * `term`: Full-width dropdown terminal (`Super + ` ` `) anchored to monitor top.
-    * `music`: Center floating music/media player (`Super + m`).
+    * `music`: Center floating `vivi` media player (`Super + m`).
     * `notes`: Center floating quick notes editor (`Super + n`).
     * `fm`: Center floating Yazi terminal file manager.
   * [x] Declarative window auto-floating rules in `config/rules.ron`.
@@ -289,7 +297,7 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
     * `[R]`: Snip Region & Annotate (`wayshot -s "$(slurp)" --stdout | satty --filename -`).
     * `[W]`: Snip Focused Window (auto-calculates geometry from `win.loc()` and `win.size()`).
     * `[F]`: Full Screen to File (`~/Pictures/Screenshots/Screenshot_...png`).
-    * `[C]`: Full Screen directly to System Clipboard (`wl-copy`).
+    * `[C]`: Full Screen directly to System Clipboard (`rsclipd` / `wl-copy`).
     * `[V]`: Hardware-accelerated 60fps MP4 Screen Video (`wl-screenrec`).
     * `[G]`: Animated Region Recording as GIF (`wl-screenrec -g "$(slurp)" --output-format gif`).
     * `[Esc] / [Q]`: Close & dismiss modal immediately.
