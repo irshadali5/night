@@ -258,6 +258,32 @@ enum Commands {
         /// Profile name: coding, reading, multitask, ultrawide
         name: Option<String>,
     },
+
+    /// Trigger the interactive Tokyo Night Command Palette modal
+    Palette,
+
+    /// Trigger the interactive Tokyo Night Window Switcher & Overview modal
+    Overview,
+
+    /// Snap the focused window to a geometric target (center, left, right, top, bottom, top-left, top-right, bottom-left, bottom-right, pip, max)
+    Snap {
+        /// Geometric snap position
+        position: String,
+    },
+
+    /// Inspect and manage smart idle daemon and inactivity timers
+    Idle {
+        #[command(subcommand)]
+        action: Option<IdleCommand>,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum IdleCommand {
+    /// Query current inactivity status and sleep/lock thresholds
+    Status,
+    /// Reset inactivity timers and wake display power
+    Reset,
 }
 
 #[derive(Subcommand, Debug)]
@@ -290,6 +316,13 @@ enum SessionCommand {
     Restore,
     /// Clear saved window session file
     Clear,
+    /// Immediately lock the desktop session using Veila
+    Lock,
+    /// Gracefully terminate and tear down the desktop session
+    #[command(alias = "exit")]
+    Logout,
+    /// Query the status of the active desktop session and compositor
+    Status,
 }
 
 #[derive(Subcommand, Debug)]
@@ -747,13 +780,9 @@ async fn main() {
                     println!("📸 Full screenshot saved to ~/Pictures/Screenshots");
                 }
                 Some(SnipMode::Copy) => {
-                    let cmd = if which::which("rsclipd").is_ok() {
-                        "wayshot --stdout | rsclipd store --mime image/png".to_string()
-                    } else {
-                        "wayshot --stdout | wl-copy".to_string()
-                    };
+                    let cmd = "wayshot --stdout | rsclipd store --mime image/png".to_string();
                     run_cmd(IpcCommand::Spawn(cmd)).await;
-                    println!("📋 Full screenshot copied to clipboard");
+                    println!("📋 Full screenshot copied to clipboard (pure-Rust rsclip)");
                 }
                 Some(SnipMode::Record) => {
                     let cmd = "mkdir -p ~/Videos/Recordings && wl-screenrec -f ~/Videos/Recordings/rec_$(date +%Y-%m-%d_%H-%M-%S).mp4".to_string();
@@ -1044,6 +1073,22 @@ async fn main() {
                 night_core::session_restore::SavedSession::clear();
                 println!("🗑️ Saved window session file removed.");
             }
+            SessionCommand::Lock => {
+                let lock_cmd = night_core::config::UserConfig::load().apps.lock_cmd;
+                println!("🔒 Locking desktop session via {lock_cmd}...");
+                night_core::exec::spawn_shell(&lock_cmd);
+            }
+            SessionCommand::Logout => {
+                println!("🚪 Initiating graceful desktop session logout...");
+                let _ = std::process::Command::new("night-session")
+                    .arg("logout")
+                    .status();
+            }
+            SessionCommand::Status => {
+                let _ = std::process::Command::new("night-session")
+                    .arg("status")
+                    .status();
+            }
         },
 
         Commands::Wallpaper { path } => {
@@ -1135,6 +1180,35 @@ async fn main() {
                 }
             }
         }
+        Commands::Palette => {
+            run_cmd(IpcCommand::ShowPalette).await;
+        }
+        Commands::Overview => {
+            run_cmd(IpcCommand::ShowOverview).await;
+        }
+        Commands::Snap { position } => {
+            if let Some(pos) = night_core::ipc::SnapPosition::parse(&position) {
+                run_cmd(IpcCommand::SnapWindow(pos)).await;
+                println!("🪟 Snapped focused window to {}", pos.name());
+            } else {
+                eprintln!("❌ Unknown snap position '{}'. Valid: center, left, right, top, bottom, top-left, top-right, bottom-left, bottom-right, pip, max", position);
+                exit(1);
+            }
+        }
+        Commands::Idle { action } => match action.unwrap_or(IdleCommand::Status) {
+            IdleCommand::Status => {
+                let is_inh = night_core::gamma::is_inhibited();
+                println!("🌙 Project Night Smart Idle Status:");
+                println!("   Inhibition Active:  {}", if is_inh { "YES (Suppressing Dim/Lock)" } else { "NO" });
+                println!("   Dim Threshold:      300s (5m)");
+                println!("   Lock Threshold:     600s (10m)");
+                println!("   DPMS Threshold:     900s (15m)");
+            }
+            IdleCommand::Reset => {
+                let _ = send_command(&IpcCommand::Dpms(night_core::ipc::DpmsAction::On)).await;
+                println!("✅ Woke displays and signaled user activity.");
+            }
+        },
     }
 }
 
