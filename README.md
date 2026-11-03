@@ -38,6 +38,7 @@ night/
     ├── night-core/               # TOML config parsing, postcard state caching, theme constants
     ├── night-daemons/            # Autostart supervisor for background services
     ├── night-tags/               # AwesomeWM-style dynamic tag management ([1..9])
+    ├── night-layout/             # Dynamic layout engine (MasterStack, Dwindle, Spiral, Fair)
     ├── night-rules/              # RON-powered declarative window placement & auto-floating
     ├── night-binds/              # Keyboard shortcuts, media keys, and screenshot binds
     └── night-pinnacle/           # Main binary entrypoint orchestrating all crates
@@ -59,7 +60,10 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Minimalist Launcher** | [Yofi](https://github.com/loki-47-500/yofi) | Pure Rust (`smithay-client-toolkit`) | Bound to `Super + d` in `night-binds`. |
 | **Terminal Emulator** | [Alacritty](https://github.com/alacritty/alacritty) | Rust + OpenGL | Primary terminal bound to `Super + Return`. |
 | **Alternative Terminal**| [Rio](https://github.com/raphamorim/rio) | Rust + WebGPU | Bound to `Super + Shift + Return`. |
-| **File Manager** | [Yazi](https://github.com/sxyazi/yazi) | Rust + Tokio | Bound to `Super + e` (in Alacritty). |
+| **GUI File Manager** | [Favnyr](https://github.com/GlitchAwakened/Favnyr) | Rust + Slint UI | Modern, lightweight native file manager bound to `Super + e`. |
+| **Terminal File Manager**| [Yazi](https://github.com/sxyazi/yazi) | Rust + Tokio | Blazingly fast async TUI file manager bound to `Super + y`. |
+| **Primary Web Browser** | [Zen Browser](https://zen-browser.app/) | Gecko / Fast & Modern | Focused, privacy-conscious browser bound to `Super + b`. |
+| **Alternative Browser** | [Brave](https://brave.com/) | Chromium | Privacy browser bound to `Super + Shift + b`. |
 | **Notifications** | [Wired](https://github.com/Toqozz/wired-notify) | Pure Rust | Launched by `night-daemons` on startup. |
 | **OSD Overlay** | [SwayOSD](https://github.com/ErikReider/SwayOSD) | GTK4-rs + Layer-Shell | Server started by `night-daemons`; volume/brightness keys mapped in `night-binds`. |
 | **Wallpaper Daemon** | [swww](https://github.com/LGFae/swww) | Pure Rust | Started by `night-daemons` for smooth wallpaper transitions. |
@@ -77,10 +81,15 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Shift + Return` $\rightarrow$ Launch **Rio** (GPU Terminal)
 * `Super + Space` $\rightarrow$ Launch **Anyrun** (Runner)
 * `Super + d` $\rightarrow$ Launch **Yofi** (Minimal Pure-Rust Launcher)
-* `Super + e` $\rightarrow$ Launch **Yazi** (Terminal File Manager)
+* `Super + e` $\rightarrow$ Launch **Favnyr** (Rust+Slint GUI File Manager)
+* `Super + y` $\rightarrow$ Launch **Yazi** (Async Terminal File Manager)
+* `Super + b` $\rightarrow$ Launch **Zen Browser** (Primary Web Browser)
+* `Super + Shift + b` $\rightarrow$ Launch **Brave Browser** (Alternative Browser)
 * `Super + Escape` $\rightarrow$ Lock Session (**Veila** - Pure Rust Locker)
 
 ### Window Navigation & Layout
+* `Super + Tab` $\rightarrow$ Cycle Tiling Layout (**MasterStack** $\rightarrow$ **Dwindle** $\rightarrow$ **Spiral** $\rightarrow$ **Fair**)
+* `Super + =` / `Super + -` $\rightarrow$ Increase / Decrease Layout Gaps in Real-Time
 * `Super + [h/j/k/l]` or `Super + Arrows` $\rightarrow$ Directional Focus (West / South / North / East)
 * `Super + Shift + [h/j/k/l]` $\rightarrow$ Swap Window with Neighbor in Direction
 * `Super + f` $\rightarrow$ Toggle Fullscreen Mode
@@ -95,7 +104,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 
 ### Multimedia, Screenshots & Session
 * `Super + Shift + r` $\rightarrow$ Reload Pinnacle Configuration
-* `Super + Shift + e` $\rightarrow$ Exit Pinnacle Session
+* `Super + Shift + x` $\rightarrow$ Exit Pinnacle Session
 * `Print` $\rightarrow$ Interactive Region Screenshot & Annotate (**Wayshot** + **Satty**)
 * `Super + Print` $\rightarrow$ Fullscreen Screenshot to `~/Pictures`
 * `Super + Alt + r` $\rightarrow$ Toggle Screen Recording (**wl-screenrec**)
@@ -110,6 +119,8 @@ Night includes an ultra-fast Unix domain socket server (`$XDG_RUNTIME_DIR/night.
 ```bash
 cargo xtask msg reload              # Reloads configuration
 cargo xtask msg switch-tag 3        # Switches active tag to 3
+cargo xtask msg layout next         # Cycles to next layout (MasterStack, Dwindle, Spiral, Fair)
+cargo xtask msg gaps 2.0            # Dynamically adjusts gaps
 cargo xtask msg state               # Queries session state
 cargo xtask msg spawn alacritty     # Launches an application
 cargo xtask msg close               # Closes currently focused window
@@ -124,7 +135,7 @@ No need for GNU Stow, Makefiles, or shell scripts. Everything is handled by the 
 ### 1. Install System Dependencies (Arch Linux)
 ```bash
 sudo pacman -S --needed rustup base-devel git slurp
-yay -S pinnacle-comp-git alacritty ironbar-bin anyrun-git wired-notify-bin swayosd-git swww wayshot satty-bin yazi veila-bin
+yay -S pinnacle-comp-git alacritty ironbar-bin anyrun-git wired-notify-bin swayosd-git swww wayshot satty-bin yazi veila-bin favnyr-git zen-browser-bin brave-bin
 ```
 
 ### 2. Install Night
