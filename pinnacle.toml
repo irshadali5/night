@@ -1,0 +1,6 @@
+# ~/.config/pinnacle/pinnacle.toml
+# Tells the Pinnacle daemon how to run your Night compositor configuration.
+
+# Run the installed Night orchestrator binary with absolute path
+run = ["/home/irshad/.cargo/bin/night-pinnacle"]
+
