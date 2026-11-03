@@ -57,6 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ui.set_app_alt_browser(cfg.apps.alt_browser.clone().into());
         ui.set_app_file_manager(cfg.apps.file_manager.clone().into());
         ui.set_app_term_file_manager(cfg.apps.term_file_manager.clone().into());
+        ui.set_app_media_player(cfg.apps.media_player.clone().into());
         ui.set_app_launcher(cfg.apps.launcher.clone().into());
         ui.set_app_minimal_launcher(cfg.apps.minimal_launcher.clone().into());
         ui.set_app_lock_cmd(cfg.apps.lock_cmd.clone().into());
@@ -226,7 +227,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui_weak = ui.as_weak();
     let cfg_clone = Arc::clone(&user_cfg);
     ui.on_save_apps_config(
-        move |term, alt_term, browser, alt_browser, fm, term_fm, launcher, min_launcher, lock| {
+        move |term, alt_term, browser, alt_browser, fm, term_fm, media, launcher, min_launcher, lock| {
             let mut cfg = cfg_clone.lock().unwrap();
             cfg.apps.terminal = term.to_string();
             cfg.apps.alt_terminal = alt_term.to_string();
@@ -234,6 +235,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             cfg.apps.alt_browser = alt_browser.to_string();
             cfg.apps.file_manager = fm.to_string();
             cfg.apps.term_file_manager = term_fm.to_string();
+            cfg.apps.media_player = media.to_string();
             cfg.apps.launcher = launcher.to_string();
             cfg.apps.minimal_launcher = min_launcher.to_string();
             cfg.apps.lock_cmd = lock.to_string();

@@ -95,6 +95,7 @@ export component SettingsWindow inherits Window {
     in-out property <string> app-alt-browser: "brave";
     in-out property <string> app-file-manager: "favnyr";
     in-out property <string> app-term-file-manager: "yazi";
+    in-out property <string> app-media-player: "vivi";
     in-out property <string> app-launcher: "anyrun";
     in-out property <string> app-minimal-launcher: "yofi";
     in-out property <string> app-lock-cmd: "veila";
@@ -120,7 +121,7 @@ export component SettingsWindow inherits Window {
     callback apply-gaps-preview(float, float);
     callback save-appearance-config(float, float, int);
     callback cycle-layout();
-    callback save-apps-config(string, string, string, string, string, string, string, string, string);
+    callback save-apps-config(string, string, string, string, string, string, string, string, string, string);
     callback save-monitor-config(string, float, int, int, int, string, string);
     callback toggle-dpms();
     callback lock-screen();
@@ -703,6 +704,21 @@ export component SettingsWindow inherits Window {
                                     }
                                 }
 
+                                // Media Player
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text {
+                                        text: "Media Player (vivi):";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                        width: 240px;
+                                        vertical-alignment: center;
+                                    }
+                                    LineEdit {
+                                        text <=> root.app-media-player;
+                                    }
+                                }
+
                                 // Lock Screen
                                 HorizontalLayout {
                                     spacing: 12px;
@@ -731,6 +747,7 @@ export component SettingsWindow inherits Window {
                                             root.app-alt-browser,
                                             root.app-file-manager,
                                             root.app-term-file-manager,
+                                            root.app-media-player,
                                             root.app-launcher,
                                             root.app-minimal-launcher,
                                             root.app-lock-cmd
