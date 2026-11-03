@@ -38,6 +38,14 @@ pub fn default_rules() -> Vec<Rule> {
             action: WindowAction::Float,
         },
         Rule {
+            app_id: "zen".to_string(),
+            action: WindowAction::MoveToTag("2".to_string()),
+        },
+        Rule {
+            app_id: "brave".to_string(),
+            action: WindowAction::MoveToTag("2".to_string()),
+        },
+        Rule {
             app_id: "discord".to_string(),
             action: WindowAction::MoveToTag("8".to_string()),
         },
