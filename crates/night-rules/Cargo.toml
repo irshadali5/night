@@ -1,0 +1,16 @@
+[package]
+name = "night-rules"
+description = "Declarative window placement and layout matching rules for Night powered by RON"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+night-core.workspace = true
+pinnacle-api.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+serde.workspace = true
+ron.workspace = true
+dirs.workspace = true
