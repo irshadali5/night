@@ -589,6 +589,7 @@ fn task_doctor() {
         ("Yazi TUI File Manager", "yazi", "yazi"),
         ("Zen Browser", "zen-browser", "zen-browser-bin"),
         ("Brave Browser", "brave", "brave-bin"),
+        ("Vivi Media Player", "vivi", "vivi-bin"),
         ("Ironbar Status Bar", "ironbar", "ironbar-bin"),
         ("Wired Notification Daemon", "wired", "wired-notify-bin"),
         ("SwayOSD Overlay Server", "swayosd-server", "swayosd-git"),
@@ -599,7 +600,7 @@ fn task_doctor() {
         ("wayidle Idle Daemon", "wayidle", "wayidle"),
         ("Veila Screen Locker", "veila", "veila-bin"),
         ("wlsunset Night Light", "wlsunset", "wlsunset"),
-        ("wl-clipboard History", "wl-copy", "wl-clipboard"),
+        ("rsclip Clipboard Manager", "rsclip", "rsclip-git"),
         ("playerctl Media Control", "playerctl", "playerctl"),
     ];
 
@@ -608,6 +609,8 @@ fn task_doctor() {
     for (name, bin, pkg) in required_tools {
         let found = if bin == "zen-browser" {
             which::which("zen-browser").is_ok() || which::which("zen").is_ok()
+        } else if bin == "rsclip" {
+            which::which("rsclip").is_ok() || which::which("rsclipd").is_ok()
         } else {
             which::which(bin).is_ok()
         };
