@@ -35,13 +35,15 @@ pub struct DesktopStatus {
     pub battery: Option<crate::power::BatteryInfo>,
     #[serde(default)]
     pub volume: Option<crate::audio::VolumeInfo>,
+    #[serde(default)]
+    pub network: Option<crate::network::NetworkInfo>,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{},"network":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -76,6 +78,17 @@ impl DesktopStatus {
             match &self.volume {
                 Some(v) => format!(r#"{{"percentage":{},"is_muted":{}}}"#, v.percentage, v.is_muted),
                 None => "null".to_string(),
+            },
+            match &self.network {
+                Some(n) => format!(
+                    r#"{{"interface":"{}","ssid":{},"signal_pct":{},"ip_addr":{},"is_online":{}}}"#,
+                    n.interface,
+                    match &n.ssid { Some(s) => format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")), None => "null".to_string() },
+                    match n.signal_pct { Some(s) => s.to_string(), None => "null".to_string() },
+                    match &n.ip_addr { Some(ip) => format!("\"{}\"", ip), None => "null".to_string() },
+                    n.is_online
+                ),
+                None => "null".to_string(),
             }
         )
     }
@@ -91,6 +104,10 @@ impl DesktopStatus {
         let vol_str = self.volume.as_ref().map(|v| v.display_string()).unwrap_or_else(|| "󰕾 50%".into());
         let vol_pct = self.volume.as_ref().map(|v| v.percentage.to_string()).unwrap_or_else(|| "50".into());
         let vol_icon = self.volume.as_ref().map(|v| v.glyph()).unwrap_or("󰕾");
+        let net_str = self.network.as_ref().map(|n| n.display_string()).unwrap_or_else(|| "󰤮 Offline".into());
+        let net_glyph = self.network.as_ref().map(|n| n.glyph()).unwrap_or("󰤮");
+        let net_ssid = self.network.as_ref().and_then(|n| n.ssid.as_deref()).unwrap_or("Offline");
+        let net_ip = self.network.as_ref().and_then(|n| n.ip_addr.as_deref()).unwrap_or("");
 
         template
             .replace("{active_tag}", &self.active_tag)
@@ -113,6 +130,10 @@ impl DesktopStatus {
             .replace("{volume}", &vol_str)
             .replace("{volume_pct}", &vol_pct)
             .replace("{volume_icon}", vol_icon)
+            .replace("{network}", &net_str)
+            .replace("{net_icon}", net_glyph)
+            .replace("{ssid}", net_ssid)
+            .replace("{ip}", net_ip)
     }
 }
 
@@ -235,6 +256,10 @@ pub enum IpcCommand {
     GetBattery,
     /// Queries current volume status
     GetVolume,
+    /// Triggers the Snowcap Tokyo Night fuzzy app launcher modal
+    ShowLauncher,
+    /// Queries network connectivity status
+    GetNetwork,
 }
 
 /// Desktop IPC Response
@@ -251,6 +276,7 @@ pub enum IpcResponse {
     Theme(crate::theme::ThemeVariant),
     Battery(Option<crate::power::BatteryInfo>),
     Volume(Option<crate::audio::VolumeInfo>),
+    Network(Option<crate::network::NetworkInfo>),
     Error(String),
 }
 
