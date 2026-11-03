@@ -129,6 +129,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Shift + Escape` $\rightarrow$ Toggle DPMS Screen Power (Screen Sleep / Wake)
 
 ### Multimedia, Screenshots & Session
+* `Super + Shift + s` $\rightarrow$ Open **Tokyo Night Snipping Modal** (Region, Window, Full, Clipboard, MP4, GIF)
 * `Super + /` $\rightarrow$ Open **Snowcap** Keybinds Cheatsheet Overlay (Tokyo Night themed)
 * `Super + BackSpace` $\rightarrow$ Open **Snowcap** Tokyo Night Session Flyout Menu (Lock, Sleep, Reboot, Power Off)
 * `Super + Shift + e` $\rightarrow$ Open **Snowcap** Quit Confirmation Prompt
@@ -198,6 +199,20 @@ nightctl switcher
 nightctl overlay
 nightctl quit-prompt
 nightctl session-menu
+
+# Interactive Tokyo Night snipping tool & screen recorder
+nightctl snip           # Open interactive modal
+nightctl snip region    # Snip region & annotate via Satty
+nightctl snip window    # Snip focused window coordinates
+nightctl snip full      # Fullscreen to ~/Pictures/Screenshots
+nightctl snip copy      # Fullscreen to system clipboard
+nightctl snip record    # Hardware-accelerated 60fps MP4 recording
+nightctl snip gif       # Animated screencast recording (GIF)
+
+# Official Tokyo Night theme engine (Night, Storm, Moon, Day)
+nightctl theme status
+nightctl theme set storm
+nightctl theme toggle
 ```
 
 Alternatively, remote commands can be delivered via `cargo xtask msg <CMD>`:
