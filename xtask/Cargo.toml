@@ -7,3 +7,5 @@ license.workspace = true
 
 [dependencies]
 dirs.workspace = true
+night-core.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
