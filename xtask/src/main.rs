@@ -132,6 +132,18 @@ enum MsgCommand {
         /// Optional action: "list", "cycle", "menu", or ID number
         action: Option<String>,
     },
+    /// Manages display brightness ("raise", "lower", or percentage)
+    Brightness {
+        action: Option<String>,
+    },
+    /// Toggles Do Not Disturb (DND) mode
+    Dnd,
+    /// Triggers Snowcap notification center modal
+    Notify,
+    /// Saves or restores desktop window session layout ("save", "restore")
+    Session {
+        action: String,
+    },
     /// Sets or queries desktop wallpaper via swww
     Wallpaper {
         /// Optional path to wallpaper file
@@ -584,6 +596,23 @@ async fn task_msg(command: MsgCommand) {
             }
             _ => night_core::ipc::IpcCommand::GetAudioSinks,
         },
+        MsgCommand::Brightness { action } => {
+            let act = match action.as_deref() {
+                Some("raise") | Some("up") => night_core::backlight::BacklightAction::Raise(5),
+                Some("lower") | Some("down") => night_core::backlight::BacklightAction::Lower(5),
+                Some(pct_str) if pct_str.parse::<u8>().is_ok() => {
+                    night_core::backlight::BacklightAction::Set(pct_str.parse::<u8>().unwrap())
+                }
+                _ => night_core::backlight::BacklightAction::Query,
+            };
+            night_core::ipc::IpcCommand::Backlight(act)
+        }
+        MsgCommand::Dnd => night_core::ipc::IpcCommand::ToggleDnd,
+        MsgCommand::Notify => night_core::ipc::IpcCommand::ShowNotifications,
+        MsgCommand::Session { action } => match action.as_str() {
+            "restore" => night_core::ipc::IpcCommand::RestoreSession,
+            _ => night_core::ipc::IpcCommand::SaveSession,
+        },
         MsgCommand::Wallpaper { path } => {
             if let Some(p) = path {
                 night_core::ipc::IpcCommand::Spawn(format!("swww img \"{p}\" --transition-type wipe --transition-duration 1.5"))
@@ -636,6 +665,10 @@ async fn task_msg(command: MsgCommand) {
             if let Some(ref bt) = s.bluetooth {
                 println!("  Bluetooth Status     : {}", bt.display_string());
             }
+            if let Some(ref bl) = s.backlight {
+                println!("  Display Backlight    : {}", bl.display_string());
+            }
+            println!("  Do Not Disturb (DND) : {}", if s.dnd { "󰂛 Enabled (Muted)" } else { "󰂚 Disabled (Normal)" });
             println!("  Last Reload Timestamp: {}", s.last_reload);
         }
         Ok(night_core::ipc::IpcResponse::Battery(Some(bat))) => {
@@ -702,6 +735,22 @@ async fn task_msg(command: MsgCommand) {
                     println!("  {} [{}] {} {}", marker, sink.id, sink.icon(), sink.name);
                 }
             }
+        }
+        Ok(night_core::ipc::IpcResponse::Backlight(Some(bl))) => {
+            println!("🔆 Display Backlight: {} (device: {})", bl.display_string(), bl.device_name);
+        }
+        Ok(night_core::ipc::IpcResponse::Backlight(None)) => {
+            println!("🔆 Display Backlight: No controllable hardware backlight detected");
+        }
+        Ok(night_core::ipc::IpcResponse::Dnd(dnd)) => {
+            let icon = night_core::notifications::NotificationHistory::glyph_dnd(dnd);
+            println!("{icon} Do Not Disturb: {}", if dnd { "ENABLED (Notifications Muted)" } else { "DISABLED (Normal)" });
+        }
+        Ok(night_core::ipc::IpcResponse::SavedSession(Some(s))) => {
+            println!("🔄 Restored window session from timestamp {} ({} windows)", s.timestamp, s.windows.len());
+        }
+        Ok(night_core::ipc::IpcResponse::SavedSession(None)) => {
+            println!("🔄 No saved session file found on disk");
         }
         Ok(resp) => println!("✅ Response: {resp:?}"),
         Err(e) => {
