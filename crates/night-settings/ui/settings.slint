@@ -147,6 +147,7 @@ export component SettingsWindow inherits Window {
     callback set-volume(float);
     callback set-brightness(float);
     callback toggle-dnd();
+    callback apply-layout-profile(string);
 
     HorizontalLayout {
         padding: 0px;
@@ -573,6 +574,72 @@ export component SettingsWindow inherits Window {
                                         text-color: #1a1b26;
                                         clicked => {
                                             root.cycle-layout();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Card: Workspace Layout Profiles (Phase 21)
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: "Workspace Ergonomic Layout Profiles";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                Text {
+                                    text: "Instant presets tailored for software engineering, study, and multitasking:";
+                                    color: #a9b1d6;
+                                    font-size: 12px;
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 10px;
+
+                                    TokyoButton {
+                                        text: "󰅩 Coding";
+                                        btn-color: #7aa2f7;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.apply-layout-profile("coding");
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        text: "󰈙 Reading";
+                                        btn-color: #7dcfff;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.apply-layout-profile("reading");
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        text: "󱂬 Multitask";
+                                        btn-color: #bb9af7;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.apply-layout-profile("multitask");
+                                        }
+                                    }
+
+                                    TokyoButton {
+                                        text: "󰍹 Ultrawide";
+                                        btn-color: #9ece6a;
+                                        text-color: #1a1b26;
+                                        clicked => {
+                                            root.apply-layout-profile("ultrawide");
                                         }
                                     }
                                 }

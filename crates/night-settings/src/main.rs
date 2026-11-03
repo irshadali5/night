@@ -26,17 +26,20 @@ struct SettingsCli {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-        )
-        .init();
+    let _log_guard = night_core::logging::init_logger("settings");
+    night_core::exec::ensure_desktop_env();
 
     let cli = SettingsCli::parse();
     info!("Starting Night Control Center (Slint GUI)");
 
-    let ui = SettingsWindow::new()?;
+    let ui = match SettingsWindow::new() {
+        Ok(window) => window,
+        Err(e) => {
+            error!(error = %e, "Failed to initialize Slint SettingsWindow");
+            eprintln!("❌ Failed to initialize Slint SettingsWindow: {e}");
+            return Err(e.into());
+        }
+    };
 
     // Load configurations from disk
     let user_cfg = Arc::new(Mutex::new(UserConfig::load()));
@@ -247,6 +250,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     u.set_current_layout(name.into());
                     u.set_notification_msg("Switched tiling layout".into());
                 });
+            }
+        });
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_apply_layout_profile(move |profile_str| {
+        let ui_weak = ui_weak.clone();
+        tokio::spawn(async move {
+            match send_command(&IpcCommand::SetLayoutProfile(profile_str.to_string())).await {
+                Ok(IpcResponse::Profile(name)) => {
+                    let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                        u.set_notification_msg(format!("Applied {name} workspace layout profile").into());
+                    });
+                }
+                Ok(IpcResponse::Error(e)) => {
+                    let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                        u.set_notification_msg(format!("Layout error: {e}").into());
+                    });
+                }
+                _ => {}
             }
         });
     });
