@@ -97,8 +97,30 @@ enum Commands {
         action: DpmsArg,
     },
 
-    /// Toggle the Quake-style dropdown scratchpad terminal
-    Scratchpad,
+    /// Toggle a named scratchpad drawer (term, music, notes, fm)
+    Scratchpad {
+        /// Drawer name: "term" (default), "music", "notes", or "fm"
+        name: Option<String>,
+    },
+
+    /// Manage Wayland clipboard history and interactive modal
+    Clip {
+        #[command(subcommand)]
+        action: Option<ClipCommand>,
+    },
+
+    /// Internal helper to record clipboard text from argument or standard input
+    #[command(name = "clip-record", hide = true)]
+    ClipRecord {
+        /// Text snippet to record
+        text: Option<String>,
+    },
+
+    /// Control MPRIS media players and query active track info
+    Media {
+        #[command(subcommand)]
+        action: MediaCommand,
+    },
 
     /// Show the Snowcap interactive keybindings cheatsheet modal
     #[command(alias = "binds")]
@@ -159,6 +181,36 @@ enum GammaCommand {
     /// Set warm night light color temperature (3800K)
     Night,
     /// Query current color temperature
+    Status,
+}
+
+#[derive(Subcommand, Debug)]
+enum ClipCommand {
+    /// List stored clipboard history entries
+    List,
+    /// Open the Snowcap Tokyo Night clipboard history modal
+    Show,
+    /// Clear all stored clipboard history
+    Clear,
+    /// Copy a specific history index back into active system clipboard
+    Copy { index: usize },
+    /// Record text snippet into history
+    Record { text: Option<String> },
+}
+
+#[derive(Subcommand, Debug)]
+enum MediaCommand {
+    /// Toggle play/pause on active media player
+    #[command(alias = "play", alias = "pause")]
+    PlayPause,
+    /// Skip to next media track
+    Next,
+    /// Return to previous media track
+    #[command(alias = "previous")]
+    Prev,
+    /// Stop media playback
+    Stop,
+    /// Query current playing media track info
     Status,
 }
 
@@ -329,9 +381,100 @@ async fn main() {
             println!("🌙 DPMS display power updated: {action:?}");
         }
 
-        Commands::Scratchpad => {
-            run_cmd(IpcCommand::ToggleScratchpad).await;
+        Commands::Scratchpad { name } => {
+            let drawer = name.unwrap_or_else(|| "term".into());
+            run_cmd(IpcCommand::ToggleNamedScratchpad(drawer)).await;
         }
+
+        Commands::Clip { action } => {
+            let act = action.unwrap_or(ClipCommand::Show);
+            match act {
+                ClipCommand::Show => {
+                    run_cmd(IpcCommand::ShowClipboard).await;
+                }
+                ClipCommand::List => {
+                    match send_command(&IpcCommand::Clipboard(night_core::ipc::ClipboardAction::List)).await {
+                        Ok(IpcResponse::Clipboard(items)) => {
+                            if items.is_empty() {
+                                println!("Clipboard history is empty.");
+                            } else {
+                                println!("📋 Night Wayland Clipboard History ({} items):", items.len());
+                                for (idx, item) in items.iter().take(15).enumerate() {
+                                    let clean = item.replace('\n', " ").replace('\t', " ");
+                                    let preview = if clean.chars().count() > 60 {
+                                        let s: String = clean.chars().take(57).collect();
+                                        format!("{s}...")
+                                    } else {
+                                        clean
+                                    };
+                                    println!("  [{:>2}] ({} chars) {}", idx + 1, item.len(), preview);
+                                }
+                            }
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    }
+                }
+                ClipCommand::Clear => {
+                    run_cmd(IpcCommand::Clipboard(night_core::ipc::ClipboardAction::Clear)).await;
+                    println!("📋 Clipboard history cleared.");
+                }
+                ClipCommand::Copy { index } => {
+                    let zero_idx = index.saturating_sub(1);
+                    run_cmd(IpcCommand::Clipboard(night_core::ipc::ClipboardAction::Copy(zero_idx))).await;
+                    println!("📋 Copied history item #{index} to active system clipboard.");
+                }
+                ClipCommand::Record { text } => {
+                    let content = text.unwrap_or_else(|| {
+                        use std::io::Read;
+                        let mut buf = String::new();
+                        let _ = io::stdin().read_to_string(&mut buf);
+                        buf
+                    });
+                    if !content.trim().is_empty() {
+                        run_cmd(IpcCommand::Clipboard(night_core::ipc::ClipboardAction::Record(content))).await;
+                    }
+                }
+            }
+        }
+
+        Commands::ClipRecord { text } => {
+            let content = text.unwrap_or_else(|| {
+                use std::io::Read;
+                let mut buf = String::new();
+                let _ = io::stdin().read_to_string(&mut buf);
+                buf
+            });
+            if !content.trim().is_empty() {
+                night_core::clipboard::ClipboardHistory::record_text(&content);
+            }
+        }
+
+        Commands::Media { action } => match action {
+            MediaCommand::PlayPause => {
+                run_cmd(IpcCommand::Media(night_core::ipc::MediaAction::PlayPause)).await;
+            }
+            MediaCommand::Next => {
+                run_cmd(IpcCommand::Media(night_core::ipc::MediaAction::Next)).await;
+            }
+            MediaCommand::Prev => {
+                run_cmd(IpcCommand::Media(night_core::ipc::MediaAction::Previous)).await;
+            }
+            MediaCommand::Stop => {
+                run_cmd(IpcCommand::Media(night_core::ipc::MediaAction::Stop)).await;
+            }
+            MediaCommand::Status => match send_command(&IpcCommand::GetStatus).await {
+                Ok(IpcResponse::Status(s)) => {
+                    if let Some(media) = s.media_info {
+                        println!("🎵 Now Playing: {media}");
+                    } else {
+                        println!("🎵 No active media player detected.");
+                    }
+                }
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+        },
 
         Commands::Overlay => {
             run_cmd(IpcCommand::ShowBinds).await;
