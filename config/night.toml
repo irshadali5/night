@@ -14,4 +14,5 @@ alt_terminal = "rio"
 launcher = "anyrun"
 minimal_launcher = "yofi"
 file_manager = "yazi"
+lock_cmd = "veila"
 
