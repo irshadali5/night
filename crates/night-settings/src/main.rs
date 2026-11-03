@@ -125,6 +125,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     } else {
                         u.set_battery_status("AC Power".into());
                     }
+                    if let Some(ref net) = status.network {
+                        u.set_network_status(net.display_string().into());
+                    } else {
+                        u.set_network_status("Offline".into());
+                    }
                     if let Some(ref vol) = status.volume {
                         u.set_volume_level(vol.percentage as f32);
                         u.set_audio_volume(vol.display_string().into());

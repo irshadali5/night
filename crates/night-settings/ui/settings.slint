@@ -117,6 +117,7 @@ export component SettingsWindow inherits Window {
     in-out property <bool> is-inhibited: false;
     in-out property <string> media-track: "No Media Playing";
     in-out property <string> battery-status: "AC Power";
+    in-out property <string> network-status: "Offline";
     in-out property <string> audio-volume: "50%";
     in-out property <float> volume-level: 50.0;
 
@@ -1023,6 +1024,21 @@ export component SettingsWindow inherits Window {
                                     Text {
                                         text: "Battery: " + root.battery-status;
                                         color: #9ece6a;
+                                        font-size: 13px;
+                                        font-weight: 600;
+                                    }
+                                }
+
+                                HorizontalLayout {
+                                    Text {
+                                        text: "Network Connectivity:";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                    }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Text {
+                                        text: root.network-status;
+                                        color: #7dcfff;
                                         font-size: 13px;
                                         font-weight: 600;
                                     }
