@@ -22,7 +22,9 @@ case "$MODE" in
     full)
         # Fullscreen immediate capture to file and clipboard
         wayshot -f "$TARGET_FILE"
-        if command -v wl-copy > /dev/null 2>&1; then
+        if command -v rsclipd > /dev/null 2>&1; then
+            rsclipd store --mime image/png < "$TARGET_FILE"
+        elif command -v wl-copy > /dev/null 2>&1; then
             wl-copy < "$TARGET_FILE"
         fi
         if command -v wired > /dev/null 2>&1 || command -v notify-send > /dev/null 2>&1; then
