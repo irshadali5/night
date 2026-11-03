@@ -39,6 +39,10 @@ fn current_desktop_status() -> DesktopStatus {
         None
     };
 
+    let glyph = night_tags::tag_glyph(&state.active_tag);
+    let user_cfg = UserConfig::load();
+    let theme_str = user_cfg.general.theme.name().to_string();
+
     DesktopStatus {
         active_tag: state.active_tag,
         layout: night_layout::current_layout().name().into(),
@@ -50,6 +54,8 @@ fn current_desktop_status() -> DesktopStatus {
         inhibited: night_core::gamma::is_inhibited(),
         gamma_temp: Some(night_core::gamma::current_temperature()),
         media_info,
+        active_tag_glyph: Some(glyph.to_string()),
+        theme: Some(theme_str),
     }
 }
 
@@ -224,6 +230,22 @@ async fn config() {
                 IpcCommand::ShowClipboard => {
                     night_binds::show_clipboard_modal();
                     IpcResponse::Ok
+                }
+                IpcCommand::ShowSnipping => {
+                    night_binds::show_snipping_modal();
+                    IpcResponse::Ok
+                }
+                IpcCommand::SetTheme(variant) => {
+                    info!(theme = %variant.name(), "IPC: Setting Tokyo Night theme variant");
+                    let mut cfg = UserConfig::load();
+                    cfg.general.theme = variant;
+                    let _ = cfg.save();
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Theme(variant)
+                }
+                IpcCommand::GetTheme => {
+                    let cfg = UserConfig::load();
+                    IpcResponse::Theme(cfg.general.theme)
                 }
                 IpcCommand::Clipboard(action) => {
                     use night_core::ipc::ClipboardAction;
