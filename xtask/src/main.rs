@@ -118,6 +118,11 @@ enum MsgCommand {
     },
     /// Queries battery and power supply status
     Power,
+    /// Triggers the Snowcap Tokyo Night application launcher modal
+    #[command(alias = "run")]
+    Launcher,
+    /// Queries network connectivity status
+    Net,
     /// Sets or queries desktop wallpaper via swww
     Wallpaper {
         /// Optional path to wallpaper file
@@ -558,6 +563,8 @@ async fn task_msg(command: MsgCommand) {
             night_core::ipc::IpcCommand::Volume(act)
         }
         MsgCommand::Power => night_core::ipc::IpcCommand::GetBattery,
+        MsgCommand::Launcher => night_core::ipc::IpcCommand::ShowLauncher,
+        MsgCommand::Net => night_core::ipc::IpcCommand::GetNetwork,
         MsgCommand::Wallpaper { path } => {
             if let Some(p) = path {
                 night_core::ipc::IpcCommand::Spawn(format!("swww img \"{p}\" --transition-type wipe --transition-duration 1.5"))
@@ -601,6 +608,9 @@ async fn task_msg(command: MsgCommand) {
             if let Some(ref b) = s.battery {
                 println!("  Battery Power        : {} ({})", b.display_string(), b.status);
             }
+            if let Some(ref n) = s.network {
+                println!("  Network Connectivity : {}", n.display_string());
+            }
             println!("  Last Reload Timestamp: {}", s.last_reload);
         }
         Ok(night_core::ipc::IpcResponse::Battery(Some(bat))) => {
@@ -614,6 +624,24 @@ async fn task_msg(command: MsgCommand) {
         }
         Ok(night_core::ipc::IpcResponse::Volume(None)) => {
             println!("🔊 Audio: No active sink");
+        }
+        Ok(night_core::ipc::IpcResponse::Network(Some(net))) => {
+            println!("🌐 Network Status: {}", net.display_string());
+            println!("  Interface       : {}", net.interface);
+            println!("  Type            : {:?}", net.kind);
+            if let Some(ref ssid) = net.ssid {
+                println!("  SSID            : {ssid}");
+            }
+            if let Some(sig) = net.signal_pct {
+                println!("  Signal Quality  : {sig}%");
+            }
+            if let Some(ref ip) = net.ip_addr {
+                println!("  Local IPv4      : {ip}");
+            }
+            println!("  Online          : {}", if net.is_online { "Yes" } else { "No" });
+        }
+        Ok(night_core::ipc::IpcResponse::Network(None)) => {
+            println!("🌐 Network: Disconnected / No active interface");
         }
         Ok(resp) => println!("✅ Response: {resp:?}"),
         Err(e) => {
@@ -648,7 +676,6 @@ fn task_doctor() {
         ("Veila Screen Locker", "veila", "veila-bin"),
         ("wlsunset Night Light", "wlsunset", "wlsunset"),
         ("rsclip Clipboard Manager", "rsclip", "rsclip-git"),
-        ("playerctl Media Control", "playerctl", "playerctl"),
     ];
 
     let mut missing = Vec::new();
