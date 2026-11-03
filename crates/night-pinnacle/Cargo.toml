@@ -1,0 +1,24 @@
+[package]
+name = "night-pinnacle"
+description = "Main binary entrypoint for the Pinnacle Compositor in the Night Desktop Environment"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "night-pinnacle"
+path = "src/main.rs"
+
+[dependencies]
+night-core.workspace = true
+night-daemons.workspace = true
+night-tags.workspace = true
+night-rules.workspace = true
+night-binds.workspace = true
+
+pinnacle-api.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
