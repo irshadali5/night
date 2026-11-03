@@ -112,6 +112,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(temp) = status.gamma_temp {
                         u.set_gamma_temp(temp as f32);
                     }
+                    if let Some(media) = status.media_info {
+                        u.set_media_track(media.into());
+                    }
                 });
             }
             Ok(_) => {

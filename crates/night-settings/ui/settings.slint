@@ -113,6 +113,7 @@ export component SettingsWindow inherits Window {
     in-out property <int> output-count: 1;
     in-out property <float> gamma-temp: 6500.0;
     in-out property <bool> is-inhibited: false;
+    in-out property <string> media-track: "No Media Playing";
 
     // Callbacks to Rust backend
     callback apply-gaps-preview(float, float);
