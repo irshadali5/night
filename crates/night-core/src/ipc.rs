@@ -72,6 +72,17 @@ pub enum OutputNav {
     Name(String),
 }
 
+/// Window Operations for focused window
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum WindowAction {
+    Sticky,
+    Pip,
+    Center,
+    ToggleFloat,
+    ToggleFullscreen,
+    ToggleMaximize,
+}
+
 /// Desktop IPC Request Commands
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IpcCommand {
@@ -99,6 +110,8 @@ pub enum IpcCommand {
     ShowBinds,
     /// Triggers the Snowcap quit confirmation prompt
     ShowQuit,
+    /// Triggers the Snowcap Tokyo Night session flyout menu
+    ShowSessionMenu,
     /// Subscribes to real-time status updates (persistent event stream)
     Subscribe,
     /// Changes focus to an output monitor
@@ -107,6 +120,8 @@ pub enum IpcCommand {
     MoveWindowToOutput(OutputNav),
     /// Manages DPMS display power
     Dpms(DpmsAction),
+    /// Performs window operation on currently focused window
+    WindowOp(WindowAction),
 }
 
 /// Desktop IPC Response

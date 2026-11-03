@@ -13,7 +13,7 @@ pub mod theme;
 pub use config::UserConfig;
 pub use defaults::Defaults;
 pub use exec::{spawn, spawn_shell};
-pub use ipc::{DpmsAction, IpcCommand, IpcResponse, OutputNav};
+pub use ipc::{DpmsAction, IpcCommand, IpcResponse, OutputNav, WindowAction};
 pub use monitors::{MonitorMode, MonitorPosition, MonitorProfile, MonitorTransform, MonitorVrr};
 pub use state::SessionState;
 pub use theme::Palette;
