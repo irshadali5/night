@@ -1,13 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
+    "xtask",
     "crates/night-core",
     "crates/night-daemons",
     "crates/night-tags",
     "crates/night-binds",
     "crates/night-rules",
     "crates/night-pinnacle",
-    "crates/xtask",
 ]
 
 [workspace.package]
