@@ -2,7 +2,7 @@
 //! Centralized registration for application shortcuts, window actions, tag switching, directional navigation, and mouse drags.
 
 use night_core::exec::{spawn, spawn_shell};
-use night_core::{Defaults, UserConfig};
+use night_core::UserConfig;
 use night_tags::DEFAULT_TAG_NAMES;
 use pinnacle_api::input::{self, Mod, MouseButton};
 use pinnacle_api::util::Direction;
@@ -31,24 +31,38 @@ pub fn register_all() {
     // 1. Application Launchers & Terminals
     // -------------------------------------------------------------------------
 
-    // Super + Return -> Alacritty
-    input::keybind(Mod::SUPER, "Return").on_press(|| {
-        spawn(Defaults::TERMINAL, &[]);
+    // Super + Return & Alt + Return -> Primary Terminal
+    let term = user_cfg.apps.terminal.clone();
+    let term_alt = term.clone();
+    input::keybind(Mod::SUPER, "Return").on_press(move || {
+        spawn(&term, &[]);
+    });
+    input::keybind(Mod::ALT, "Return").on_press(move || {
+        spawn(&term_alt, &[]);
     });
 
-    // Super + Shift + Return -> Rio (WebGPU Terminal)
-    input::keybind(Mod::SUPER | Mod::SHIFT, "Return").on_press(|| {
-        spawn(Defaults::ALT_TERMINAL, &[]);
+    // Super + Shift + Return -> Alternative Terminal
+    let alt_term = user_cfg.apps.alt_terminal.clone();
+    input::keybind(Mod::SUPER | Mod::SHIFT, "Return").on_press(move || {
+        spawn(&alt_term, &[]);
     });
 
-    // Super + Space -> Tokyo Night Snowcap Application Launcher Modal
+    // Super + Space & Alt + Space -> Tokyo Night Snowcap Application Launcher Modal
     input::keybind(Mod::SUPER, "space").on_press(|| {
         show_launcher_modal();
     });
+    input::keybind(Mod::ALT, "space").on_press(|| {
+        show_launcher_modal();
+    });
 
-    // Super + d -> Yofi (Minimal Pure-Rust Launcher)
-    input::keybind(Mod::SUPER, 'd').on_press(|| {
-        spawn(Defaults::MINIMAL_LAUNCHER, &[]);
+    // Super + d & Alt + d -> Minimal Launcher
+    let min_launcher = user_cfg.apps.minimal_launcher.clone();
+    let min_launcher_alt = min_launcher.clone();
+    input::keybind(Mod::SUPER, 'd').on_press(move || {
+        spawn_shell(&min_launcher);
+    });
+    input::keybind(Mod::ALT, 'd').on_press(move || {
+        spawn_shell(&min_launcher_alt);
     });
 
     // Super + e -> Favnyr (Modern Rust+Slint GUI File Manager)
@@ -76,8 +90,11 @@ pub fn register_all() {
         spawn(&alt_browser, &[]);
     });
 
-    // Super + i -> Night Control Center / Settings (Slint GUI)
+    // Super + i & Alt + i -> Night Control Center / Settings (Slint GUI)
     input::keybind(Mod::SUPER, 'i').on_press(|| {
+        spawn("night-settings", &[]);
+    });
+    input::keybind(Mod::ALT, 'i').on_press(|| {
         spawn("night-settings", &[]);
     });
 
@@ -250,8 +267,13 @@ pub fn register_all() {
     // 4. Window Management & Session
     // -------------------------------------------------------------------------
 
-    // Super + Shift + q -> Close focused window
+    // Super + Shift + q & Alt + Shift + q -> Close focused window
     input::keybind(Mod::SUPER | Mod::SHIFT, 'q').on_press(|| {
+        if let Some(focused) = window::get_focused() {
+            focused.close();
+        }
+    });
+    input::keybind(Mod::ALT | Mod::SHIFT, 'q').on_press(|| {
         if let Some(focused) = window::get_focused() {
             focused.close();
         }
