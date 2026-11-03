@@ -31,13 +31,17 @@ pub struct DesktopStatus {
     pub active_tag_glyph: Option<String>,
     #[serde(default)]
     pub theme: Option<String>,
+    #[serde(default)]
+    pub battery: Option<crate::power::BatteryInfo>,
+    #[serde(default)]
+    pub volume: Option<crate::audio::VolumeInfo>,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -64,6 +68,14 @@ impl DesktopStatus {
             match &self.theme {
                 Some(t) => format!("\"{}\"", t.replace('\\', "\\\\").replace('"', "\\\"")),
                 None => "null".to_string(),
+            },
+            match &self.battery {
+                Some(b) => format!(r#"{{"percentage":{},"is_charging":{},"status":"{}"}}"#, b.percentage, b.is_charging, b.status),
+                None => "null".to_string(),
+            },
+            match &self.volume {
+                Some(v) => format!(r#"{{"percentage":{},"is_muted":{}}}"#, v.percentage, v.is_muted),
+                None => "null".to_string(),
             }
         )
     }
@@ -73,6 +85,13 @@ impl DesktopStatus {
         let active_win = self.active_window.as_deref().unwrap_or("None");
         let tag_glyph = self.active_tag_glyph.as_deref().unwrap_or("󰣆");
         let theme_str = self.theme.as_deref().unwrap_or("Night");
+        let bat_str = self.battery.as_ref().map(|b| b.display_string()).unwrap_or_else(|| "AC".into());
+        let bat_pct = self.battery.as_ref().map(|b| b.percentage.to_string()).unwrap_or_else(|| "100".into());
+        let bat_icon = self.battery.as_ref().map(|b| b.glyph()).unwrap_or("󰂄");
+        let vol_str = self.volume.as_ref().map(|v| v.display_string()).unwrap_or_else(|| "󰕾 50%".into());
+        let vol_pct = self.volume.as_ref().map(|v| v.percentage.to_string()).unwrap_or_else(|| "50".into());
+        let vol_icon = self.volume.as_ref().map(|v| v.glyph()).unwrap_or("󰕾");
+
         template
             .replace("{active_tag}", &self.active_tag)
             .replace("{tag}", &self.active_tag)
@@ -88,6 +107,12 @@ impl DesktopStatus {
             .replace("{gamma}", &self.gamma_temp.map(|t| format!("{t}K")).unwrap_or_else(|| "6500K".into()))
             .replace("{media}", self.media_info.as_deref().unwrap_or("No Media"))
             .replace("{theme}", theme_str)
+            .replace("{battery}", &bat_str)
+            .replace("{battery_pct}", &bat_pct)
+            .replace("{battery_icon}", bat_icon)
+            .replace("{volume}", &vol_str)
+            .replace("{volume_pct}", &vol_pct)
+            .replace("{volume_icon}", vol_icon)
     }
 }
 
@@ -204,6 +229,12 @@ pub enum IpcCommand {
     Dpms(DpmsAction),
     /// Performs window operation on currently focused window
     WindowOp(WindowAction),
+    /// Performs audio volume operation (raise, lower, set, mute, query)
+    Volume(crate::audio::VolumeAction),
+    /// Queries battery and power supply status
+    GetBattery,
+    /// Queries current volume status
+    GetVolume,
 }
 
 /// Desktop IPC Response
@@ -218,6 +249,8 @@ pub enum IpcResponse {
     Clipboard(Vec<String>),
     Media(Option<String>),
     Theme(crate::theme::ThemeVariant),
+    Battery(Option<crate::power::BatteryInfo>),
+    Volume(Option<crate::audio::VolumeInfo>),
     Error(String),
 }
 
