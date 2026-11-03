@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging & Media]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging & Media] [Multi-Monitor/DPMS]
 ```
 
 ---
@@ -172,4 +172,26 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 * [x] **Arch Linux & AUR PKGBUILD Specification (`packaging/PKGBUILD`)**:
   * [x] Complete Arch Linux packaging specification compiling `night-pinnacle` and `nightctl` with `--release --locked`.
   * [x] Installs binaries, session desktop entry, scripts, Tokyo Night config templates, and systemd units to standard Arch Linux paths.
+
+---
+
+### Phase 11: Multi-Monitor Per-Output Tag Isolation, Monitor Profiles & DPMS Power Management
+* [x] **Declarative RON Monitor Profiles (`config/monitors.ron` & `crates/night-core/src/monitors.rs`)**:
+  * [x] Connector-based display profile schema defining HiDPI scale factor, mode (resolution & refresh rate), position coordinates, transform orientation, and VRR adaptive sync.
+  * [x] Automatic hotplug application in `night-tags` on output discovery and connection signals.
+* [x] **Per-Output Workspace Tag Isolation (`crates/night-tags`)**:
+  * [x] Implemented independent workspace tags `[1..9]` per physical monitor connector (AwesomeWM/XMonad style).
+  * [x] `switch_to_tag` and `move_focused_to_tag` now operate on the focused monitor via `tag::get_on_output`.
+* [x] **Multi-Monitor Navigation & Window Movement (`crates/night-binds` & `nightctl`)**:
+  * [x] `Super + o` / `Super + period` $\rightarrow$ Focus next display output.
+  * [x] `Super + comma` $\rightarrow$ Focus previous display output.
+  * [x] `Super + Shift + o` / `Super + Shift + period` $\rightarrow$ Move focused window to next display output.
+  * [x] `Super + Shift + comma` $\rightarrow$ Move focused window to previous display output.
+  * [x] `Super + Shift + Escape` $\rightarrow$ Toggle DPMS display power across all screens.
+* [x] **CLI Remote Control & IPC Integration (`nightctl output` & `nightctl dpms`)**:
+  * [x] Added `output <next|prev|focus|move-window>` and `dpms [on|off|toggle]` commands to `nightctl`.
+  * [x] Added `IpcCommand::FocusOutput`, `IpcCommand::MoveWindowToOutput`, and `IpcCommand::Dpms` to IPC protocol.
+* [x] **Hotplug Signal Hooks (`crates/night-pinnacle`)**:
+  * [x] Attached `OutputSignal::Connect`, `OutputSignal::Disconnect`, and `OutputSignal::Focused` for instant real-time status bar synchronization.
+
 
