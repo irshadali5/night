@@ -41,13 +41,17 @@ pub struct DesktopStatus {
     pub system: Option<crate::sysinfo::SystemStats>,
     #[serde(default)]
     pub bluetooth: Option<crate::bluetooth::BluetoothInfo>,
+    #[serde(default)]
+    pub backlight: Option<crate::backlight::BacklightInfo>,
+    #[serde(default)]
+    pub dnd: bool,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{},"network":{},"system":{},"bluetooth":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{},"network":{},"system":{},"bluetooth":{},"backlight":{},"dnd":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -109,7 +113,12 @@ impl DesktopStatus {
                     bt.is_powered, bt.is_connected, bt.devices.len()
                 ),
                 None => "null".to_string(),
-            }
+            },
+            match &self.backlight {
+                Some(bl) => format!(r#"{{"percentage":{},"device":"{}"}}"#, bl.percentage, bl.device_name),
+                None => "null".to_string(),
+            },
+            self.dnd
         )
     }
 
@@ -136,6 +145,11 @@ impl DesktopStatus {
         let disk_str = self.system.as_ref().map(|s| s.display_disk()).unwrap_or_else(|| "󰋊 N/A".into());
         let bt_str = self.bluetooth.as_ref().map(|b| b.display_string()).unwrap_or_else(|| "󰂲 Off".into());
         let bt_icon = self.bluetooth.as_ref().map(|b| b.glyph()).unwrap_or("󰂲");
+        let bl_str = self.backlight.as_ref().map(|b| b.display_string()).unwrap_or_else(|| "󰃟 50%".into());
+        let bl_pct = self.backlight.as_ref().map(|b| b.percentage.to_string()).unwrap_or_else(|| "50".into());
+        let bl_icon = self.backlight.as_ref().map(|b| b.glyph()).unwrap_or("󰃟");
+        let dnd_str = if self.dnd { "DND Active" } else { "Normal" };
+        let dnd_icon = if self.dnd { "󰂛" } else { "󰂚" };
 
         template
             .replace("{active_tag}", &self.active_tag)
@@ -170,6 +184,11 @@ impl DesktopStatus {
             .replace("{disk}", &disk_str)
             .replace("{bt}", &bt_str)
             .replace("{bt_icon}", bt_icon)
+            .replace("{brightness}", &bl_str)
+            .replace("{brightness_pct}", &bl_pct)
+            .replace("{brightness_icon}", bl_icon)
+            .replace("{dnd}", dnd_str)
+            .replace("{dnd_icon}", dnd_icon)
     }
 }
 
@@ -308,6 +327,20 @@ pub enum IpcCommand {
     CycleAudioSink,
     /// Triggers the Snowcap Tokyo Night interactive audio sink switcher modal
     ShowAudioSinkMenu,
+    /// Performs display backlight brightness adjustment
+    Backlight(crate::backlight::BacklightAction),
+    /// Queries display backlight status
+    GetBacklight,
+    /// Toggles Do Not Disturb (DND) mode
+    ToggleDnd,
+    /// Queries Do Not Disturb (DND) state
+    GetDnd,
+    /// Triggers the Snowcap Tokyo Night notification center modal
+    ShowNotifications,
+    /// Saves current running desktop session layout
+    SaveSession,
+    /// Restores saved desktop session layout
+    RestoreSession,
 }
 
 /// Desktop IPC Response
@@ -328,6 +361,10 @@ pub enum IpcResponse {
     SystemStats(crate::sysinfo::SystemStats),
     Bluetooth(Option<crate::bluetooth::BluetoothInfo>),
     AudioSinks(Vec<crate::audio::AudioSink>),
+    Backlight(Option<crate::backlight::BacklightInfo>),
+    Dnd(bool),
+    Notifications(Vec<crate::notifications::NotificationRecord>),
+    SavedSession(Option<crate::session_restore::SavedSession>),
     Error(String),
 }
 
