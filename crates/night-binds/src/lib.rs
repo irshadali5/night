@@ -63,6 +63,11 @@ pub fn register_all() {
         spawn(&alt_browser, &[]);
     });
 
+    // Super + i -> Night Control Center / Settings (Slint GUI)
+    input::keybind(Mod::SUPER, 'i').on_press(|| {
+        spawn("night-settings", &[]);
+    });
+
     // Super + Escape -> Lock Session (Veila - Pure Rust Wayland Screen Locker)
     let lock_cmd = user_cfg.apps.lock_cmd.clone();
     input::keybind(Mod::SUPER, "Escape").on_press(move || {
