@@ -1,9 +1,5 @@
 # ~/.config/pinnacle/pinnacle.toml
 # Tells the Pinnacle daemon how to run your Night compositor configuration.
 
-# 1. Run the installed binary from PATH (~/.cargo/bin/night-pinnacle):
-# (Install via `cargo install --path crates/night-pinnacle`)
-run = ["night-pinnacle"]
-
-# 2. Alternative during active development:
-# run = ["cargo", "run", "--manifest-path", "/home/irshad/Projects/night/Cargo.toml", "-p", "night-pinnacle", "--release"]
+# Run the installed Night orchestrator binary with absolute path
+run = ["/home/irshad/.cargo/bin/night-pinnacle"]
