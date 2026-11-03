@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging & Media] [Multi-Monitor/DPMS]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout]
 ```
 
 ---
@@ -193,5 +193,24 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Added `IpcCommand::FocusOutput`, `IpcCommand::MoveWindowToOutput`, and `IpcCommand::Dpms` to IPC protocol.
 * [x] **Hotplug Signal Hooks (`crates/night-pinnacle`)**:
   * [x] Attached `OutputSignal::Connect`, `OutputSignal::Disconnect`, and `OutputSignal::Focused` for instant real-time status bar synchronization.
+
+---
+
+### Phase 12: Advanced Window States (Sticky, PiP, Window Centering) & Snowcap Session Flyout
+* [x] **Sticky Window Management (`crates/night-binds`)**:
+  * [x] Pinned workspace mode (`Super + s`): toggles window visibility across all workspace tags on active monitor.
+  * [x] Clean detachment on toggle: unpins back to current active workspace tag only.
+* [x] **Picture-in-Picture (PiP) Mode (`crates/night-binds`)**:
+  * [x] Picture-in-Picture toggle (`Super + p`): automatically floats, pins sticky, resizes to 16:9 (480x270), and anchors to bottom-right corner.
+  * [x] Toggle again restores window to normal tiled mode on active tag.
+* [x] **Floating Window Centering (`crates/night-binds`)**:
+  * [x] Instant window centering (`Super + c`): calculates display geometry offsets and centers focused floating window.
+* [x] **Snowcap Tokyo Night Session Flyout Modal (`crates/night-binds`)**:
+  * [x] Interactive in-compositor session manager (`Super + BackSpace` or `nightctl session-menu`).
+  * [x] Layer-shell modal with direct keyboard triggers: `[L]` Lock, `[S]` Sleep, `[R]` Reload, `[Q]` Exit, `[P]` Power Off, `[B]` Reboot, `[Escape]` Cancel.
+* [x] **CLI & IPC Window Control (`nightctl window`)**:
+  * [x] Added `nightctl window <sticky|pip|center|float|fullscreen|maximize>` commands.
+  * [x] Added `IpcCommand::WindowOp(WindowAction)` and `IpcCommand::ShowSessionMenu` to IPC protocol.
+
 
 
