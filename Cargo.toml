@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/night-core",
+    "crates/night-daemons",
+    "crates/night-tags",
+    "crates/night-binds",
+    "crates/night-rules",
+    "crates/night-pinnacle",
+    "crates/xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Night Desktop Team"]
+license = "MIT"
+repository = "https://github.com/your-username/night"
+
+[workspace.dependencies]
+# Pinnacle Compositor API
+pinnacle-api = { git = "https://github.com/pinnacle-comp/pinnacle" }
+
+# Async runtime & utilities
+tokio = { version = "1.40", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror = "2.0"
+
+# Standard Ecosystem Crates (avoiding custom from-scratch boilerplate)
+dirs = "5.0"                                      # Standard XDG base directory resolution
+interprocess = { version = "2.2", features = ["tokio"] } # Fast Unix domain socket IPC
+shell-words = "1.1"                               # Safe shell argument tokenization
+which = "7.0"                                     # Reliable PATH binary discovery
+
+# Serialization & Formats (Best-of-breed selection)
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"                                      # For human-readable, user-facing configs
+ron = "0.8"                                       # For rich, typed Rust data (rules & bindings)
+postcard = { version = "1.1", features = ["alloc"] } # For ultra-fast binary session/IPC caching
+
+# Internal Workspace Crates
+night-core = { path = "crates/night-core" }
+night-daemons = { path = "crates/night-daemons" }
+night-tags = { path = "crates/night-tags" }
+night-binds = { path = "crates/night-binds" }
+night-rules = { path = "crates/night-rules" }
