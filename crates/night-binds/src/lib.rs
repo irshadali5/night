@@ -10,9 +10,11 @@ use pinnacle_api::{output, pinnacle, window};
 use tracing::info;
 
 pub mod clipboard_ui;
+pub mod launcher;
 pub mod snipping;
 pub mod switcher;
 pub use clipboard_ui::show_clipboard_modal;
+pub use launcher::{scan_desktop_applications, show_launcher_modal, AppEntry};
 pub use snipping::show_snipping_modal;
 pub use switcher::show_window_switcher;
 
@@ -35,9 +37,9 @@ pub fn register_all() {
         spawn(Defaults::ALT_TERMINAL, &[]);
     });
 
-    // Super + Space -> Anyrun (Modular Runner)
+    // Super + Space -> Tokyo Night Snowcap Application Launcher Modal
     input::keybind(Mod::SUPER, "space").on_press(|| {
-        spawn(Defaults::LAUNCHER, &[]);
+        show_launcher_modal();
     });
 
     // Super + d -> Yofi (Minimal Pure-Rust Launcher)
@@ -329,21 +331,21 @@ pub fn register_all() {
         spawn(Defaults::OSD_CLIENT, &["--brightness", "lower"]);
     });
 
-    // MPRIS Media Controls
+    // MPRIS Media Controls (Vivi & System Players)
     input::keybind(Mod::empty(), "XF86AudioPlay").on_press(|| {
-        spawn_shell("playerctl play-pause 2>/dev/null");
+        handle_media_action(night_core::ipc::MediaAction::PlayPause);
     });
     input::keybind(Mod::empty(), "XF86AudioPause").on_press(|| {
-        spawn_shell("playerctl play-pause 2>/dev/null");
+        handle_media_action(night_core::ipc::MediaAction::PlayPause);
     });
     input::keybind(Mod::empty(), "XF86AudioNext").on_press(|| {
-        spawn_shell("playerctl next 2>/dev/null");
+        handle_media_action(night_core::ipc::MediaAction::Next);
     });
     input::keybind(Mod::empty(), "XF86AudioPrev").on_press(|| {
-        spawn_shell("playerctl previous 2>/dev/null");
+        handle_media_action(night_core::ipc::MediaAction::Previous);
     });
     input::keybind(Mod::empty(), "XF86AudioStop").on_press(|| {
-        spawn_shell("playerctl stop 2>/dev/null");
+        handle_media_action(night_core::ipc::MediaAction::Stop);
     });
 
     // -------------------------------------------------------------------------
@@ -496,23 +498,25 @@ pub fn toggle_scratchpad() {
     toggle_named_scratchpad("term");
 }
 
-/// Handles an MPRIS media player operation
+/// Handles an MPRIS media player operation (Vivi / MPRIS players)
 pub fn handle_media_action(action: night_core::ipc::MediaAction) {
     use night_core::ipc::MediaAction;
-    match action {
-        MediaAction::PlayPause => {
-            spawn_shell("playerctl play-pause 2>/dev/null");
-        }
-        MediaAction::Next => {
-            spawn_shell("playerctl next 2>/dev/null");
-        }
-        MediaAction::Previous => {
-            spawn_shell("playerctl previous 2>/dev/null");
-        }
-        MediaAction::Stop => {
-            spawn_shell("playerctl stop 2>/dev/null");
-        }
-        MediaAction::Query => {}
+    let (p_cmd, bus_method) = match action {
+        MediaAction::PlayPause => ("play-pause", "PlayPause"),
+        MediaAction::Next => ("next", "Next"),
+        MediaAction::Previous => ("previous", "Previous"),
+        MediaAction::Stop => ("stop", "Stop"),
+        MediaAction::Query => return,
+    };
+
+    if which::which("playerctl").is_ok() {
+        spawn_shell(&format!("playerctl {p_cmd} 2>/dev/null"));
+    } else {
+        // Pure-Rust / systemd busctl fallback to any active MPRIS player (including Vivi)
+        let bus_cmd = format!(
+            "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{{print $1}}'); [ -n \"$target\" ] && busctl --user call \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player {bus_method} 2>/dev/null"
+        );
+        spawn_shell(&bus_cmd);
     }
 }
 
@@ -649,8 +653,8 @@ impl Default for SessionFlyout {
             background_color: [0.10, 0.11, 0.15, 0.96],
             border_color: [0.48, 0.64, 0.97, 1.0],
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
-            width: 580,
-            height: 270,
+            width: 600,
+            height: 310,
         }
     }
 }
@@ -711,6 +715,16 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
         )
         .into()]);
 
+        let actions_row4 = Row::new_with_children([Text::new(
+            "  [V] Clipboard (rsclip)                     [Space] App Launcher",
+        )
+        .style(
+            text::Style::new()
+                .font(self.font.clone().weight(Weight::Bold))
+                .pixels(14.0),
+        )
+        .into()]);
+
         let hint = Text::new("Press ESCAPE to cancel")
             .style(text::Style::new().font(self.font.clone()).pixels(12.0));
 
@@ -724,6 +738,8 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
             actions_row2.into(),
             Text::new("").style(text::Style::new().pixels(8.0)).into(),
             actions_row3.into(),
+            Text::new("").style(text::Style::new().pixels(8.0)).into(),
+            actions_row4.into(),
             Text::new("").style(text::Style::new().pixels(14.0)).into(),
             hint.into(),
         ]))
@@ -810,6 +826,10 @@ pub fn show_session_menu() {
             Keysym::v | Keysym::V => {
                 h.close();
                 show_clipboard_modal();
+            }
+            Keysym::space => {
+                h.close();
+                show_launcher_modal();
             }
             _ => {
                 h.close();
