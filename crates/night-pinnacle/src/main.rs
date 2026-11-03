@@ -2,6 +2,7 @@
 // Orchestrates modular workspace crates: core, daemons, tags, rules, and binds.
 // Utilizes TOML for user preferences, RON for window rules, and postcard for session caching.
 
+use night_core::ipc::{IpcCommand, IpcResponse};
 use night_core::{SessionState, UserConfig};
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -54,6 +55,44 @@ async fn config() {
     // 7. Register Keyboard & Multimedia Bindings
     // -------------------------------------------------------------------------
     night_binds::register_all();
+
+    // -------------------------------------------------------------------------
+    // 8. Start Desktop IPC Server (Unix Socket via `postcard` binary serialization)
+    // -------------------------------------------------------------------------
+    tokio::spawn(async move {
+        night_core::ipc::run_ipc_server(|cmd| match cmd {
+            IpcCommand::ReloadConfig => {
+                info!("IPC: Received ReloadConfig command");
+                pinnacle_api::pinnacle::reload_config();
+                IpcResponse::Ok
+            }
+            IpcCommand::SwitchTag(name) => {
+                info!(tag = %name, "IPC: Received SwitchTag command");
+                night_tags::switch_to_tag(&name);
+                IpcResponse::Ok
+            }
+            IpcCommand::QueryState => {
+                let state = SessionState::load().unwrap_or(SessionState {
+                    active_tag: "1".into(),
+                    last_reload_timestamp: 0,
+                });
+                IpcResponse::State(state)
+            }
+            IpcCommand::Spawn(command) => {
+                info!(command = %command, "IPC: Received Spawn command");
+                night_core::exec::spawn_shell(&command);
+                IpcResponse::Ok
+            }
+            IpcCommand::CloseFocused => {
+                info!("IPC: Received CloseFocused command");
+                if let Some(focused) = pinnacle_api::window::get_focused() {
+                    focused.close();
+                }
+                IpcResponse::Ok
+            }
+        })
+        .await;
+    });
 
     // Save initial session state using postcard
     let initial_state = SessionState {
