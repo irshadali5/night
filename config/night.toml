@@ -13,19 +13,17 @@ theme = "Night"
 
 [apps]
 terminal = "alacritty"
-alt_terminal = "rio"
-launcher = "anyrun"
-minimal_launcher = "yofi"
-file_manager = "favnyr"
+alt_terminal = "alacritty"
+launcher = "fuzzel"
+minimal_launcher = "fuzzel"
+file_manager = "alacritty -e yazi"
 term_file_manager = "yazi"
 browser = "zen-browser"
-alt_browser = "brave"
+alt_browser = "zen-browser"
 media_player = "vivi"
-lock_cmd = "veila"
+lock_cmd = "swaylock -c 1a1b26"
 
 [gamma]
 enabled = false
 day_temp = 6500
 night_temp = 3800
-
-
