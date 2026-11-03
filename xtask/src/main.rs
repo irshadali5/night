@@ -61,6 +61,16 @@ enum XtaskCommand {
     },
     /// Toggles hardware-accelerated screen recording (wl-screenrec)
     Record,
+    /// Views or tails recent desktop logs (~/.local/state/night/logs/)
+    #[command(alias = "log")]
+    Logs {
+        /// Target service: night, settings, ctl, session (default: "night")
+        #[arg(default_value = "night")]
+        service: String,
+        /// Number of recent lines to display
+        #[arg(short = 'n', long, default_value_t = 50)]
+        lines: usize,
+    },
     /// Sends an IPC command to running Night compositor
     #[command(alias = "ctl")]
     Msg {
@@ -206,6 +216,7 @@ async fn main() {
         XtaskCommand::Wallpaper { path } => task_wallpaper(path),
         XtaskCommand::Screenshot { mode } => task_screenshot(&mode),
         XtaskCommand::Record => task_record(),
+        XtaskCommand::Logs { service, lines } => task_logs(&service, lines),
         XtaskCommand::Msg { command } => task_msg(command).await,
     }
 }
@@ -777,6 +788,16 @@ async fn task_msg(command: MsgCommand) {
             eprintln!("❌ Failed to deliver command: {e}");
             exit(1);
         }
+    }
+}
+
+fn task_logs(service: &str, lines: usize) {
+    let recent = night_core::logging::read_recent_logs(service, lines);
+    let path = night_core::logging::log_file_path(service);
+    println!("🌙 Project Night Logs — Service: `{service}`");
+    println!("📁 File: {}\n", path.display());
+    for line in recent {
+        println!("{line}");
     }
 }
 
