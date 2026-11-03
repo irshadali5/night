@@ -70,7 +70,21 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5
 
 ---
 
-### Phase 5: Multi-Monitor, Theming & Hardening
+### Phase 5: Multi-Monitor, Interactive Navigation & IPC Hardening
 * [x] Unified Tokyo Night dark color palette in `night-core::theme`.
-* [ ] Multi-monitor specific tag layout handling and screen resolution profiles.
-* [ ] Verify wayidle session lock integration with `swaylock`.
+* [x] **Multi-Monitor Hotplugging (`night-tags`)**:
+  * [x] Dynamic monitor detection via `output::for_each_output` for live display hotplugging.
+  * [x] Automated workspace tag provisioning across all connected displays.
+* [x] **Interactive Window & Mouse Navigation (`night-binds`)**:
+  * [x] Vim-style directional focus (`Super + h/j/k/l`) and Arrow keys via `in_direction`.
+  * [x] Window swapping (`Super + Shift + h/j/k/l`) with adjacent neighbors.
+  * [x] Fullscreen toggle (`Super + f`) and floating mode toggle (`Super + Shift + Space`).
+  * [x] Interactive floating window drag (`Super + LeftClick`) via `window::begin_move`.
+  * [x] Interactive floating window resize (`Super + RightClick`) via `window::begin_resize`.
+* [x] **Idle & Session Lock Management (`night-daemons`)**:
+  * [x] Dynamic session locking (`Super + Escape`) using **Veila** (pure-Rust Wayland locker).
+  * [x] Automated idle timeout trigger via `wayidle` using configured `lock_cmd`.
+* [x] **Desktop Interprocess Communication (IPC)**:
+  * [x] Async Unix socket server in `night-pinnacle` (`/run/user/1000/night.sock`).
+  * [x] Binary serialized IPC commands (`ReloadConfig`, `SwitchTag`, `QueryState`, `Spawn`, `CloseFocused`) via `postcard`.
+  * [x] CLI control runner in task runner (`cargo xtask msg <reload|switch-tag|state|spawn|close>`).
