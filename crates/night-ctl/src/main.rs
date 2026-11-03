@@ -70,6 +70,19 @@ enum Commands {
     /// Launch the Slint-based GUI Control Center & Settings app
     Settings,
 
+    /// Show the Snowcap Tokyo Night interactive visual window switcher
+    #[command(alias = "switch-window")]
+    Switcher,
+
+    /// Manage night light & display color temperature for late-night ergonomics
+    Gamma {
+        #[command(subcommand)]
+        action: GammaCommand,
+    },
+
+    /// Toggle idle inhibition (presentation and long compile mode)
+    Inhibit,
+
     /// Manage multi-monitor focus and window placement across displays
     #[command(alias = "monitor")]
     Output {
@@ -133,6 +146,20 @@ enum OutputCommand {
         /// Target output ("next", "prev", or connector name)
         target: String,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum GammaCommand {
+    /// Toggle night light between day (6500K) and warm night temperature
+    Toggle,
+    /// Set explicit color temperature in Kelvin (e.g. 3800, 4500, 6500)
+    Set { temp: u32 },
+    /// Set neutral daylight color temperature (6500K)
+    Day,
+    /// Set warm night light color temperature (3800K)
+    Night,
+    /// Query current color temperature
+    Status,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -231,6 +258,51 @@ async fn main() {
             run_cmd(IpcCommand::Spawn("night-settings".into())).await;
         }
 
+        Commands::Switcher => {
+            run_cmd(IpcCommand::ShowSwitcher).await;
+        }
+
+        Commands::Gamma { action } => match action {
+            GammaCommand::Toggle => match send_command(&IpcCommand::ToggleGamma).await {
+                Ok(IpcResponse::Gamma(t)) => println!("🌙 Night light toggled: {t}K"),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            GammaCommand::Set { temp } => match send_command(&IpcCommand::SetGamma(temp)).await {
+                Ok(IpcResponse::Gamma(t)) => println!("🌙 Night light set to {t}K"),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            GammaCommand::Day => match send_command(&IpcCommand::SetGamma(6500)).await {
+                Ok(_) => println!("☀️ Daylight temperature set (6500K)"),
+                Err(e) => fatal(e),
+            },
+            GammaCommand::Night => match send_command(&IpcCommand::SetGamma(3800)).await {
+                Ok(_) => println!("🌙 Warm night light set (3800K)"),
+                Err(e) => fatal(e),
+            },
+            GammaCommand::Status => match send_command(&IpcCommand::GetStatus).await {
+                Ok(IpcResponse::Status(s)) => {
+                    let temp = s.gamma_temp.unwrap_or(6500);
+                    println!("🌙 Current color temperature: {temp}K");
+                }
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+        },
+
+        Commands::Inhibit => match send_command(&IpcCommand::ToggleInhibit).await {
+            Ok(IpcResponse::Inhibited(inh)) => {
+                if inh {
+                    println!("☕ Idle inhibition ENABLED (Presentation & compile mode active)");
+                } else {
+                    println!("🌙 Idle inhibition DISABLED (Normal power saving active)");
+                }
+            }
+            Ok(resp) => println!("{resp:?}"),
+            Err(e) => fatal(e),
+        },
+
         Commands::Output { action } => match action {
             OutputCommand::Next => run_cmd(IpcCommand::FocusOutput(OutputNav::Next)).await,
             OutputCommand::Prev => run_cmd(IpcCommand::FocusOutput(OutputNav::Prev)).await,
@@ -321,5 +393,7 @@ fn print_status_table(status: &DesktopStatus) {
     println!("  Gaps (Inner / Outer) : {:.0}px / {:.0}px", status.inner_gaps, status.outer_gaps);
     println!("  Connected Monitors   : {}", status.output_count);
     println!("  Focused Window       : {}", status.active_window.as_deref().unwrap_or("None"));
+    println!("  Night Light (Gamma)  : {}K", status.gamma_temp.unwrap_or(6500));
+    println!("  Idle Inhibition Mode : {}", if status.inhibited { "☕ Enabled (Sleep Suspended)" } else { "🌙 Normal Power Saving" });
     println!("  Last Reload (Epoch)  : {}", status.last_reload);
 }
