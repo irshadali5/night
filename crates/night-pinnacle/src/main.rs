@@ -35,9 +35,10 @@ async fn config() {
     }
 
     // -------------------------------------------------------------------------
-    // 4. Setup Dynamic Tags (Workspaces)
+    // 4. Setup Dynamic Tags & Layout Engine
     // -------------------------------------------------------------------------
     night_tags::setup_tags();
+    night_layout::setup_layout();
 
     // -------------------------------------------------------------------------
     // 5. Supervise Background Daemons & Services
@@ -89,6 +90,17 @@ async fn config() {
                     focused.close();
                 }
                 IpcResponse::Ok
+            }
+            IpcCommand::CycleLayout => {
+                let next = night_layout::cycle_layout();
+                IpcResponse::Layout(next.name().into())
+            }
+            IpcCommand::AdjustGaps(delta) => {
+                night_layout::adjust_gaps(delta);
+                IpcResponse::Ok
+            }
+            IpcCommand::GetLayout => {
+                IpcResponse::Layout(night_layout::current_layout().name().into())
             }
         })
         .await;

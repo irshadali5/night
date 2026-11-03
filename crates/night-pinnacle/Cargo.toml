@@ -15,6 +15,7 @@ night-core.workspace = true
 night-daemons.workspace = true
 night-tags.workspace = true
 night-rules.workspace = true
+night-layout.workspace = true
 night-binds.workspace = true
 
 pinnacle-api.workspace = true
