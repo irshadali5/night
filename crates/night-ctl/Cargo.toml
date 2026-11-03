@@ -11,4 +11,5 @@ night-core.workspace = true
 tokio.workspace = true
 postcard.workspace = true
 serde.workspace = true
+clap.workspace = true
 
