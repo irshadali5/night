@@ -105,7 +105,7 @@ impl ClipboardHistory {
         info!("Cleared clipboard history");
     }
 
-    /// Copies a specific history index back into the active Wayland clipboard using `wl-copy`
+    /// Copies a specific history index back into the active Wayland clipboard
     pub fn copy_entry_at(index: usize) -> Option<String> {
         let history = Self::load();
         if let Some(item) = history.items.get(index) {
@@ -118,11 +118,31 @@ impl ClipboardHistory {
     }
 }
 
-/// Spawns `wl-copy` to place text into active Wayland clipboard selection
+/// Places text into active Wayland clipboard selection using pure-Rust `rsclipd`
+/// with seamless fallback to `wl-copy`.
 pub fn copy_to_system_clipboard(text: &str) {
     use std::io::Write;
     use std::process::{Command, Stdio};
 
+    // 1. Prefer pure-Rust native rsclipd
+    if which::which("rsclipd").is_ok() {
+        if let Ok(mut child) = Command::new("rsclipd")
+            .args(["store", "--mime", "text/plain"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+        {
+            if let Some(mut stdin) = child.stdin.take() {
+                let _ = stdin.write_all(text.as_bytes());
+            }
+            let _ = child.wait();
+            info!(length = text.len(), "Pushed entry to Wayland system clipboard via pure-Rust rsclipd");
+            return;
+        }
+    }
+
+    // 2. Fallback to wl-copy if installed
     if which::which("wl-copy").is_ok() {
         if let Ok(mut child) = Command::new("wl-copy")
             .stdin(Stdio::piped())
@@ -134,10 +154,11 @@ pub fn copy_to_system_clipboard(text: &str) {
                 let _ = stdin.write_all(text.as_bytes());
             }
             let _ = child.wait();
-            info!(length = text.len(), "Pushed entry to Wayland system clipboard via wl-copy");
+            info!(length = text.len(), "Pushed entry to Wayland system clipboard via wl-copy fallback");
+            return;
         }
-    } else {
-        warn!("wl-copy binary not found on PATH; cannot write to Wayland clipboard");
     }
+
+    warn!("Neither rsclipd nor wl-copy found on PATH; cannot write to Wayland clipboard");
 }
 
