@@ -59,7 +59,11 @@ pub async fn start_all() {
 
     // Launch Wayland idle monitor (wayidle) if installed
     if which::which("wayidle").is_ok() {
-        spawn_shell("~/.config/wayidle/wayidle.sh 2>/dev/null");
+        let user_cfg = night_core::UserConfig::load();
+        let lock_cmd = user_cfg.apps.lock_cmd;
+        let idle_cmd = format!("wayidle -t 300 -s \"{lock_cmd}\" 2>/dev/null || ~/.config/wayidle/wayidle.sh 2>/dev/null");
+        info!(command = %idle_cmd, "Starting wayidle session watcher");
+        spawn_shell(&idle_cmd);
     }
 
     info!("Night daemon supervisor initialization finished.");
