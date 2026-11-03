@@ -75,9 +75,12 @@ pub async fn start_all() {
         night_core::gamma::set_temperature(user_cfg.gamma.night_temp);
     }
 
-    // Launch Wayland clipboard history recorder if wl-paste is available
-    if which::which("wl-paste").is_ok() {
-        info!("Starting Wayland clipboard history recorder via wl-paste");
+    // Launch pure-Rust Wayland clipboard daemon (rsclipd) or fallback recorder
+    if which::which("rsclipd").is_ok() {
+        info!("Starting pure-Rust Wayland clipboard daemon (rsclipd watch)");
+        spawn_shell("rsclipd watch >/dev/null 2>&1 &");
+    } else if which::which("wl-paste").is_ok() {
+        info!("Starting Wayland clipboard history recorder via wl-paste fallback");
         spawn_shell("wl-paste --type text --watch nightctl clip-record >/dev/null 2>&1 &");
     }
 
