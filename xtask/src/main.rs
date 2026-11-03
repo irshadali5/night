@@ -8,7 +8,7 @@ use night_core::theme::ThemeVariant;
 use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
-use std::process::{exit, Command};
+use std::process::{exit, Command, Stdio};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -45,6 +45,22 @@ enum XtaskCommand {
     Doctor,
     /// Installs Wayland session desktop entry for login managers (GDM, SDDM, Ly, greetd)
     Session,
+    /// Configures 100% Rust-native TUI Display Manager (greetd + tuigreet)
+    #[command(alias = "setup-dm")]
+    Dm,
+    /// Sets desktop wallpaper or selects random Tokyo Night image
+    Wallpaper {
+        /// Optional path to wallpaper image
+        path: Option<PathBuf>,
+    },
+    /// Takes interactive or fullscreen screenshot (wayshot + slurp + satty)
+    Screenshot {
+        /// Mode: "area" (default), "full", or "window"
+        #[arg(default_value = "area")]
+        mode: String,
+    },
+    /// Toggles hardware-accelerated screen recording (wl-screenrec)
+    Record,
     /// Sends an IPC command to running Night compositor
     #[command(alias = "ctl")]
     Msg {
@@ -186,6 +202,10 @@ async fn main() {
         XtaskCommand::Theme { variant } => task_theme(&root_dir, variant.map(Into::into).unwrap_or(ThemeVariant::Night)),
         XtaskCommand::Doctor => task_doctor(),
         XtaskCommand::Session => task_session(&root_dir),
+        XtaskCommand::Dm => task_dm(&root_dir),
+        XtaskCommand::Wallpaper { path } => task_wallpaper(path),
+        XtaskCommand::Screenshot { mode } => task_screenshot(&mode),
+        XtaskCommand::Record => task_record(),
         XtaskCommand::Msg { command } => task_msg(command).await,
     }
 }
@@ -214,9 +234,9 @@ fn task_check(root: &Path) {
 }
 
 fn task_build(root: &Path) {
-    println!("🔨 Building `night-pinnacle`, `nightctl`, and `night-settings` in release mode...");
+    println!("🔨 Building `night-pinnacle`, `nightctl`, `night-settings`, and `night-session` in release mode...");
     let status = Command::new("cargo")
-        .args(["build", "--release", "-p", "night-pinnacle", "-p", "nightctl", "-p", "night-settings"])
+        .args(["build", "--release", "-p", "night-pinnacle", "-p", "nightctl", "-p", "night-settings", "-p", "night-session"])
         .current_dir(root)
         .status()
         .expect("Failed to run cargo build");
@@ -224,7 +244,7 @@ fn task_build(root: &Path) {
     if !status.success() {
         exit(status.code().unwrap_or(1));
     }
-    println!("✅ Build complete: target/release/night-pinnacle, nightctl, night-settings");
+    println!("✅ Build complete: target/release/night-pinnacle, nightctl, night-settings, night-session");
 }
 
 fn task_install(root: &Path) {
@@ -238,7 +258,7 @@ fn task_install(root: &Path) {
     let _ = fs::create_dir_all(&cargo_bin);
 
     // 2. Install binaries to ~/.cargo/bin
-    for bin_name in ["night-pinnacle", "nightctl", "night-settings"] {
+    for bin_name in ["night-pinnacle", "nightctl", "night-settings", "night-session"] {
         let source_bin = root.join("target/release").join(bin_name);
         let target_bin = cargo_bin.join(bin_name);
         println!("==> Copying binary to {}", target_bin.display());
@@ -844,25 +864,29 @@ fn task_session(root: &Path) {
     println!("📦 Installing Wayland desktop session entry...");
     let home = dirs::home_dir().expect("Failed to locate home directory");
 
-    // 1. Install night-session and desktop scripts to ~/.cargo/bin
+    // 1. Install night-session compiled binary to ~/.cargo/bin
     let bin_dir = home.join(".cargo/bin");
     let _ = fs::create_dir_all(&bin_dir);
-    for script_name in ["night-session", "wallpaper.sh", "screenshot.sh", "record.sh"] {
-        let script_src = root.join("assets").join(script_name);
-        let script_dst = bin_dir.join(script_name);
-        if script_src.exists() {
-            if let Ok(_) = fs::copy(&script_src, &script_dst) {
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::PermissionsExt;
-                    if let Ok(meta) = fs::metadata(&script_dst) {
-                        let mut perms = meta.permissions();
-                        perms.set_mode(0o755);
-                        let _ = fs::set_permissions(&script_dst, perms);
-                    }
+    let session_src = root.join("target/release/night-session");
+    let session_dst = bin_dir.join("night-session");
+    if session_src.exists() {
+        if let Ok(_) = fs::copy(&session_src, &session_dst) {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if let Ok(meta) = fs::metadata(&session_dst) {
+                    let mut perms = meta.permissions();
+                    perms.set_mode(0o755);
+                    let _ = fs::set_permissions(&session_dst, perms);
                 }
-                println!("==> Installed launcher script to {}", script_dst.display());
             }
+            println!("==> Installed pure-Rust session binary to {}", session_dst.display());
+        }
+    } else {
+        // Fallback to assets launcher if release binary not yet built
+        let fallback_src = root.join("assets/night-session");
+        if fallback_src.exists() {
+            let _ = fs::copy(&fallback_src, &session_dst);
         }
     }
 
@@ -879,5 +903,361 @@ fn task_session(root: &Path) {
             println!("==> Installed Wayland session entry to {}", desktop_dst.display());
             println!("✨ Night is now selectable from your login display manager (GDM, SDDM, Ly, greetd)!");
         }
+    }
+
+    // 3. Install systemd user services to ~/.config/systemd/user/
+    let systemd_user_dir = home.join(".config/systemd/user");
+    if let Ok(_) = fs::create_dir_all(&systemd_user_dir) {
+        let service_src = root.join("assets/night.service");
+        if service_src.exists() {
+            let _ = fs::copy(&service_src, systemd_user_dir.join("night.service"));
+            let _ = fs::copy(&service_src, systemd_user_dir.join("pinnacle.service"));
+            println!("==> Installed systemd user units: night.service & pinnacle.service");
+        }
+        let shutdown_src = root.join("assets/night-shutdown.target");
+        if shutdown_src.exists() {
+            let _ = fs::copy(&shutdown_src, systemd_user_dir.join("night-shutdown.target"));
+            let _ = fs::copy(&shutdown_src, systemd_user_dir.join("pinnacle-shutdown.target"));
+            println!("==> Installed systemd user units: night-shutdown.target & pinnacle-shutdown.target");
+        }
+    }
+
+    // 4. Install XDG desktop portal configurations
+    let portal_dir = home.join(".config/xdg-desktop-portal");
+    if let Ok(_) = fs::create_dir_all(&portal_dir) {
+        let portal_src = root.join("assets/night-portals.conf");
+        if portal_src.exists() {
+            let _ = fs::copy(&portal_src, portal_dir.join("night-portals.conf"));
+            let _ = fs::copy(&portal_src, portal_dir.join("pinnacle-portals.conf"));
+            println!("==> Installed XDG desktop portal configs for Night & Pinnacle");
+        }
+    }
+}
+
+fn task_dm(root: &Path) {
+    println!("🌙 Configuring 100% Rust-Native TUI Display Manager (greetd + tuigreet)...");
+
+    let is_root = Command::new("id")
+        .arg("-u")
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim() == "0")
+        .unwrap_or(false);
+
+    if !is_root {
+        println!("ℹ️ Notice: Administrative commands will invoke `sudo`.");
+    }
+
+    // 1. Disable cosmic-greeter
+    println!("==> Disabling cosmic-greeter.service...");
+    let mut cmd = if is_root { Command::new("systemctl") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("systemctl"); }
+    let _ = cmd.args(["stop", "cosmic-greeter.service"]).output();
+
+    let mut cmd = if is_root { Command::new("systemctl") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("systemctl"); }
+    let _ = cmd.args(["disable", "cosmic-greeter.service"]).output();
+
+    // 2. Install greetd & greetd-tuigreet
+    println!("==> Installing greetd and greetd-tuigreet via pacman...");
+    let mut cmd = if is_root { Command::new("pacman") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("pacman"); }
+    let _ = cmd.args(["-S", "--needed", "--noconfirm", "greetd", "greetd-tuigreet"]).status();
+
+    // 3. Create cache directory for tuigreet
+    println!("==> Configuring /var/cache/tuigreet for session persistence...");
+    let mut cmd = if is_root { Command::new("mkdir") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("mkdir"); }
+    let _ = cmd.args(["-p", "/var/cache/tuigreet"]).output();
+
+    let mut cmd = if is_root { Command::new("chown") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("chown"); }
+    let _ = cmd.args(["-R", "greeter:greeter", "/var/cache/tuigreet"]).output();
+
+    // 4. Deploy Tokyo Night /etc/greetd/config.toml
+    println!("==> Deploying Tokyo Night /etc/greetd/config.toml...");
+    let src_config = root.join("assets/greetd-tuigreet.toml");
+    let mut cmd = if is_root { Command::new("cp") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("cp"); }
+    let _ = cmd.args([src_config.to_str().unwrap_or("assets/greetd-tuigreet.toml"), "/etc/greetd/config.toml"]).output();
+
+    // 5. Update Wayland desktop entry and systemd service
+    println!("==> Updating /usr/share/wayland-sessions/night.desktop...");
+    let src_desktop = root.join("assets/night.desktop");
+    let mut cmd = if is_root { Command::new("cp") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("cp"); }
+    let _ = cmd.args([src_desktop.to_str().unwrap_or("assets/night.desktop"), "/usr/share/wayland-sessions/night.desktop"]).output();
+
+    let src_svc = root.join("assets/night.service");
+    let mut cmd = if is_root { Command::new("cp") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("cp"); }
+    let _ = cmd.args([src_svc.to_str().unwrap_or("assets/night.service"), "/usr/lib/systemd/user/night.service"]).output();
+
+    // 6. Enable greetd.service
+    println!("==> Enabling greetd.service as primary display manager...");
+    let mut cmd = if is_root { Command::new("systemctl") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("systemctl"); }
+    let _ = cmd.args(["enable", "greetd.service"]).status();
+
+    // 7. Remove cosmic-greeter package
+    println!("==> Removing cosmic-greeter package...");
+    let mut cmd = if is_root { Command::new("pacman") } else { Command::new("sudo") };
+    if !is_root { cmd.arg("pacman"); }
+    let _ = cmd.args(["-Rdd", "--noconfirm", "cosmic-greeter"]).output();
+
+    println!("✨ Rust-native TUI display manager (tuigreet) is installed and active!");
+    println!("   You can switch to it right now with: sudo systemctl restart greetd");
+}
+
+fn task_wallpaper(target: Option<PathBuf>) {
+    println!("🖼️ Managing Tokyo Night wallpaper in pure Rust...");
+
+    // 1. Ensure swww-daemon is running if swww is present
+    if which::which("swww").is_ok() {
+        let is_running = Command::new("pgrep")
+            .args(["-x", "swww-daemon"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+
+        if !is_running {
+            println!("==> Starting swww-daemon background daemon...");
+            let _ = Command::new("swww-daemon").spawn();
+            std::thread::sleep(std::time::Duration::from_millis(400));
+        }
+    }
+
+    let wallpaper_path = if let Some(p) = target {
+        if p.exists() {
+            Some(p)
+        } else {
+            eprintln!("⚠️ Specified wallpaper not found: {}", p.display());
+            None
+        }
+    } else {
+        // Search standard directories
+        let home = dirs::home_dir().unwrap_or_default();
+        let search_dirs = [
+            dirs::config_dir().unwrap_or_else(|| home.join(".config")).join("night/wallpapers"),
+            home.join("Pictures/Wallpapers"),
+            home.join(".config/quickshell/ii/assets/images"),
+        ];
+
+        let mut candidates = Vec::new();
+        for dir in &search_dirs {
+            if let Ok(entries) = fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+                        let ext = ext.to_lowercase();
+                        if matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp") {
+                            candidates.push(path);
+                        }
+                    }
+                }
+            }
+        }
+
+        if !candidates.is_empty() {
+            let idx = (std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as usize)
+                % candidates.len();
+            Some(candidates[idx].clone())
+        } else {
+            None
+        }
+    };
+
+    if let Some(img) = wallpaper_path {
+        println!("==> Setting Tokyo Night wallpaper: {}", img.display());
+        if which::which("swww").is_ok() {
+            let _ = Command::new("swww")
+                .args([
+                    "img",
+                    img.to_str().unwrap(),
+                    "--transition-type",
+                    "grow",
+                    "--transition-pos",
+                    "0.5,0.5",
+                    "--transition-step",
+                    "90",
+                    "--transition-fps",
+                    "60",
+                    "--transition-duration",
+                    "1.5",
+                ])
+                .status();
+        } else if which::which("swaybg").is_ok() {
+            let _ = Command::new("pkill").args(["-x", "swaybg"]).status();
+            let _ = Command::new("swaybg")
+                .args(["-i", img.to_str().unwrap(), "-m", "fill"])
+                .spawn();
+        }
+    } else {
+        println!("==> No wallpaper found; clearing to solid Tokyo Night (#1a1b26)");
+        if which::which("swww").is_ok() {
+            let _ = Command::new("swww").args(["clear", "1a1b26"]).status();
+        } else if which::which("swaybg").is_ok() {
+            let _ = Command::new("pkill").args(["-x", "swaybg"]).status();
+            let _ = Command::new("swaybg").args(["-c", "#1a1b26"]).spawn();
+        }
+    }
+}
+
+fn task_screenshot(mode: &str) {
+    println!("📸 Project Night Screen Capture ({mode})...");
+    let home = dirs::home_dir().unwrap_or_default();
+    let pictures_dir = dirs::picture_dir()
+        .unwrap_or_else(|| home.join("Pictures"))
+        .join("Screenshots");
+    let _ = fs::create_dir_all(&pictures_dir);
+
+    let ts = Command::new("date")
+        .arg("+%Y-%m-%d_%H-%M-%S")
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_else(|_| "capture".into());
+
+    let target_file = pictures_dir.join(format!("Screenshot_{ts}.png"));
+
+    match mode {
+        "area" => {
+            println!("==> Interactive region selection (drag with mouse)...");
+            let slurp_res = Command::new("slurp")
+                .args(["-b", "#1a1b26cc", "-c", "#7aa2f7", "-w", "2", "-s", "#7aa2f733"])
+                .output();
+
+            if let Ok(output) = slurp_res {
+                let geom = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !geom.is_empty() {
+                    let wayshot = Command::new("wayshot")
+                        .args(["-s", &geom, "--stdout"])
+                        .stdout(Stdio::piped())
+                        .spawn();
+
+                    if let Ok(wayshot_child) = wayshot {
+                        if let Some(stdout) = wayshot_child.stdout {
+                            let _ = Command::new("satty")
+                                .args(["--filename", "-", "--output-filename", target_file.to_str().unwrap()])
+                                .stdin(stdout)
+                                .status();
+                        }
+                    }
+                }
+            }
+        }
+        "full" => {
+            println!("==> Capturing full screen to {}...", target_file.display());
+            let _ = Command::new("wayshot")
+                .args(["-f", target_file.to_str().unwrap()])
+                .status();
+
+            if which::which("wl-copy").is_ok() {
+                if let Ok(file) = fs::File::open(&target_file) {
+                    let _ = Command::new("wl-copy").stdin(file).status();
+                }
+            }
+
+            if which::which("notify-send").is_ok() {
+                let _ = Command::new("notify-send")
+                    .args([
+                        "-a",
+                        "Night Desktop",
+                        "Screenshot Captured",
+                        &format!("Saved to {}", target_file.display()),
+                    ])
+                    .status();
+            }
+            println!("✅ Screenshot saved to {}", target_file.display());
+        }
+        "window" => {
+            println!("==> Click window to capture...");
+            let slurp_res = Command::new("slurp").output();
+            if let Ok(output) = slurp_res {
+                let geom = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !geom.is_empty() {
+                    let wayshot = Command::new("wayshot")
+                        .args(["-s", &geom, "--stdout"])
+                        .stdout(Stdio::piped())
+                        .spawn();
+
+                    if let Ok(wayshot_child) = wayshot {
+                        if let Some(stdout) = wayshot_child.stdout {
+                            let _ = Command::new("satty")
+                                .args(["--filename", "-", "--output-filename", target_file.to_str().unwrap()])
+                                .stdin(stdout)
+                                .status();
+                        }
+                    }
+                }
+            }
+        }
+        _ => eprintln!("❌ Unknown screenshot mode '{mode}'. Options: area, full, window"),
+    }
+}
+
+fn task_record() {
+    println!("🎥 Hardware-Accelerated Screen Recording Toggle...");
+    let home = dirs::home_dir().unwrap_or_default();
+    let videos_dir = dirs::video_dir()
+        .unwrap_or_else(|| home.join("Videos"))
+        .join("Recordings");
+    let _ = fs::create_dir_all(&videos_dir);
+
+    let is_running = Command::new("pgrep")
+        .args(["-x", "wl-screenrec"])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    if is_running {
+        println!("==> Stopping screen recording...");
+        let _ = Command::new("pkill")
+            .args(["-SIGINT", "-x", "wl-screenrec"])
+            .status();
+
+        if which::which("notify-send").is_ok() {
+            let _ = Command::new("notify-send")
+                .args([
+                    "-a",
+                    "Night Desktop",
+                    "Screen Recording Saved",
+                    &format!("Video saved to {}", videos_dir.display()),
+                ])
+                .status();
+        }
+        println!("✅ Screen recording stopped.");
+    } else {
+        let ts = Command::new("date")
+            .arg("+%Y-%m-%d_%H-%M-%S")
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+            .unwrap_or_else(|_| "recording".into());
+
+        let target_file = videos_dir.join(format!("Recording_{ts}.mp4"));
+        println!("==> Starting recording to {}...", target_file.display());
+
+        if which::which("notify-send").is_ok() {
+            let _ = Command::new("notify-send")
+                .args([
+                    "-a",
+                    "Night Desktop",
+                    "Screen Recording Started",
+                    &format!("Capturing to {}", target_file.display()),
+                ])
+                .status();
+        }
+
+        let _ = Command::new("wl-screenrec")
+            .args([
+                "--audio",
+                "--encode-resolution",
+                "1920x1080",
+                "-f",
+                target_file.to_str().unwrap(),
+            ])
+            .spawn();
+        println!("✅ Screen recording active in background.");
     }
 }
