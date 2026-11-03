@@ -75,5 +75,11 @@ pub async fn start_all() {
         night_core::gamma::set_temperature(user_cfg.gamma.night_temp);
     }
 
+    // Launch Wayland clipboard history recorder if wl-paste is available
+    if which::which("wl-paste").is_ok() {
+        info!("Starting Wayland clipboard history recorder via wl-paste");
+        spawn_shell("wl-paste --type text --watch nightctl clip-record >/dev/null 2>&1 &");
+    }
+
     info!("Night daemon supervisor initialization finished.");
 }
