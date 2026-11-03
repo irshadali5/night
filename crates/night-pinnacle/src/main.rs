@@ -5,7 +5,6 @@
 use night_core::ipc::{DesktopStatus, IpcCommand, IpcResponse};
 use night_core::{SessionState, UserConfig};
 use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Gathers comprehensive real-time desktop status across active outputs, windows, and tags
 fn current_desktop_status() -> DesktopStatus {
@@ -18,25 +17,38 @@ fn current_desktop_status() -> DesktopStatus {
         .map(|w| format!("{} ({})", w.title(), w.app_id()));
     let output_count = pinnacle_api::output::get_all().count();
 
-    let media_info = if which::which("playerctl").is_ok() {
-        std::process::Command::new("playerctl")
-            .args(["metadata", "--format", "{{artist}} - {{title}}"])
+    let media_info = {
+        let bus_out = std::process::Command::new("sh")
+            .args(["-c", "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{print $1}'); if [ -n \"$target\" ]; then busctl --user get-property \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata 2>/dev/null; elif command -v playerctl >/dev/null 2>&1; then playerctl metadata --format '{{artist}} - {{title}}' 2>/dev/null; fi"])
             .output()
-            .ok()
-            .and_then(|out| {
-                if out.status.success() {
-                    let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                    if !s.is_empty() && s != " - " {
-                        Some(s)
-                    } else {
-                        None
+            .ok();
+        bus_out.and_then(|out| {
+            if out.status.success() {
+                let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if !s.is_empty() && s != " - " {
+                    // If output contains busctl metadata signature, extract title
+                    if s.contains("xesam:title") {
+                        let title = s.lines()
+                            .find(|l| l.contains("xesam:title"))
+                            .and_then(|l| l.split('"').nth(1))
+                            .unwrap_or("");
+                        let artist = s.lines()
+                            .find(|l| l.contains("xesam:artist"))
+                            .and_then(|l| l.split('"').nth(1))
+                            .unwrap_or("");
+                        if !title.is_empty() {
+                            if !artist.is_empty() {
+                                return Some(format!("{artist} - {title}"));
+                            }
+                            return Some(title.to_string());
+                        }
+                    } else if !s.contains("Metadata") {
+                        return Some(s);
                     }
-                } else {
-                    None
                 }
-            })
-    } else {
-        None
+            }
+            None
+        })
     };
 
     let glyph = night_tags::tag_glyph(&state.active_tag);
@@ -68,15 +80,13 @@ fn current_desktop_status() -> DesktopStatus {
 
 async fn config() {
     // -------------------------------------------------------------------------
-    // 1. Initialize Logging & Tracing
+    // 1. Initialize Logging & Desktop Environment
     // -------------------------------------------------------------------------
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "night_pinnacle=info,night_core=info,pinnacle_api=info".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    let _log_guard = night_core::logging::init_logger("night");
+    if let Some(guard) = _log_guard {
+        Box::leak(Box::new(guard));
+    }
+    night_core::exec::ensure_desktop_env();
 
     info!("🌙 Initializing Project Night (Rust Wayland Desktop Environment)...");
 
@@ -449,6 +459,46 @@ async fn config() {
                         }
                     }
                     IpcResponse::SavedSession(saved)
+                }
+                IpcCommand::SetLayoutProfile(name) => {
+                    if let Some(profile) = night_layout::LayoutProfile::parse(&name) {
+                        profile.apply();
+                        night_binds::show_profile_osd(profile.name());
+                        night_core::ipc::broadcast_status(current_desktop_status());
+                        IpcResponse::Profile(profile.name().to_string())
+                    } else {
+                        IpcResponse::Error(format!("Unknown layout profile: {name}"))
+                    }
+                }
+                IpcCommand::ShowOsd(target) => {
+                    match target.to_lowercase().as_str() {
+                        "volume" => {
+                            if let Some(vol) = night_core::audio::get_volume() {
+                                night_binds::show_volume_osd(vol.percentage, vol.is_muted);
+                            }
+                        }
+                        "brightness" => {
+                            if let Some(bl) = night_core::backlight::get_backlight() {
+                                night_binds::show_brightness_osd(bl.percentage);
+                            }
+                        }
+                        "dnd" => {
+                            let dnd = night_core::notifications::NotificationHistory::is_dnd();
+                            night_binds::show_dnd_osd(dnd);
+                        }
+                        "gamma" => {
+                            let temp = night_core::gamma::current_temperature();
+                            night_binds::show_gamma_osd(temp);
+                        }
+                        "layout" => {
+                            let layout = night_layout::current_layout();
+                            night_binds::show_layout_osd(layout.name());
+                        }
+                        _ => {
+                            night_binds::show_profile_osd(&target);
+                        }
+                    }
+                    IpcResponse::Ok
                 }
                 IpcCommand::Subscribe => {
                     IpcResponse::Status(current_desktop_status())
