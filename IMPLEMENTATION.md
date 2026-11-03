@@ -25,6 +25,7 @@ Each technology has been chosen and implemented for its ideal use case:
 | **`night-core`** | Library | `dirs`, `interprocess`, `which`, `shell-words`, `postcard`, `toml`, `serde` | Theme constants, default apps, TOML config, binary session caching, and Unix socket IPC client/server. | 🟢 Active |
 | **`night-daemons`** | Library | `night-core`, `which`, `pinnacle-api` | Supervises background services (`swww`, `ironbar`, `wired`, `swayosd`, `wayidle`) with `$PATH` discovery. | 🟢 Active |
 | **`night-tags`** | Library | `night-core`, `pinnacle-api` | Multi-monitor dynamic tag management ([1..9]) with runtime display hotplug detection. | 🟢 Active |
+| **`night-layout`**| Library | `night-core`, `pinnacle-api` | Dynamic tiling layout engine (MasterStack, Dwindle, Spiral, Fair) with real-time gaps. | 🟢 Active |
 | **`night-rules`** | Library | `night-core`, `serde`, `ron`, `dirs`, `pinnacle-api` | RON-powered declarative window matching rules (auto-floating dialogs, tag assignments). | 🟢 Active |
 | **`night-binds`** | Library | `night-core`, `night-tags`, `pinnacle-api` | Centralized keybindings for apps, directional focus, swap, fullscreen, OSD, screenshots, and mouse drag/resize. | 🟢 Active |
 | **`night-pinnacle`**| Binary | All internal crates + `pinnacle-api` | Main binary orchestrator running `pinnacle_api::main!(config)` with async IPC server. | 🟢 Active |
@@ -42,7 +43,10 @@ Each technology has been chosen and implemented for its ideal use case:
 | **Yofi** | [loki-47-500/yofi](https://github.com/loki-47-500/yofi) | Minimalist pure-Rust launcher bound to `Super + d` in `night-binds`. |
 | **Alacritty** | [alacritty/alacritty](https://github.com/alacritty/alacritty) | Primary terminal bound to `Super + Return` in `night-binds`. |
 | **Rio** | [raphamorim/rio](https://github.com/raphamorim/rio) | Alternative terminal bound to `Super + Shift + Return`. |
-| **Yazi** | [sxyazi/yazi](https://github.com/sxyazi/yazi) | TUI File manager launched in terminal via `Super + e`. |
+| **Favnyr** | [GlitchAwakened/Favnyr](https://github.com/GlitchAwakened/Favnyr) | Rust + Slint UI file manager bound to `Super + e`. |
+| **Yazi** | [sxyazi/yazi](https://github.com/sxyazi/yazi) | TUI File manager launched in terminal via `Super + y`. |
+| **Zen Browser** | [zen-browser.app](https://zen-browser.app/) | Modern focused web browser bound to `Super + b`. |
+| **Brave** | [brave.com](https://brave.com/) | Privacy-focused alternative browser bound to `Super + Shift + b`. |
 | **Wired** | [Toqozz/wired-notify](https://github.com/Toqozz/wired-notify) | Notification daemon started in `night-daemons`. |
 | **SwayOSD** | [ErikReider/SwayOSD](https://github.com/ErikReider/SwayOSD) | Server started in `night-daemons`; volume/brightness keys mapped in `night-binds`. |
 | **swww** | [LGFae/swww](https://github.com/LGFae/swww) | Wallpaper daemon started in `night-daemons`. |
