@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use night_core::ipc::{
     send_command, subscribe_status, DesktopStatus, DpmsAction, IpcCommand, IpcResponse, OutputNav,
 };
+use night_core::theme::ThemeVariant;
 use std::io::{self, Write};
 use std::process::exit;
 
@@ -153,6 +154,68 @@ enum Commands {
 
     /// Reload the compositor configuration
     Reload,
+
+    /// Interactive Tokyo Night snipping tool and screen recorder
+    Snip {
+        /// Optional direct capture mode (region, window, full, copy, record, gif)
+        #[arg(value_enum)]
+        mode: Option<SnipMode>,
+    },
+
+    /// Manage Tokyo Night theme variants (Night, Storm, Moon, Day)
+    Theme {
+        #[command(subcommand)]
+        action: Option<ThemeCommand>,
+    },
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+enum SnipMode {
+    /// Interactive region snip piped to Satty annotation editor
+    Region,
+    /// Snip focused window coordinates
+    Window,
+    /// Full screen screenshot saved to ~/Pictures/Screenshots/
+    Full,
+    /// Full screen screenshot copied directly to clipboard
+    Copy,
+    /// Hardware-accelerated 60fps MP4 recording
+    Record,
+    /// Animated screencast recording saved as GIF
+    Gif,
+}
+
+#[derive(Subcommand, Debug)]
+enum ThemeCommand {
+    /// Set specific Tokyo Night variant
+    Set {
+        /// Variant name: "night", "storm", "moon", "day"
+        #[arg(value_enum)]
+        variant: ThemeVariantArg,
+    },
+    /// Cycle to the next Tokyo Night theme variant
+    Toggle,
+    /// Query active Tokyo Night variant
+    Status,
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+enum ThemeVariantArg {
+    Night,
+    Storm,
+    Moon,
+    Day,
+}
+
+impl From<ThemeVariantArg> for ThemeVariant {
+    fn from(arg: ThemeVariantArg) -> Self {
+        match arg {
+            ThemeVariantArg::Night => ThemeVariant::Night,
+            ThemeVariantArg::Storm => ThemeVariant::Storm,
+            ThemeVariantArg::Moon => ThemeVariant::Moon,
+            ThemeVariantArg::Day => ThemeVariant::Day,
+        }
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -513,6 +576,74 @@ async fn main() {
             run_cmd(IpcCommand::ReloadConfig).await;
             println!("🌙 Configuration reloaded.");
         }
+
+        Commands::Snip { mode } => {
+            match mode {
+                None => {
+                    run_cmd(IpcCommand::ShowSnipping).await;
+                }
+                Some(SnipMode::Region) => {
+                    let cmd = "wayshot -s \"$(slurp)\" --stdout | satty --filename -".to_string();
+                    run_cmd(IpcCommand::Spawn(cmd)).await;
+                }
+                Some(SnipMode::Window) => {
+                    // Triggers the window capture directly through snipping modal
+                    run_cmd(IpcCommand::ShowSnipping).await;
+                }
+                Some(SnipMode::Full) => {
+                    let cmd = "mkdir -p ~/Pictures/Screenshots && wayshot -f ~/Pictures/Screenshots/Screenshot_$(date +%Y-%m-%d_%H-%M-%S).png".to_string();
+                    run_cmd(IpcCommand::Spawn(cmd)).await;
+                    println!("📸 Full screenshot saved to ~/Pictures/Screenshots");
+                }
+                Some(SnipMode::Copy) => {
+                    let cmd = "wayshot --stdout | wl-copy".to_string();
+                    run_cmd(IpcCommand::Spawn(cmd)).await;
+                    println!("📋 Full screenshot copied to clipboard");
+                }
+                Some(SnipMode::Record) => {
+                    let cmd = "mkdir -p ~/Videos/Recordings && wl-screenrec -f ~/Videos/Recordings/rec_$(date +%Y-%m-%d_%H-%M-%S).mp4".to_string();
+                    run_cmd(IpcCommand::Spawn(cmd)).await;
+                    println!("🎥 Recording started: ~/Videos/Recordings (MP4 60fps)");
+                }
+                Some(SnipMode::Gif) => {
+                    let cmd = "mkdir -p ~/Videos/Recordings && wl-screenrec -g \"$(slurp)\" --output-format gif -f ~/Videos/Recordings/rec_$(date +%Y-%m-%d_%H-%M-%S).gif".to_string();
+                    run_cmd(IpcCommand::Spawn(cmd)).await;
+                    println!("🎞️ Animated GIF recording started: ~/Videos/Recordings");
+                }
+            }
+        }
+
+        Commands::Theme { action } => match action {
+            None | Some(ThemeCommand::Status) => match send_command(&IpcCommand::GetTheme).await {
+                Ok(IpcResponse::Theme(v)) => println!("Active Tokyo Night Theme: {}", v.name()),
+                Ok(other) => println!("{other:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(ThemeCommand::Set { variant }) => {
+                let v: ThemeVariant = variant.into();
+                match send_command(&IpcCommand::SetTheme(v)).await {
+                    Ok(IpcResponse::Theme(updated)) => {
+                        println!("🌙 Tokyo Night theme switched to: {}", updated.name());
+                    }
+                    Ok(other) => println!("{other:?}"),
+                    Err(e) => fatal(e),
+                }
+            }
+            Some(ThemeCommand::Toggle) => match send_command(&IpcCommand::GetTheme).await {
+                Ok(IpcResponse::Theme(current)) => {
+                    let next = current.next();
+                    match send_command(&IpcCommand::SetTheme(next)).await {
+                        Ok(IpcResponse::Theme(updated)) => {
+                            println!("🌙 Tokyo Night theme toggled to: {}", updated.name());
+                        }
+                        Ok(other) => println!("{other:?}"),
+                        Err(e) => fatal(e),
+                    }
+                }
+                Ok(other) => println!("{other:?}"),
+                Err(e) => fatal(e),
+            },
+        },
     }
 }
 
@@ -530,13 +661,19 @@ fn fatal(msg: String) -> ! {
 }
 
 fn print_status_table(status: &DesktopStatus) {
+    let glyph = status.active_tag_glyph.as_deref().unwrap_or("󰣆");
+    let theme = status.theme.as_deref().unwrap_or("Night");
     println!("🌙 Night Desktop Environment");
-    println!("  Active Workspace Tag : {}", status.active_tag);
+    println!("  Active Workspace Tag : {} ({glyph})", status.active_tag);
+    println!("  Tokyo Night Theme    : {theme}");
     println!("  Tiling Layout        : {}", status.layout);
     println!("  Gaps (Inner / Outer) : {:.0}px / {:.0}px", status.inner_gaps, status.outer_gaps);
     println!("  Connected Monitors   : {}", status.output_count);
     println!("  Focused Window       : {}", status.active_window.as_deref().unwrap_or("None"));
     println!("  Night Light (Gamma)  : {}K", status.gamma_temp.unwrap_or(6500));
     println!("  Idle Inhibition Mode : {}", if status.inhibited { "☕ Enabled (Sleep Suspended)" } else { "🌙 Normal Power Saving" });
+    if let Some(ref m) = status.media_info {
+        println!("  Media Track          : {m}");
+    }
     println!("  Last Reload (Epoch)  : {}", status.last_reload);
 }
