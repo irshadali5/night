@@ -3337,6 +3337,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "night-session"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "which",
+]
+
+[[package]]
 name = "night-settings"
 version = "0.1.0"
 dependencies = [
