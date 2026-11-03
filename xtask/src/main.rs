@@ -123,6 +123,15 @@ enum MsgCommand {
     Launcher,
     /// Queries network connectivity status
     Net,
+    /// Queries real-time hardware performance metrics (CPU, RAM, Temp, Disk)
+    Top,
+    /// Queries Bluetooth controller and connected wireless peripherals
+    Bt,
+    /// Manages audio output sinks (headphones, speakers, HDMI, USB DAC)
+    Sink {
+        /// Optional action: "list", "cycle", "menu", or ID number
+        action: Option<String>,
+    },
     /// Sets or queries desktop wallpaper via swww
     Wallpaper {
         /// Optional path to wallpaper file
@@ -565,6 +574,16 @@ async fn task_msg(command: MsgCommand) {
         MsgCommand::Power => night_core::ipc::IpcCommand::GetBattery,
         MsgCommand::Launcher => night_core::ipc::IpcCommand::ShowLauncher,
         MsgCommand::Net => night_core::ipc::IpcCommand::GetNetwork,
+        MsgCommand::Top => night_core::ipc::IpcCommand::GetSystemStats,
+        MsgCommand::Bt => night_core::ipc::IpcCommand::GetBluetooth,
+        MsgCommand::Sink { action } => match action.as_deref() {
+            Some("cycle") | Some("next") => night_core::ipc::IpcCommand::CycleAudioSink,
+            Some("menu") => night_core::ipc::IpcCommand::ShowAudioSinkMenu,
+            Some(id_str) if id_str.parse::<u32>().is_ok() => {
+                night_core::ipc::IpcCommand::SetAudioSink(id_str.parse::<u32>().unwrap())
+            }
+            _ => night_core::ipc::IpcCommand::GetAudioSinks,
+        },
         MsgCommand::Wallpaper { path } => {
             if let Some(p) = path {
                 night_core::ipc::IpcCommand::Spawn(format!("swww img \"{p}\" --transition-type wipe --transition-duration 1.5"))
@@ -611,6 +630,12 @@ async fn task_msg(command: MsgCommand) {
             if let Some(ref n) = s.network {
                 println!("  Network Connectivity : {}", n.display_string());
             }
+            if let Some(ref sys) = s.system {
+                println!("  System Resources     : CPU: {}% | RAM: {}% ({:.1}/{:.1} GiB)", sys.cpu_pct, sys.mem_pct, sys.mem_used_mb as f32 / 1024.0, sys.mem_total_mb as f32 / 1024.0);
+            }
+            if let Some(ref bt) = s.bluetooth {
+                println!("  Bluetooth Status     : {}", bt.display_string());
+            }
             println!("  Last Reload Timestamp: {}", s.last_reload);
         }
         Ok(night_core::ipc::IpcResponse::Battery(Some(bat))) => {
@@ -642,6 +667,41 @@ async fn task_msg(command: MsgCommand) {
         }
         Ok(night_core::ipc::IpcResponse::Network(None)) => {
             println!("🌐 Network: Disconnected / No active interface");
+        }
+        Ok(night_core::ipc::IpcResponse::SystemStats(s)) => {
+            println!("🌙 Tokyo Night System Resource Monitor:");
+            println!("   CPU Usage    : {}%", s.cpu_pct);
+            println!("  󰍛 Memory (RAM) : {:.1} / {:.1} GiB ({}%)", s.mem_used_mb as f32 / 1024.0, s.mem_total_mb as f32 / 1024.0, s.mem_pct);
+            println!("  󰋊 Root Disk    : {} / {} GiB ({}%)", s.disk_used_gb, s.disk_total_gb, s.disk_pct);
+            if let Some(t) = s.cpu_temp_c {
+                println!("  󰔏 Temperature  : {}°C", t);
+            }
+        }
+        Ok(night_core::ipc::IpcResponse::Bluetooth(Some(bt))) => {
+            println!("󰂯 Bluetooth Status: {}", bt.display_string());
+            println!("  Powered   : {}", if bt.is_powered { "Yes" } else { "No" });
+            println!("  Connected : {}", if bt.is_connected { "Yes" } else { "No" });
+            if !bt.devices.is_empty() {
+                println!("  Connected Wireless Peripherals:");
+                for dev in &bt.devices {
+                    let bat = dev.battery_pct.map(|b| format!("({b}%)")).unwrap_or_default();
+                    println!("    {} {:<28} {} [{}]", dev.icon, dev.name, bat, dev.mac);
+                }
+            }
+        }
+        Ok(night_core::ipc::IpcResponse::Bluetooth(None)) => {
+            println!("󰂲 Bluetooth: Controller not detected or uninitialized");
+        }
+        Ok(night_core::ipc::IpcResponse::AudioSinks(sinks)) => {
+            println!("🔊 Audio Output Sinks (PipeWire / PulseAudio):");
+            if sinks.is_empty() {
+                println!("  No active audio output sinks found.");
+            } else {
+                for sink in sinks {
+                    let marker = if sink.is_default { "▶ [ACTIVE]" } else { "          " };
+                    println!("  {} [{}] {} {}", marker, sink.id, sink.icon(), sink.name);
+                }
+            }
         }
         Ok(resp) => println!("✅ Response: {resp:?}"),
         Err(e) => {
