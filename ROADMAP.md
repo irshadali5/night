@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout & Theme] [Signals & Packaging]
 ```
 
 ---
@@ -107,3 +107,19 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Pure-Rust theme generator in `cargo xtask theme`.
   * [x] Generates matching configurations for external suite: `alacritty.toml`, `ironbar.css`, `anyrun.css`, `veila.toml`.
   * [x] Automatically deployed to user config paths on `cargo xtask install`.
+
+---
+
+### Phase 7: Compositor Lifecycle Signals, System Doctor & Session Packaging
+* [x] **Real-time Signal Integration (`pinnacle_api::signal`)**:
+  * [x] Hooked `TagSignal::Active` in `night-tags` to continuously synchronize binary session state on tag switch events.
+* [x] **Desktop Environment & Suite Doctor (`cargo xtask doctor`)**:
+  * [x] Pure-Rust diagnostic tool checking presence of all 18 tools in the 100% Rust-native desktop suite.
+  * [x] Validates configuration paths and Wayland session environment variables (`WAYLAND_DISPLAY`, `XDG_SESSION_TYPE`).
+  * [x] Emits consolidated, copy-pasteable Arch Linux `yay -S --needed ...` command for missing packages.
+* [x] **Wayland Session Packaging & Launcher (`assets/`)**:
+  * [x] Created `assets/night.desktop` for login display managers (GDM, SDDM, Ly, greetd).
+  * [x] Created `assets/night-session` launcher script with pure-Wayland toolkit environment variables.
+  * [x] Implemented `cargo xtask session` to install session files to `~/.cargo/bin` and wayland-sessions.
+* [x] **Comprehensive Status Reporting (`cargo xtask msg status`)**:
+  * [x] Added `GetStatus` IPC query returning `DesktopStatus` (active tag, layout, inner/outer gaps, connected monitor count, focused window title).
