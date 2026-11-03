@@ -1952,4 +1952,5 @@ dependencies = [
  "dirs",
  "night-core",
  "tokio",
+ "which",
 ]
