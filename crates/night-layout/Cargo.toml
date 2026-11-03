@@ -1,0 +1,15 @@
+[package]
+name = "night-layout"
+description = "Dynamic layout engine and gaps management for the Night desktop environment"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+night-core.workspace = true
+pinnacle-api.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+serde.workspace = true
+
