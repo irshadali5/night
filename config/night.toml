@@ -1,0 +1,17 @@
+# 🌙 Project Night - User Configuration (TOML Format)
+# Best used for human-editable, top-level settings and desktop defaults.
+# Stored at: ~/.config/night/night.toml
+
+[general]
+autostart_daemons = true
+default_tag = "1"
+border_width = 2
+# primary_monitor = "eDP-1"
+
+[apps]
+terminal = "alacritty"
+alt_terminal = "rio"
+launcher = "anyrun"
+minimal_launcher = "yofi"
+file_manager = "yazi"
+
