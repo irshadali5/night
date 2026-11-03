@@ -3285,7 +3285,9 @@ dependencies = [
 name = "night-daemons"
 version = "0.1.0"
 dependencies = [
+ "dirs",
  "night-core",
+ "night-rules",
  "pinnacle-api",
  "tokio",
  "tracing",
