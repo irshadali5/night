@@ -1,0 +1,44 @@
+// 🌙 Tokyo Night Monitor & Display Profiles
+// Declarative RON configuration for physical display connectors.
+// Defines resolution, refresh rate, HiDPI scaling, global coordinates, and VRR per monitor.
+
+[
+    // Internal laptop display or primary monitor (scaled 1.0, 1080p @ 60Hz)
+    MonitorProfile(
+        name: "eDP-1",
+        scale: Some(1.0),
+        mode: Some(MonitorMode(
+            width: 1920,
+            height: 1080,
+            refresh_rate_hz: Some(60),
+        )),
+        position: Some(MonitorPosition(x: 0, y: 0)),
+        transform: Some(Normal),
+        vrr: Some(Off),
+    ),
+
+    // High-refresh external gaming / creative monitor (1440p @ 144Hz, positioned to the right)
+    MonitorProfile(
+        name: "DP-1",
+        scale: Some(1.25),
+        mode: Some(MonitorMode(
+            width: 2560,
+            height: 1440,
+            refresh_rate_hz: Some(144),
+        )),
+        position: Some(MonitorPosition(x: 1920, y: 0)),
+        transform: Some(Normal),
+        vrr: Some(OnDemand),
+    ),
+
+    // Wildcard fallback configuration for any unlisted or hotplugged display
+    MonitorProfile(
+        name: "*",
+        scale: Some(1.0),
+        mode: None,
+        position: None,
+        transform: Some(Normal),
+        vrr: Some(Off),
+    ),
+]
+
