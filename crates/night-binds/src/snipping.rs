@@ -62,7 +62,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SnippingModal 
             (" [R]", "󰩭  Snip Region & Annotate", "slurp selection piped to satty editor"),
             (" [W]", "󰖯  Snip Focused Window", "auto-crops active window coordinates"),
             (" [F]", "󰹑  Full Screen to File", "saved to ~/Pictures/Screenshot_..."),
-            (" [C]", "󰅍  Full Screen to Clipboard", "direct copy via wl-copy"),
+            (" [C]", "󰅍  Full Screen to Clipboard", "direct copy via rsclip"),
             (" [V]", "󰕧  Record Screen (MP4 60fps)", "hardware accelerated wl-screenrec"),
             (" [G]", "󰈫  Record Region as GIF", "animated screencast via wl-screenrec"),
         ];
