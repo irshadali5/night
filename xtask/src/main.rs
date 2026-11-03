@@ -9,7 +9,8 @@ use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 use std::process::{Command, exit};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut args = env::args().skip(1);
     let task = args.next().unwrap_or_else(|| "help".to_string());
 
@@ -21,6 +22,7 @@ fn main() {
         "build" => task_build(&root_dir),
         "run" => task_run(&root_dir),
         "uninstall" => task_uninstall(&root_dir),
+        "msg" | "ctl" => task_msg(args.collect()).await,
         "help" | "--help" | "-h" => print_help(),
         other => {
             eprintln!("Unknown task: '{other}'. Run `cargo xtask help` for usage.");
@@ -144,6 +146,46 @@ fn task_uninstall(_root: &Path) {
     println!("✅ Night uninstalled.");
 }
 
+async fn task_msg(args: Vec<String>) {
+    if args.is_empty() {
+        eprintln!("Usage: cargo xtask msg <reload|switch-tag <TAG>|state|spawn <CMD>|close>");
+        exit(1);
+    }
+
+    let cmd = match args[0].as_str() {
+        "reload" => night_core::ipc::IpcCommand::ReloadConfig,
+        "switch-tag" => {
+            if args.len() < 2 {
+                eprintln!("Error: 'switch-tag' requires a tag name (e.g. `cargo xtask msg switch-tag 2`)");
+                exit(1);
+            }
+            night_core::ipc::IpcCommand::SwitchTag(args[1].clone())
+        }
+        "state" => night_core::ipc::IpcCommand::QueryState,
+        "spawn" => {
+            if args.len() < 2 {
+                eprintln!("Error: 'spawn' requires a command string (e.g. `cargo xtask msg spawn alacritty`)");
+                exit(1);
+            }
+            night_core::ipc::IpcCommand::Spawn(args[1..].join(" "))
+        }
+        "close" => night_core::ipc::IpcCommand::CloseFocused,
+        other => {
+            eprintln!("Unknown IPC command: '{other}'");
+            exit(1);
+        }
+    };
+
+    println!("📡 Sending IPC command to Night: {cmd:?}");
+    match night_core::ipc::send_command(&cmd).await {
+        Ok(resp) => println!("✅ Response: {resp:?}"),
+        Err(e) => {
+            eprintln!("❌ Failed to deliver command: {e}");
+            exit(1);
+        }
+    }
+}
+
 fn print_help() {
     println!(
         r#"🌙 Night Workspace Task Runner (cargo xtask)
@@ -156,6 +198,7 @@ SUBCOMMANDS:
     check        Runs `cargo check` across all workspace crates
     build        Builds `night-pinnacle` in release mode
     run          Builds and launches the Pinnacle compositor
+    msg <CMD>    Sends IPC command to running Night session (reload, switch-tag, state, spawn, close)
     uninstall    Removes the installed binary and config symlink
     help         Prints this help message
 "#
