@@ -14,7 +14,7 @@ use pinnacle_api::experimental::snowcap_api::widget::{
     Alignment, Background, Length, Padding, WidgetDef,
 };
 use pinnacle_api::Keysym;
-use night_core::exec::spawn_shell;
+use night_core::exec::{resolve_executable, spawn_shell};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::info;
@@ -104,7 +104,7 @@ pub fn scan_desktop_applications() -> Vec<AppEntry> {
     ];
 
     for (name, bin, comment, is_term) in priority_names {
-        if which::which(bin).is_ok() {
+        if resolve_executable(bin).is_some() {
             if let Some(idx) = apps.iter().position(|a| a.name.eq_ignore_ascii_case(name)) {
                 let app = apps.remove(idx);
                 prioritized.push(app);
