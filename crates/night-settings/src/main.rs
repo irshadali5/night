@@ -130,6 +130,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     } else {
                         u.set_network_status("Offline".into());
                     }
+                    if let Some(ref bt) = status.bluetooth {
+                        u.set_bluetooth_status(bt.display_string().into());
+                    } else {
+                        u.set_bluetooth_status("Off".into());
+                    }
+                    if let Some(ref sys) = status.system {
+                        u.set_cpu_pct(sys.cpu_pct as f32);
+                        u.set_cpu_label(format!("{}%", sys.cpu_pct).into());
+                        u.set_mem_pct(sys.mem_pct as f32);
+                        u.set_mem_label(format!("{:.1} / {:.1} GiB ({}%)", sys.mem_used_mb as f32 / 1024.0, sys.mem_total_mb as f32 / 1024.0, sys.mem_pct).into());
+                    }
                     if let Some(ref vol) = status.volume {
                         u.set_volume_level(vol.percentage as f32);
                         u.set_audio_volume(vol.display_string().into());

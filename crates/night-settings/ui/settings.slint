@@ -118,6 +118,11 @@ export component SettingsWindow inherits Window {
     in-out property <string> media-track: "No Media Playing";
     in-out property <string> battery-status: "AC Power";
     in-out property <string> network-status: "Offline";
+    in-out property <string> bluetooth-status: "Off";
+    in-out property <float> cpu-pct: 0.0;
+    in-out property <string> cpu-label: "0%";
+    in-out property <float> mem-pct: 0.0;
+    in-out property <string> mem-label: "0 / 0 GiB";
     in-out property <string> audio-volume: "50%";
     in-out property <float> volume-level: 50.0;
 
@@ -1044,6 +1049,21 @@ export component SettingsWindow inherits Window {
                                     }
                                 }
 
+                                HorizontalLayout {
+                                    Text {
+                                        text: "Bluetooth Wireless:";
+                                        color: #c0caf5;
+                                        font-size: 13px;
+                                    }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    Text {
+                                        text: root.bluetooth-status;
+                                        color: #bb9af7;
+                                        font-size: 13px;
+                                        font-weight: 600;
+                                    }
+                                }
+
                                 VerticalLayout {
                                     spacing: 6px;
                                     HorizontalLayout {
@@ -1067,6 +1087,68 @@ export component SettingsWindow inherits Window {
                                         changed(val) => {
                                             root.volume-level = val;
                                             root.set-volume(val);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Live Hardware Performance: CPU & RAM Meters
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: " Hardware Performance (Procfs)";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                VerticalLayout {
+                                    spacing: 4px;
+                                    HorizontalLayout {
+                                        Text { text: "CPU Utilization:"; color: #c0caf5; font-size: 13px; }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text { text: root.cpu-label; color: #7dcfff; font-size: 13px; font-weight: 600; }
+                                    }
+                                    Rectangle {
+                                        height: 8px;
+                                        background: #1a1b26;
+                                        border-radius: 4px;
+                                        Rectangle {
+                                            x: 0;
+                                            width: parent.width * (root.cpu-pct / 100.0);
+                                            height: 8px;
+                                            background: #7aa2f7;
+                                            border-radius: 4px;
+                                        }
+                                    }
+                                }
+
+                                VerticalLayout {
+                                    spacing: 4px;
+                                    HorizontalLayout {
+                                        Text { text: "Memory (RAM):"; color: #c0caf5; font-size: 13px; }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text { text: root.mem-label; color: #9ece6a; font-size: 13px; font-weight: 600; }
+                                    }
+                                    Rectangle {
+                                        height: 8px;
+                                        background: #1a1b26;
+                                        border-radius: 4px;
+                                        Rectangle {
+                                            x: 0;
+                                            width: parent.width * (root.mem-pct / 100.0);
+                                            height: 8px;
+                                            background: #73daca;
+                                            border-radius: 4px;
                                         }
                                     }
                                 }
