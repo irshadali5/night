@@ -13,12 +13,17 @@ pub mod audio_ui;
 pub mod clipboard_ui;
 pub mod launcher;
 pub mod notifications_ui;
+pub mod osd;
 pub mod snipping;
 pub mod switcher;
 pub use audio_ui::show_audio_sink_modal;
 pub use clipboard_ui::show_clipboard_modal;
 pub use launcher::{scan_desktop_applications, show_launcher_modal, AppEntry};
 pub use notifications_ui::show_notifications_modal;
+pub use osd::{
+    show_brightness_osd, show_dnd_osd, show_gamma_osd, show_layout_osd, show_osd,
+    show_profile_osd, show_volume_osd, OsdKind,
+};
 pub use snipping::show_snipping_modal;
 pub use switcher::show_window_switcher;
 
@@ -141,7 +146,26 @@ pub fn register_all() {
 
     // Super + Tab -> Cycle Tiling Layout (MasterStack -> Dwindle -> Spiral -> Fair)
     input::keybind(Mod::SUPER, "Tab").on_press(|| {
-        night_layout::cycle_layout();
+        let next = night_layout::cycle_layout();
+        show_layout_osd(next.name());
+    });
+
+    // Super + Alt + [1..4] -> Direct Workspace Layout Profiles
+    input::keybind(Mod::SUPER | Mod::ALT, '1').on_press(|| {
+        night_layout::LayoutProfile::Coding.apply();
+        show_profile_osd("Coding");
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, '2').on_press(|| {
+        night_layout::LayoutProfile::Reading.apply();
+        show_profile_osd("Reading");
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, '3').on_press(|| {
+        night_layout::LayoutProfile::Multitasking.apply();
+        show_profile_osd("Multitasking");
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, '4').on_press(|| {
+        night_layout::LayoutProfile::Ultrawide.apply();
+        show_profile_osd("Ultrawide");
     });
 
     // Super + equal -> Increase Gaps
@@ -335,16 +359,25 @@ pub fn register_all() {
     // Volume Up
     input::keybind(Mod::empty(), "XF86AudioRaiseVolume").on_press(|| {
         night_core::audio::handle_volume_action(night_core::audio::VolumeAction::Raise(5));
+        if let Some(vol) = night_core::audio::get_volume() {
+            show_volume_osd(vol.percentage, vol.is_muted);
+        }
     });
 
     // Volume Down
     input::keybind(Mod::empty(), "XF86AudioLowerVolume").on_press(|| {
         night_core::audio::handle_volume_action(night_core::audio::VolumeAction::Lower(5));
+        if let Some(vol) = night_core::audio::get_volume() {
+            show_volume_osd(vol.percentage, vol.is_muted);
+        }
     });
 
     // Audio Mute Toggle
     input::keybind(Mod::empty(), "XF86AudioMute").on_press(|| {
         night_core::audio::handle_volume_action(night_core::audio::VolumeAction::MuteToggle);
+        if let Some(vol) = night_core::audio::get_volume() {
+            show_volume_osd(vol.percentage, vol.is_muted);
+        }
     });
 
     // Super + Shift + a -> Audio Output Sink Switcher Modal
@@ -360,11 +393,17 @@ pub fn register_all() {
     // Brightness Up
     input::keybind(Mod::empty(), "XF86MonBrightnessUp").on_press(|| {
         night_core::backlight::handle_backlight_action(night_core::backlight::BacklightAction::Raise(5));
+        if let Some(bl) = night_core::backlight::get_backlight() {
+            show_brightness_osd(bl.percentage);
+        }
     });
 
     // Brightness Down
     input::keybind(Mod::empty(), "XF86MonBrightnessDown").on_press(|| {
         night_core::backlight::handle_backlight_action(night_core::backlight::BacklightAction::Lower(5));
+        if let Some(bl) = night_core::backlight::get_backlight() {
+            show_brightness_osd(bl.percentage);
+        }
     });
 
     // MPRIS Media Controls (Vivi & System Players)
@@ -545,15 +584,11 @@ pub fn handle_media_action(action: night_core::ipc::MediaAction) {
         MediaAction::Query => return,
     };
 
-    if which::which("playerctl").is_ok() {
-        spawn_shell(&format!("playerctl {p_cmd} 2>/dev/null"));
-    } else {
-        // Pure-Rust / systemd busctl fallback to any active MPRIS player (including Vivi)
-        let bus_cmd = format!(
-            "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{{print $1}}'); [ -n \"$target\" ] && busctl --user call \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player {bus_method} 2>/dev/null"
-        );
-        spawn_shell(&bus_cmd);
-    }
+    // Pure D-Bus / systemd busctl dispatch to any active MPRIS player (including Vivi)
+    let bus_cmd = format!(
+        "target=$(busctl --user list 2>/dev/null | grep org.mpris.MediaPlayer2 | head -n1 | awk '{{print $1}}'); if [ -n \"$target\" ]; then busctl --user call \"$target\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player {bus_method} 2>/dev/null; elif command -v playerctl >/dev/null 2>&1; then playerctl {p_cmd} 2>/dev/null; fi"
+    );
+    spawn_shell(&bus_cmd);
 }
 
 /// Displays the interactive Tokyo Night keybinding cheatsheet overlay via Snowcap
