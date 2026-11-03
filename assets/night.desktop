@@ -1,8 +1,7 @@
 [Desktop Entry]
 Name=Night
 Comment=Minimalist, keyboard-driven Rust Wayland Desktop Environment powered by Pinnacle
-Exec=night-session
+Exec=/usr/local/bin/night-session
 Type=Application
-DesktopNames=pinnacle;night
+DesktopNames=pinnacle;night;
 Keywords=wayland;compositor;rust;tiling;
-

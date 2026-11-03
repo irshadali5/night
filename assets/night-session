@@ -1,12 +1,52 @@
-#!/bin/sh
+#!/bin/bash
 # 🌙 Night Wayland Desktop Environment Launcher
-# Sets standard Wayland environment variables and launches Pinnacle.
+# Sets standard Wayland environment variables and manages the Pinnacle/Night session lifecycle.
+
+# Redirect all session launcher stdout & stderr to a dedicated log for complete debugging
+exec >> /tmp/night-session.log 2>&1
+echo "================================================================================"
+echo "🌙 Night Session Starting: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "User: $(whoami) (UID: $(id -u)) | Shell: $SHELL"
+echo "Invoked as: $0 $*"
+echo "Initial PATH: $PATH"
+echo "================================================================================"
+
+# If not running as a login shell, re-exec with a login shell to load user environment
+if [ -n "$SHELL" ] &&
+   grep -q "$SHELL" /etc/shells &&
+   ! (echo "$SHELL" | grep -q "false") &&
+   ! (echo "$SHELL" | grep -q "nologin"); then
+  if [ "$1" != '-l' ]; then
+    echo "Re-execing with login shell: $SHELL -l"
+    exec bash -c "exec -l '$SHELL' -c '$0 -l $*'"
+  else
+    shift
+  fi
+fi
+
+# Ensure user and system PATH are comprehensively available
+export HOME="${HOME:-/home/irshad}"
+export USER="${USER:-irshad}"
+export PATH="$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+
+# Ensure critical state and cache directories exist before starting
+mkdir -p "$HOME/.local/state/pinnacle" \
+         "$HOME/.local/share/night" \
+         "$HOME/.config/night" \
+         "$HOME/.config/pinnacle" \
+         "$HOME/.config/systemd/user" \
+         "$HOME/.config/xdg-desktop-portal"
+
+# Clear out any leftover greeter display sockets so Pinnacle defaults to Udev/DRM backend
+unset WAYLAND_DISPLAY
+unset WAYLAND_SOCKET
+unset DISPLAY
 
 export XDG_CURRENT_DESKTOP=pinnacle:night
 export XDG_SESSION_TYPE=wayland
 export XDG_SESSION_DESKTOP=night
 
-# Force pure Wayland backends
+# Hardware acceleration & Wayland native toolkit backends
 export MOZ_ENABLE_WAYLAND=1
 export QT_QPA_PLATFORM=wayland
 export GDK_BACKEND=wayland,x11,*
@@ -14,6 +54,49 @@ export CLUTTER_BACKEND=wayland
 export SDL_VIDEODRIVER=wayland
 export _JAVA_AWT_WM_NONREPARENTING=1
 
-# Execute Pinnacle compositor
-exec pinnacle
+echo "Prepared environment for Pinnacle."
+echo "Resolved pinnacle binary: $(which pinnacle || echo '/usr/local/bin/pinnacle')"
+echo "Resolved night-pinnacle binary: $(which night-pinnacle || echo '/usr/local/bin/night-pinnacle')"
 
+# Try systemd user session manager first (standard on Arch Linux / greetd)
+if hash systemctl >/dev/null 2>&1; then
+    echo "systemd detected; checking user units..."
+
+    # Reset any previously failed units
+    systemctl --user reset-failed 2>/dev/null || true
+
+    # Import environment into systemd user manager
+    systemctl --user import-environment \
+        PATH HOME USER \
+        XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP \
+        MOZ_ENABLE_WAYLAND QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER _JAVA_AWT_WM_NONREPARENTING 2>/dev/null || true
+
+    # Update DBus activation environment
+    if hash dbus-update-activation-environment 2>/dev/null; then
+        dbus-update-activation-environment --all 2>/dev/null || true
+    fi
+
+    # Check if night.service or pinnacle.service is available
+    if systemctl --user list-unit-files night.service 2>/dev/null | grep -q "night.service" || \
+       [ -f "$HOME/.config/systemd/user/night.service" ] || \
+       [ -f "/usr/lib/systemd/user/night.service" ]; then
+        echo "Starting night.service via systemctl --user --wait..."
+        systemctl --user --wait start night.service
+    elif systemctl --user list-unit-files pinnacle.service 2>/dev/null | grep -q "pinnacle.service" || \
+         [ -f "$HOME/.config/systemd/user/pinnacle.service" ] || \
+         [ -f "/usr/lib/systemd/user/pinnacle.service" ]; then
+        echo "Starting pinnacle.service via systemctl --user --wait..."
+        systemctl --user --wait start pinnacle.service
+    else
+        echo "No systemd unit found, executing pinnacle directly with --session..."
+        exec /home/irshad/.cargo/bin/pinnacle --session
+    fi
+
+    echo "Compositor exited. Tearing down session..."
+    systemctl --user start --job-mode=replace-irreversibly night-shutdown.target 2>/dev/null || true
+    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP PINNACLE_GRPC_SOCKET 2>/dev/null || true
+    echo "🌙 Night Session Exited Cleanly: $(date '+%Y-%m-%d %H:%M:%S')"
+else
+    echo "No systemd detected; running pinnacle directly..."
+    exec /home/irshad/.cargo/bin/pinnacle --session
+fi
