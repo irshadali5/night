@@ -8,6 +8,18 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{UnixListener, UnixStream};
 use tracing::{error, info, warn};
 
+/// Comprehensive real-time desktop status
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DesktopStatus {
+    pub active_tag: String,
+    pub layout: String,
+    pub inner_gaps: f32,
+    pub outer_gaps: f32,
+    pub active_window: Option<String>,
+    pub output_count: usize,
+    pub last_reload: u64,
+}
+
 /// Desktop IPC Request Commands
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IpcCommand {
@@ -27,14 +39,17 @@ pub enum IpcCommand {
     AdjustGaps(f32),
     /// Queries current active layout name
     GetLayout,
+    /// Queries full desktop status
+    GetStatus,
 }
 
 /// Desktop IPC Response
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IpcResponse {
     Ok,
     State(SessionState),
     Layout(String),
+    Status(DesktopStatus),
     Error(String),
 }
 
