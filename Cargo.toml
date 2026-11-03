@@ -9,6 +9,7 @@ members = [
     "crates/night-binds",
     "crates/night-rules",
     "crates/night-pinnacle",
+    "crates/night-ctl",
 ]
 
 [workspace.package]
