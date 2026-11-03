@@ -815,6 +815,7 @@ dependencies = [
  "interprocess",
  "pinnacle-api",
  "postcard",
+ "ron",
  "serde",
  "shell-words",
  "thiserror 2.0.21",
