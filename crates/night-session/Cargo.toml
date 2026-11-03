@@ -11,6 +11,10 @@ name = "night-session"
 path = "src/main.rs"
 
 [dependencies]
+night-core.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+clap.workspace = true
 dirs.workspace = true
 which.workspace = true
 

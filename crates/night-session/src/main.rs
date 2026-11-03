@@ -1,53 +1,135 @@
-//! 🌙 night-session: Pure-Rust Native Wayland Desktop Environment Launcher
+//! 🌙 night-session: Pure-Rust Native Wayland Desktop Environment Session Manager
 //! Replaces legacy shell scripts with a compiled, memory-safe ELF binary.
-//! Manages display manager session initialization, systemd user integration, and teardown.
+//! Manages display manager session initialization, systemd user integration,
+//! screen locking, graceful teardown, and signal handling.
 
+use clap::{Parser, Subcommand};
+use night_core::config::UserConfig;
+use night_core::exec::{ensure_desktop_env, resolve_executable, spawn_shell};
+use night_core::logging::init_logger;
 use std::env;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::PathBuf;
 use std::process::{exit, Command, Stdio};
-use std::time::{SystemTime, UNIX_EPOCH};
+use tracing::{error, info, warn};
 
-fn log(msg: &str) {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let line = format!("[night-session:{now}] {msg}\n");
-    print!("{line}");
+#[derive(Parser, Debug)]
+#[command(
+    name = "night-session",
+    author = "Night Desktop Team",
+    version,
+    about = "🌙 Pure-Rust Native Wayland Desktop Environment Session Manager",
+    long_about = "Manages the lifecycle of Project Night under display managers (greetd, Ly, GDM, SDDM) or TTY.\nHandles environment propagation, systemd user session coordination, screen locking, and teardown."
+)]
+struct Cli {
+    #[command(subcommand)]
+    action: Option<SessionSubcommand>,
+}
 
-    // Log to ~/.local/state/night/logs/session.log and /tmp/night-session.log for foolproof diagnostics
-    let state_log = dirs::state_dir()
-        .map(|d| d.join("night/logs/session.log"))
-        .unwrap_or_else(|| PathBuf::from("/tmp/night-session.log"));
-    if let Some(parent) = state_log.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    for target in [&state_log, &PathBuf::from("/tmp/night-session.log")] {
-        if let Ok(mut file) = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(target)
-        {
-            let _ = file.write_all(line.as_bytes());
-        }
+#[derive(Subcommand, Debug)]
+enum SessionSubcommand {
+    /// Launch the Wayland desktop environment session (default)
+    Run,
+    /// Immediately lock the desktop session using the configured screen locker (Veila)
+    Lock,
+    /// Gracefully terminate and tear down the desktop session
+    #[command(alias = "exit")]
+    Logout,
+    /// Query the status of the active desktop session and compositor
+    Status,
+}
+
+#[tokio::main]
+async fn main() {
+    let _log_guard = init_logger("session");
+    ensure_desktop_env();
+
+    let cli = Cli::parse();
+    match cli.action.unwrap_or(SessionSubcommand::Run) {
+        SessionSubcommand::Run => run_session().await,
+        SessionSubcommand::Lock => lock_session(),
+        SessionSubcommand::Logout => logout_session(),
+        SessionSubcommand::Status => print_session_status(),
     }
 }
 
-fn main() {
-    log("================================================================================");
-    log("🌙 Starting Project Night Desktop Environment (Pure-Rust Session Launcher)...");
+/// Immediately triggers the configured screen locker
+fn lock_session() {
+    let cfg = UserConfig::load();
+    let lock_cmd = cfg.apps.lock_cmd;
+    info!(cmd = %lock_cmd, "night-session: Locking active session");
+    spawn_shell(&lock_cmd);
+}
 
-    let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/home/irshad"));
-    let user = env::var("USER").unwrap_or_else(|_| "irshad".into());
-    log(&format!("Running as User: {user} | HOME: {}", home.display()));
+/// Gracefully terminates and tears down the active desktop session
+fn logout_session() {
+    info!("night-session: Initiating graceful desktop session logout");
+    teardown_session();
+
+    // If nightctl is available, send quit command to compositor
+    let _ = Command::new("nightctl")
+        .args(["msg", "close"])
+        .status();
+
+    exit(0);
+}
+
+/// Displays live session diagnostics
+fn print_session_status() {
+    println!("🌙 Project Night Session Status");
+    println!("  User                 : {}", env::var("USER").unwrap_or_else(|_| "unknown".into()));
+    println!("  Home Directory       : {}", dirs::home_dir().map(|h| h.display().to_string()).unwrap_or_default());
+    println!("  XDG_CURRENT_DESKTOP  : {}", env::var("XDG_CURRENT_DESKTOP").unwrap_or_else(|_| "unset".into()));
+    println!("  XDG_SESSION_TYPE     : {}", env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "unset".into()));
+    println!("  WAYLAND_DISPLAY      : {}", env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "none".into()));
+
+    let socket = dirs::runtime_dir().map(|r| r.join("night.sock"));
+    if let Some(ref s) = socket {
+        println!("  IPC Socket Path      : {} ({})", s.display(), if s.exists() { "ACTIVE" } else { "OFFLINE" });
+    }
+
+    if let Ok(output) = Command::new("systemctl").args(["--user", "is-active", "night.service"]).output() {
+        let status = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        println!("  systemd night.service: {}", if status.is_empty() { "inactive/not installed" } else { &status });
+    }
+}
+
+/// Performs complete graphical session teardown and unsets environment variables
+fn teardown_session() {
+    info!("Tearing down graphical user session...");
+
+    if which::which("systemctl").is_ok() {
+        let _ = Command::new("systemctl")
+            .args(["--user", "start", "--job-mode=replace-irreversibly", "night-shutdown.target"])
+            .output();
+
+        let _ = Command::new("systemctl")
+            .args([
+                "--user",
+                "unset-environment",
+                "WAYLAND_DISPLAY",
+                "DISPLAY",
+                "XDG_SESSION_TYPE",
+                "XDG_CURRENT_DESKTOP",
+                "PINNACLE_GRPC_SOCKET",
+            ])
+            .output();
+    }
+
+    info!("🌙 Project Night Desktop Session Finished Cleanly.");
+}
+
+/// Launches and supervises the full Wayland desktop session
+async fn run_session() {
+    info!("================================================================================");
+    info!("🌙 Starting Project Night Desktop Environment (Pure-Rust Session Manager)...");
+
+    let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
+    let user = env::var("USER").unwrap_or_else(|_| "user".into());
+    info!(user = %user, home = %home.display(), "Initializing user session");
 
     // 1. Ensure user and system PATH are comprehensively available
-    let cargo_bin = home.join(".cargo/bin");
-    let current_path = env::var("PATH").unwrap_or_default();
-    let extended_path = format!("{}:/usr/local/bin:/usr/bin:/bin:{current_path}", cargo_bin.display());
-    env::set_var("PATH", &extended_path);
+    ensure_desktop_env();
 
     // 2. Ensure critical state and cache directories exist before starting
     let dirs_to_create = [
@@ -61,7 +143,7 @@ fn main() {
 
     for dir in &dirs_to_create {
         if let Err(e) = fs::create_dir_all(dir) {
-            log(&format!("⚠️ Notice creating {}: {e}", dir.display()));
+            warn!(path = %dir.display(), error = %e, "Could not create state directory");
         }
     }
 
@@ -83,12 +165,12 @@ fn main() {
     env::set_var("SDL_VIDEODRIVER", "wayland");
     env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
 
-    log("Environment variables configured for native Wayland execution.");
+    info!("Environment variables configured for native Wayland execution.");
 
     // 5. Systemd User Session Integration (Arch Linux / greetd standard)
     let has_systemctl = which::which("systemctl").is_ok();
     if has_systemctl {
-        log("systemd detected; synchronizing user environment...");
+        info!("systemd detected; synchronizing user environment...");
 
         // Reset failed state of user units
         let _ = Command::new("systemctl")
@@ -140,40 +222,35 @@ fn main() {
         };
 
         if let Some(unit) = target_unit {
-            log(&format!("Starting {unit} via systemctl --user --wait..."));
-            let status = Command::new("systemctl")
+            info!(unit = %unit, "Starting compositor service via systemctl --user --wait");
+
+            let mut sys_child = Command::new("systemctl")
                 .args(["--user", "--wait", "start", unit])
-                .status();
+                .spawn()
+                .unwrap_or_else(|e| {
+                    error!(error = %e, "Failed to spawn systemctl wait");
+                    exit(1);
+                });
 
-            log(&format!("Compositor unit {unit} exited with: {status:?}"));
+            // Signal handler for SIGINT (Ctrl+C)
+            tokio::select! {
+                res = tokio::task::spawn_blocking(move || sys_child.wait()) => {
+                    info!("Compositor systemd service exited with status: {res:?}");
+                }
+                _ = tokio::signal::ctrl_c() => {
+                    info!("Received interrupt signal (SIGINT); stopping session...");
+                }
+            }
 
-            // Teardown graphical-session
-            log("Tearing down graphical user session...");
-            let _ = Command::new("systemctl")
-                .args(["--user", "start", "--job-mode=replace-irreversibly", "night-shutdown.target"])
-                .output();
-
-            let _ = Command::new("systemctl")
-                .args([
-                    "--user",
-                    "unset-environment",
-                    "WAYLAND_DISPLAY",
-                    "DISPLAY",
-                    "XDG_SESSION_TYPE",
-                    "XDG_CURRENT_DESKTOP",
-                    "PINNACLE_GRPC_SOCKET",
-                ])
-                .output();
-
-            log("🌙 Project Night Desktop Session Finished Cleanly.");
+            teardown_session();
             return;
         }
     }
 
     // 6. Direct fallback if systemd user services are not present
-    log("Launching Pinnacle compositor directly with --session...");
-    let pinnacle_bin = which::which("pinnacle")
-        .unwrap_or_else(|_| cargo_bin.join("pinnacle"));
+    info!("Launching Pinnacle compositor directly with --session...");
+    let pinnacle_bin = resolve_executable("pinnacle")
+        .unwrap_or_else(|| PathBuf::from("/usr/local/bin/pinnacle"));
 
     let mut child = Command::new(&pinnacle_bin)
         .arg("--session")
@@ -182,15 +259,18 @@ fn main() {
         .stderr(Stdio::inherit())
         .spawn()
         .unwrap_or_else(|e| {
-            log(&format!("❌ Fatal: Failed to spawn {}: {e}", pinnacle_bin.display()));
+            error!(path = %pinnacle_bin.display(), error = %e, "Fatal: Failed to spawn Pinnacle compositor");
             exit(1);
         });
 
-    let exit_status = child.wait().unwrap_or_else(|e| {
-        log(&format!("❌ Error waiting for pinnacle: {e}"));
-        exit(1);
-    });
+    tokio::select! {
+        res = tokio::task::spawn_blocking(move || child.wait()) => {
+            info!("Pinnacle compositor process exited with: {res:?}");
+        }
+        _ = tokio::signal::ctrl_c() => {
+            info!("Received interrupt signal (SIGINT); terminating compositor...");
+        }
+    }
 
-    log(&format!("🌙 Pinnacle exited with code: {exit_status:?}"));
+    teardown_session();
 }
-
