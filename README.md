@@ -117,6 +117,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 Night includes an ultra-fast Unix domain socket server (`$XDG_RUNTIME_DIR/night.sock`) powered by `postcard` binary serialization. You can control your desktop from external scripts, Ironbar status widgets, or terminals:
 
 ```bash
+cargo xtask msg status              # Full status: active tag, layout, gaps, monitors, focused win
 cargo xtask msg reload              # Reloads configuration
 cargo xtask msg switch-tag 3        # Switches active tag to 3
 cargo xtask msg layout next         # Cycles to next layout (MasterStack, Dwindle, Spiral, Fair)
@@ -128,6 +129,17 @@ cargo xtask msg close               # Closes currently focused window
 
 ---
 
+## 🩺 System Diagnostics (`cargo xtask doctor`)
+
+Run the pure-Rust environment doctor at any time to verify system health, config files, and Wayland session environment:
+
+```bash
+cargo xtask doctor
+```
+Outputs a live checklist of all 18 tools in the 100% Rust suite, highlighting any missing packages and printing a single `yay -S --needed ...` command to install them.
+
+---
+
 ## 🚀 Installation via `cargo xtask`
 
 No need for GNU Stow, Makefiles, or shell scripts. Everything is handled by the pure-Rust task runner:
@@ -135,7 +147,7 @@ No need for GNU Stow, Makefiles, or shell scripts. Everything is handled by the 
 ### 1. Install System Dependencies (Arch Linux)
 ```bash
 sudo pacman -S --needed rustup base-devel git slurp
-yay -S pinnacle-comp-git alacritty ironbar-bin anyrun-git wired-notify-bin swayosd-git swww wayshot satty-bin yazi veila-bin favnyr-git zen-browser-bin brave-bin
+paru -S pinnacle-comp-git alacritty ironbar-bin anyrun-git wired-notify-bin swayosd-git swww wayshot satty-bin yazi veila-bin favnyr-git zen-browser-bin brave-bin
 ```
 
 ### 2. Install Night
