@@ -6,6 +6,8 @@
 autostart_daemons = true
 default_tag = "1"
 border_width = 2
+inner_gaps = 6.0
+outer_gaps = 10.0
 # primary_monitor = "eDP-1"
 
 [apps]
@@ -13,6 +15,9 @@ terminal = "alacritty"
 alt_terminal = "rio"
 launcher = "anyrun"
 minimal_launcher = "yofi"
-file_manager = "yazi"
+file_manager = "favnyr"
+term_file_manager = "yazi"
+browser = "zen-browser"
+alt_browser = "brave"
 lock_cmd = "veila"
 
