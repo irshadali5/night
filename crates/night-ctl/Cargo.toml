@@ -1,0 +1,14 @@
+[package]
+name = "nightctl"
+description = "Lightning-fast CLI client and status streaming tool for the Night Wayland Desktop"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+night-core.workspace = true
+tokio.workspace = true
+postcard.workspace = true
+serde.workspace = true
+
