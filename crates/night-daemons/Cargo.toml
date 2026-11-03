@@ -8,6 +8,8 @@ license.workspace = true
 
 [dependencies]
 night-core.workspace = true
+night-rules.workspace = true
+dirs.workspace = true
 pinnacle-api.workspace = true
 tokio.workspace = true
 tracing.workspace = true
