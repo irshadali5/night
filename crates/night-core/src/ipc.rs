@@ -341,6 +341,10 @@ pub enum IpcCommand {
     SaveSession,
     /// Restores saved desktop session layout
     RestoreSession,
+    /// Sets an ergonomic layout profile (Coding, Reading, Multitasking, Ultrawide)
+    SetLayoutProfile(String),
+    /// Triggers an on-screen display overlay (volume, brightness, dnd, gamma, layout)
+    ShowOsd(String),
 }
 
 /// Desktop IPC Response
@@ -365,6 +369,7 @@ pub enum IpcResponse {
     Dnd(bool),
     Notifications(Vec<crate::notifications::NotificationRecord>),
     SavedSession(Option<crate::session_restore::SavedSession>),
+    Profile(String),
     Error(String),
 }
 
