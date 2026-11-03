@@ -1,6 +1,7 @@
 //! 🌙 Night Tag & Workspace Management
 //! Configures AwesomeWM-style dynamic tags and screen assignments with multi-monitor hotplugging.
 
+use pinnacle_api::signal::TagSignal;
 use pinnacle_api::{output, tag};
 use tracing::info;
 
@@ -17,6 +18,22 @@ pub fn setup_tags() {
         info!(output = %name, "Initializing workspace tags [1..9] on display output");
         tag::add(op, DEFAULT_TAG_NAMES).for_each(drop);
     });
+
+    // Real-time signal hook: updates postcard binary session state whenever active tag changes
+    tag::connect_signal(TagSignal::Active(Box::new(|handle, active| {
+        if active {
+            let name = handle.name();
+            info!(tag = %name, "Active workspace tag updated in real-time");
+            let state = night_core::SessionState {
+                active_tag: name,
+                last_reload_timestamp: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+            };
+            state.save();
+        }
+    })));
 
     info!("Dynamic multi-monitor tag system initialized.");
 }
