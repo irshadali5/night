@@ -94,7 +94,10 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + b` $\rightarrow$ Launch **Zen Browser** (Primary Web Browser)
 * `Super + Shift + b` $\rightarrow$ Launch **Brave Browser** (Alternative Browser)
 * `Super + i` $\rightarrow$ Launch **Night Settings** (Tokyo Night Slint Control Center)
-* `Super + ` ` ` (tilde) $\rightarrow$ Toggle **Scratchpad** Dropdown Terminal
+* `Super + v` $\rightarrow$ Open **Clipboard History** Modal (Wayland Ring Buffer)
+* `Super + m` $\rightarrow$ Toggle **Music** Scratchpad Drawer
+* `Super + n` $\rightarrow$ Toggle **Notes** Scratchpad Drawer
+* `Super + ` ` ` (tilde) $\rightarrow$ Toggle **Terminal** Dropdown Scratchpad
 * `Super + Escape` $\rightarrow$ Lock Session (**Veila** - Pure Rust Locker)
 
 ### Window Navigation & Layout
@@ -135,6 +138,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Print` $\rightarrow$ Fullscreen Screenshot to `~/Pictures`
 * `Super + Alt + r` $\rightarrow$ Toggle Screen Recording (**wl-screenrec**)
 * `XF86Audio*` / `XF86MonBrightness*` $\rightarrow$ SwayOSD Volume & Brightness Indicators
+* `XF86AudioPlay` / `Pause` / `Next` / `Prev` / `Stop` $\rightarrow$ MPRIS Media Playback Control
 
 ---
 
@@ -174,8 +178,23 @@ nightctl window pip
 nightctl window center
 nightctl window float
 
-# Toggle dropdown scratchpad terminal and Snowcap modals
+# Toggle dropdown scratchpad drawers (term, music, notes, fm)
 nightctl scratchpad
+nightctl scratchpad music
+nightctl scratchpad notes
+
+# Clipboard history & interactive modal
+nightctl clip
+nightctl clip list
+nightctl clip clear
+
+# MPRIS media playback control
+nightctl media play-pause
+nightctl media next
+nightctl media status
+
+# Visual window switcher & Snowcap modals
+nightctl switcher
 nightctl overlay
 nightctl quit-prompt
 nightctl session-menu
