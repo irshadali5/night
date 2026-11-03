@@ -86,6 +86,17 @@ enum Commands {
     #[command(alias = "prompt-quit")]
     QuitPrompt,
 
+    /// Show the Snowcap Tokyo Night session menu modal
+    #[command(alias = "power-menu")]
+    SessionMenu,
+
+    /// Perform window operations on the currently focused window
+    Window {
+        /// Window operation to execute
+        #[arg(value_enum)]
+        op: WindowOpArg,
+    },
+
     /// Close the currently focused window
     Close,
 
@@ -120,6 +131,16 @@ enum DpmsArg {
     On,
     Off,
     Toggle,
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug)]
+enum WindowOpArg {
+    Sticky,
+    Pip,
+    Center,
+    Float,
+    Fullscreen,
+    Maximize,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -227,6 +248,22 @@ async fn main() {
 
         Commands::QuitPrompt => {
             run_cmd(IpcCommand::ShowQuit).await;
+        }
+
+        Commands::SessionMenu => {
+            run_cmd(IpcCommand::ShowSessionMenu).await;
+        }
+
+        Commands::Window { op } => {
+            let action = match op {
+                WindowOpArg::Sticky => night_core::ipc::WindowAction::Sticky,
+                WindowOpArg::Pip => night_core::ipc::WindowAction::Pip,
+                WindowOpArg::Center => night_core::ipc::WindowAction::Center,
+                WindowOpArg::Float => night_core::ipc::WindowAction::ToggleFloat,
+                WindowOpArg::Fullscreen => night_core::ipc::WindowAction::ToggleFullscreen,
+                WindowOpArg::Maximize => night_core::ipc::WindowAction::ToggleMaximize,
+            };
+            run_cmd(IpcCommand::WindowOp(action)).await;
         }
 
         Commands::Close => {
