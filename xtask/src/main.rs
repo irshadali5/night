@@ -130,9 +130,9 @@ fn task_check(root: &Path) {
 }
 
 fn task_build(root: &Path) {
-    println!("🔨 Building `night-pinnacle` and `nightctl` in release mode...");
+    println!("🔨 Building `night-pinnacle`, `nightctl`, and `night-settings` in release mode...");
     let status = Command::new("cargo")
-        .args(["build", "--release", "-p", "night-pinnacle", "-p", "nightctl"])
+        .args(["build", "--release", "-p", "night-pinnacle", "-p", "nightctl", "-p", "night-settings"])
         .current_dir(root)
         .status()
         .expect("Failed to run cargo build");
@@ -140,7 +140,7 @@ fn task_build(root: &Path) {
     if !status.success() {
         exit(status.code().unwrap_or(1));
     }
-    println!("✅ Build complete: target/release/night-pinnacle and target/release/nightctl");
+    println!("✅ Build complete: target/release/night-pinnacle, nightctl, night-settings");
 }
 
 fn task_install(root: &Path) {
@@ -154,7 +154,7 @@ fn task_install(root: &Path) {
     let _ = fs::create_dir_all(&cargo_bin);
 
     // 2. Install binaries to ~/.cargo/bin
-    for bin_name in ["night-pinnacle", "nightctl"] {
+    for bin_name in ["night-pinnacle", "nightctl", "night-settings"] {
         let source_bin = root.join("target/release").join(bin_name);
         let target_bin = cargo_bin.join(bin_name);
         println!("==> Copying binary to {}", target_bin.display());
