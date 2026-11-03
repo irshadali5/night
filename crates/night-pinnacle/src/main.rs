@@ -102,6 +102,25 @@ async fn config() {
             IpcCommand::GetLayout => {
                 IpcResponse::Layout(night_layout::current_layout().name().into())
             }
+            IpcCommand::GetStatus => {
+                let state = SessionState::load().unwrap_or(SessionState {
+                    active_tag: "1".into(),
+                    last_reload_timestamp: 0,
+                });
+                let (inner_gaps, outer_gaps) = night_layout::get_gaps();
+                let active_win = pinnacle_api::window::get_focused().map(|w| format!("{} ({})", w.title(), w.app_id()));
+                let output_count = pinnacle_api::output::get_all().count();
+
+                IpcResponse::Status(night_core::ipc::DesktopStatus {
+                    active_tag: state.active_tag,
+                    layout: night_layout::current_layout().name().into(),
+                    inner_gaps,
+                    outer_gaps,
+                    active_window: active_win,
+                    output_count,
+                    last_reload: state.last_reload_timestamp,
+                })
+            }
         })
         .await;
     });
