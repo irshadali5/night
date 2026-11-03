@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout]
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13
+[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI]
 ```
 
 ---
@@ -211,6 +211,30 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 * [x] **CLI & IPC Window Control (`nightctl window`)**:
   * [x] Added `nightctl window <sticky|pip|center|float|fullscreen|maximize>` commands.
   * [x] Added `IpcCommand::WindowOp(WindowAction)` and `IpcCommand::ShowSessionMenu` to IPC protocol.
+
+---
+
+### Phase 13: Slint Control Center & Settings GUI (`crates/night-settings`)
+* [x] **Pure-Rust GUI in Slint**:
+  * [x] Created `crates/night-settings` using Slint 1.18 GUI toolkit with native Wayland rendering.
+  * [x] Implemented Tokyo Night dark palette UI (`#1a1b26`, `#24283b`, `#414868`, `#7aa2f7`, `#c0caf5`).
+* [x] **Appearance & Real-time Gaps Tuning**:
+  * [x] Real-time inner/outer gaps sliders with instant live compositor preview via IPC (`IpcCommand::SetGaps`).
+  * [x] Window border width tuning and configuration saving to `~/.config/night/night.toml`.
+  * [x] Layout indicator and click-to-cycle button.
+* [x] **Application Preferences**:
+  * [x] Visual configuration editor for terminals (`alacritty`, `rio`), browsers (`zen-browser`, `brave`), file managers (`favnyr`, `yazi`), and launchers (`anyrun`, `yofi`).
+* [x] **Displays & Monitor Profiles**:
+  * [x] Monitor profile editor reading and writing declarative `~/.config/night/monitors.ron` via `MonitorProfile::save_all()`.
+  * [x] HiDPI display scaling presets (`1.0x`, `1.25x`, `1.5x`, `2.0x`), resolution modes, orientation transforms, and Adaptive Sync / VRR toggles.
+* [x] **System, Power & Diagnostics**:
+  * [x] DPMS display toggle, screen locking (`veila`), compositor reload, system reboot, and power off.
+  * [x] Real-time IPC connectivity badge (<2ms latency).
+* [x] **Keybinding & Remote Execution**:
+  * [x] Bound `Super + i` in `crates/night-binds` to open `night-settings`.
+  * [x] Added `nightctl settings` command.
+  * [x] Updated `xtask` to build and install `night-settings` to `~/.cargo/bin`.
+
 
 
 
