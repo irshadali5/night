@@ -157,10 +157,12 @@ pub fn show_snipping_modal() {
                 // [C] Full Screen to Clipboard
                 Keysym::c | Keysym::C => {
                     info!("Triggered full screen screenshot to clipboard");
-                    if which::which("rsclipd").is_ok() {
+                    if which::which("rsclip").is_ok() {
+                        spawn_shell("wayshot --stdout | rsclip store --mime image/png");
+                    } else if which::which("rsclipd").is_ok() {
                         spawn_shell("wayshot --stdout | rsclipd store --mime image/png");
                     } else {
-                        spawn_shell("wayshot --stdout | wl-copy");
+                        spawn_shell("wayshot --stdout | wl-copy 2>/dev/null");
                     }
                 }
                 // [V] Record Screen (MP4)
