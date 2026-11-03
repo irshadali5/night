@@ -47,6 +47,8 @@ pub async fn start_all() {
         if which::which(daemon.command).is_ok() {
             info!(daemon = %daemon.name, "Initializing daemon");
             spawn(daemon.command, daemon.args);
+        } else if daemon.command == "swww-daemon" && which::which("swaybg").is_ok() {
+            info!("swww-daemon not installed; falling back to swaybg for wallpaper");
         } else {
             warn!(
                 daemon = %daemon.name,
