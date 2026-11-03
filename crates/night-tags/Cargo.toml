@@ -1,0 +1,14 @@
+[package]
+name = "night-tags"
+description = "Tag and workspace management for Pinnacle in Night"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+night-core.workspace = true
+pinnacle-api.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
