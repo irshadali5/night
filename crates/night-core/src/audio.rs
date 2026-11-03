@@ -138,3 +138,146 @@ pub fn handle_volume_action(action: VolumeAction) -> Option<VolumeInfo> {
     get_volume()
 }
 
+/// An audio output sink device (e.g. Headphones, Speakers, HDMI, USB DAC)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AudioSink {
+    pub id: u32,
+    pub name: String,
+    pub is_default: bool,
+}
+
+impl AudioSink {
+    /// Friendly icon based on sink name
+    pub fn icon(&self) -> &'static str {
+        let lower = self.name.to_lowercase();
+        if lower.contains("headphone") || lower.contains("headset") {
+            "󰋋"
+        } else if lower.contains("hdmi") || lower.contains("displayport") || lower.contains("monitor") {
+            "󰍹"
+        } else if lower.contains("usb") || lower.contains("dac") {
+            "󰓃"
+        } else {
+            "󰕾"
+        }
+    }
+}
+
+/// Discovers all available audio output sinks via `wpctl` or `pactl`
+pub fn list_sinks() -> Vec<AudioSink> {
+    if which::which("wpctl").is_ok() {
+        if let Ok(out) = Command::new("wpctl").arg("status").output() {
+            if out.status.success() {
+                let text = String::from_utf8_lossy(&out.stdout);
+                let mut in_sinks = false;
+                let mut sinks = Vec::new();
+
+                for line in text.lines() {
+                    let trimmed = line.trim();
+                    if trimmed.contains("Sinks:") {
+                        in_sinks = true;
+                        continue;
+                    }
+                    if in_sinks && (trimmed.contains("Sources:") || trimmed.contains("Filters:") || trimmed.contains("Streams:")) {
+                        break;
+                    }
+
+                    if in_sinks && (trimmed.contains('.') || trimmed.contains('*')) {
+                        let is_default = trimmed.contains('*');
+                        // Example line: "│  *   49. Built-in Audio Analog Stereo        [vol: 0.65]"
+                        // Clean line by removing tree characters
+                        let clean = trimmed.replace('│', "").replace('*', "");
+                        let parts: Vec<&str> = clean.split_whitespace().collect();
+                        if let Some(first) = parts.first() {
+                            let id_str = first.trim_end_matches('.');
+                            if let Ok(id) = id_str.parse::<u32>() {
+                                let name_end = clean.find('[').unwrap_or(clean.len());
+                                let name_start = clean.find(id_str).map(|p| p + id_str.len()).unwrap_or(0);
+                                let name = clean[name_start..name_end].trim().trim_start_matches('.').trim().to_string();
+
+                                if !name.is_empty() {
+                                    sinks.push(AudioSink {
+                                        id,
+                                        name,
+                                        is_default,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !sinks.is_empty() {
+                    return sinks;
+                }
+            }
+        }
+    }
+
+    // Fallback via pactl if wpctl is unavailable
+    if which::which("pactl").is_ok() {
+        if let Ok(out) = Command::new("pactl").args(["list", "sinks", "short"]).output() {
+            if out.status.success() {
+                let text = String::from_utf8_lossy(&out.stdout);
+                let mut sinks = Vec::new();
+                for (idx, line) in text.lines().enumerate() {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 2 {
+                        let id = parts[0].parse::<u32>().unwrap_or(idx as u32);
+                        let name = parts[1].replace('_', " ").replace('.', " ");
+                        sinks.push(AudioSink {
+                            id,
+                            name,
+                            is_default: idx == 0,
+                        });
+                    }
+                }
+                if !sinks.is_empty() {
+                    return sinks;
+                }
+            }
+        }
+    }
+
+    Vec::new()
+}
+
+/// Sets the active default audio output sink by ID
+pub fn set_default_sink(id: u32) -> bool {
+    if which::which("wpctl").is_ok() {
+        let status = Command::new("wpctl")
+            .args(["set-default", &id.to_string()])
+            .status();
+        if status.map(|s| s.success()).unwrap_or(false) {
+            info!(id, "Default audio sink switched via wpctl");
+            return true;
+        }
+    }
+
+    if which::which("pactl").is_ok() {
+        let status = Command::new("pactl")
+            .args(["set-default-sink", &id.to_string()])
+            .status();
+        if status.map(|s| s.success()).unwrap_or(false) {
+            info!(id, "Default audio sink switched via pactl");
+            return true;
+        }
+    }
+
+    false
+}
+
+/// Cycles to the next available audio output sink
+pub fn cycle_sink() -> Option<AudioSink> {
+    let sinks = list_sinks();
+    if sinks.is_empty() {
+        return None;
+    }
+
+    let current_idx = sinks.iter().position(|s| s.is_default).unwrap_or(0);
+    let next_idx = (current_idx + 1) % sinks.len();
+    let target = &sinks[next_idx];
+
+    set_default_sink(target.id);
+    Some(target.clone())
+}
+
