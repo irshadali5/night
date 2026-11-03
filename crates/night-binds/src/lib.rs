@@ -6,7 +6,7 @@ use night_core::{Defaults, UserConfig};
 use night_tags::DEFAULT_TAG_NAMES;
 use pinnacle_api::input::{self, Mod, MouseButton};
 use pinnacle_api::util::Direction;
-use pinnacle_api::{output, pinnacle, tag, window};
+use pinnacle_api::{output, pinnacle, window};
 use tracing::info;
 
 /// Registers all user keybindings and interactive mouse bindings with the Pinnacle compositor
@@ -253,22 +253,57 @@ pub fn register_all() {
         let key_char = char::from_digit((i + 1) as u32, 10).unwrap();
         let tag_name = (*name).to_string();
 
-        // Super + <digit>: Switch to tag
+        // Super + <digit>: Switch to tag on focused output
         let target_view = tag_name.clone();
         input::keybind(Mod::SUPER, key_char).on_press(move || {
-            if let Some(t) = tag::get(&target_view) {
-                t.switch_to();
-            }
+            night_tags::switch_to_tag(&target_view);
         });
 
-        // Super + Shift + <digit>: Move focused window to tag
+        // Super + Shift + <digit>: Move focused window to tag on focused output
         let target_move = tag_name.clone();
         input::keybind(Mod::SUPER | Mod::SHIFT, key_char).on_press(move || {
-            if let (Some(win), Some(t)) = (window::get_focused(), tag::get(&target_move)) {
-                win.move_to_tag(&t);
-            }
+            night_tags::move_focused_to_tag(&target_move);
         });
     }
+
+    // -------------------------------------------------------------------------
+    // 8. Multi-Monitor Focus & Window Movement
+    // -------------------------------------------------------------------------
+
+    // Super + o -> Focus Next Display Monitor
+    input::keybind(Mod::SUPER, 'o').on_press(|| {
+        night_tags::focus_next_output();
+    });
+
+    // Super + Shift + o -> Move Focused Window to Next Display Monitor
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'o').on_press(|| {
+        night_tags::move_focused_to_next_output();
+    });
+
+    // Super + period (.) -> Focus Next Display Monitor
+    input::keybind(Mod::SUPER, "period").on_press(|| {
+        night_tags::focus_next_output();
+    });
+
+    // Super + comma (,) -> Focus Previous Display Monitor
+    input::keybind(Mod::SUPER, "comma").on_press(|| {
+        night_tags::focus_prev_output();
+    });
+
+    // Super + Shift + period (>) -> Move Window to Next Display Monitor
+    input::keybind(Mod::SUPER | Mod::SHIFT, "period").on_press(|| {
+        night_tags::move_focused_to_next_output();
+    });
+
+    // Super + Shift + comma (<) -> Move Window to Previous Display Monitor
+    input::keybind(Mod::SUPER | Mod::SHIFT, "comma").on_press(|| {
+        night_tags::move_focused_to_prev_output();
+    });
+
+    // Super + Shift + Escape -> Toggle DPMS Display Power
+    input::keybind(Mod::SUPER | Mod::SHIFT, "Escape").on_press(|| {
+        night_tags::toggle_dpms();
+    });
 
     info!("All keybindings and interactive mouse controls registered successfully.");
 }
