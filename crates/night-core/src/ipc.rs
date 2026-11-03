@@ -37,13 +37,17 @@ pub struct DesktopStatus {
     pub volume: Option<crate::audio::VolumeInfo>,
     #[serde(default)]
     pub network: Option<crate::network::NetworkInfo>,
+    #[serde(default)]
+    pub system: Option<crate::sysinfo::SystemStats>,
+    #[serde(default)]
+    pub bluetooth: Option<crate::bluetooth::BluetoothInfo>,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{},"network":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{},"network":{},"system":{},"bluetooth":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -89,6 +93,22 @@ impl DesktopStatus {
                     n.is_online
                 ),
                 None => "null".to_string(),
+            },
+            match &self.system {
+                Some(s) => format!(
+                    r#"{{"cpu_pct":{},"mem_used_mb":{},"mem_total_mb":{},"mem_pct":{},"cpu_temp_c":{},"disk_used_gb":{},"disk_total_gb":{},"disk_pct":{}}}"#,
+                    s.cpu_pct, s.mem_used_mb, s.mem_total_mb, s.mem_pct,
+                    match s.cpu_temp_c { Some(t) => t.to_string(), None => "null".to_string() },
+                    s.disk_used_gb, s.disk_total_gb, s.disk_pct
+                ),
+                None => "null".to_string(),
+            },
+            match &self.bluetooth {
+                Some(bt) => format!(
+                    r#"{{"is_powered":{},"is_connected":{},"device_count":{}}}"#,
+                    bt.is_powered, bt.is_connected, bt.devices.len()
+                ),
+                None => "null".to_string(),
             }
         )
     }
@@ -108,6 +128,14 @@ impl DesktopStatus {
         let net_glyph = self.network.as_ref().map(|n| n.glyph()).unwrap_or("󰤮");
         let net_ssid = self.network.as_ref().and_then(|n| n.ssid.as_deref()).unwrap_or("Offline");
         let net_ip = self.network.as_ref().and_then(|n| n.ip_addr.as_deref()).unwrap_or("");
+        let cpu_str = self.system.as_ref().map(|s| s.display_cpu()).unwrap_or_else(|| " 0%".into());
+        let cpu_pct = self.system.as_ref().map(|s| s.cpu_pct.to_string()).unwrap_or_else(|| "0".into());
+        let mem_str = self.system.as_ref().map(|s| s.display_mem()).unwrap_or_else(|| "󰍛 0 GiB".into());
+        let mem_pct = self.system.as_ref().map(|s| s.mem_pct.to_string()).unwrap_or_else(|| "0".into());
+        let temp_str = self.system.as_ref().map(|s| s.display_temp()).unwrap_or_else(|| "󰔏 N/A".into());
+        let disk_str = self.system.as_ref().map(|s| s.display_disk()).unwrap_or_else(|| "󰋊 N/A".into());
+        let bt_str = self.bluetooth.as_ref().map(|b| b.display_string()).unwrap_or_else(|| "󰂲 Off".into());
+        let bt_icon = self.bluetooth.as_ref().map(|b| b.glyph()).unwrap_or("󰂲");
 
         template
             .replace("{active_tag}", &self.active_tag)
@@ -134,6 +162,14 @@ impl DesktopStatus {
             .replace("{net_icon}", net_glyph)
             .replace("{ssid}", net_ssid)
             .replace("{ip}", net_ip)
+            .replace("{cpu}", &cpu_str)
+            .replace("{cpu_pct}", &cpu_pct)
+            .replace("{mem}", &mem_str)
+            .replace("{mem_pct}", &mem_pct)
+            .replace("{temp}", &temp_str)
+            .replace("{disk}", &disk_str)
+            .replace("{bt}", &bt_str)
+            .replace("{bt_icon}", bt_icon)
     }
 }
 
@@ -260,6 +296,18 @@ pub enum IpcCommand {
     ShowLauncher,
     /// Queries network connectivity status
     GetNetwork,
+    /// Queries real-time hardware performance metrics (CPU, RAM, Temp, Disk)
+    GetSystemStats,
+    /// Queries Bluetooth controller and connected peripherals
+    GetBluetooth,
+    /// Discovers all available audio output sinks
+    GetAudioSinks,
+    /// Sets default audio output sink by ID
+    SetAudioSink(u32),
+    /// Cycles to the next available audio output sink
+    CycleAudioSink,
+    /// Triggers the Snowcap Tokyo Night interactive audio sink switcher modal
+    ShowAudioSinkMenu,
 }
 
 /// Desktop IPC Response
@@ -277,6 +325,9 @@ pub enum IpcResponse {
     Battery(Option<crate::power::BatteryInfo>),
     Volume(Option<crate::audio::VolumeInfo>),
     Network(Option<crate::network::NetworkInfo>),
+    SystemStats(crate::sysinfo::SystemStats),
+    Bluetooth(Option<crate::bluetooth::BluetoothInfo>),
+    AudioSinks(Vec<crate::audio::AudioSink>),
     Error(String),
 }
 
