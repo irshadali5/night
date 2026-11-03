@@ -23,6 +23,26 @@ pub struct SwitcherItem {
     pub tag: String,
     pub output: String,
     pub is_focused: bool,
+    pub is_floating: bool,
+}
+
+fn app_icon(app_id: &str) -> &'static str {
+    let lower = app_id.to_lowercase();
+    if lower.contains("term") || lower.contains("alacritty") || lower.contains("rio") || lower.contains("foot") {
+        ""
+    } else if lower.contains("zen") || lower.contains("brave") || lower.contains("firefox") || lower.contains("chrome") {
+        ""
+    } else if lower.contains("vivi") || lower.contains("music") || lower.contains("media") {
+        ""
+    } else if lower.contains("yazi") || lower.contains("favnyr") || lower.contains("file") || lower.contains("thunar") {
+        "󰉋"
+    } else if lower.contains("settings") || lower.contains("control") {
+        ""
+    } else if lower.contains("code") || lower.contains("nvim") || lower.contains("helix") || lower.contains("rust") {
+        "󰅩"
+    } else {
+        "󰍹"
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -65,7 +85,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for WindowSwitcher
         );
 
         let subtitle = Text::new(
-            "Press [1-9] to jump directly  •  [Enter] Focus  •  [D] Close  •  [Esc] Cancel",
+            "Press [1-9] to jump directly  •  [Enter] Focus  •  [X/D] Close  •  [Esc] Cancel",
         )
         .style(text::Style::new().font(self.font.clone()).pixels(12.0));
 
@@ -84,10 +104,12 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for WindowSwitcher
                 let num = idx + 1;
                 let focus_indicator = if item.is_focused { "▶ " } else { "  " };
                 let app_badge = format!("[{}]", item.app_id);
+                let mode_badge = if item.is_floating { "[Float]" } else { "[Tile]" };
+                let icon = app_icon(&item.app_id);
 
                 let line = format!(
-                    "{focus_indicator}[{num}] {:<16} {:<34} (Tag {} • {})",
-                    app_badge, item.title, item.tag, item.output
+                    "{focus_indicator}[{num}] {icon} {:<14} {:<30} {:<7} (Tag {} • {})",
+                    app_badge, item.title, mode_badge, item.tag, item.output
                 );
 
                 let weight = if item.is_focused {
@@ -162,6 +184,7 @@ pub fn show_window_switcher() {
             tag: tag_name,
             output: output_name,
             is_focused,
+            is_floating: win.floating(),
         });
     }
 
@@ -191,10 +214,13 @@ pub fn show_window_switcher() {
                 Keysym::_8 => Some(7),
                 Keysym::_9 => Some(8),
                 Keysym::Return => Some(0),
-                Keysym::d | Keysym::D => {
-                    if let Some(first) = items_clone.first() {
+                Keysym::x | Keysym::X | Keysym::d | Keysym::D => {
+                    let target_id = items_clone.iter().find(|i| i.is_focused).map(|i| i.id)
+                        .or_else(|| items_clone.first().map(|i| i.id));
+                    if let Some(tid) = target_id {
                         for win in pinnacle_api::window::get_all() {
-                            if win.id() == first.id {
+                            if win.id() == tid {
+                                info!(id = win.id(), "WindowSwitcher: closing window");
                                 win.close();
                                 break;
                             }
