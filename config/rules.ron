@@ -9,6 +9,22 @@
         action: Float,
     ),
     Rule(
+        app_id: "night-scratchpad-term",
+        action: Float,
+    ),
+    Rule(
+        app_id: "night-scratchpad-music",
+        action: Float,
+    ),
+    Rule(
+        app_id: "night-scratchpad-notes",
+        action: Float,
+    ),
+    Rule(
+        app_id: "night-scratchpad-fm",
+        action: Float,
+    ),
+    Rule(
         app_id: "satty",
         action: Float,
     ),
