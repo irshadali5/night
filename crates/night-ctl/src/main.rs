@@ -596,7 +596,11 @@ async fn main() {
                     println!("📸 Full screenshot saved to ~/Pictures/Screenshots");
                 }
                 Some(SnipMode::Copy) => {
-                    let cmd = "wayshot --stdout | wl-copy".to_string();
+                    let cmd = if which::which("rsclipd").is_ok() {
+                        "wayshot --stdout | rsclipd store --mime image/png".to_string()
+                    } else {
+                        "wayshot --stdout | wl-copy".to_string()
+                    };
                     run_cmd(IpcCommand::Spawn(cmd)).await;
                     println!("📋 Full screenshot copied to clipboard");
                 }
