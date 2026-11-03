@@ -58,9 +58,9 @@ fn task_check(root: &Path) {
 }
 
 fn task_build(root: &Path) {
-    println!("🔨 Building `night-pinnacle` in release mode...");
+    println!("🔨 Building `night-pinnacle` and `nightctl` in release mode...");
     let status = Command::new("cargo")
-        .args(["build", "--release", "-p", "night-pinnacle"])
+        .args(["build", "--release", "-p", "night-pinnacle", "-p", "nightctl"])
         .current_dir(root)
         .status()
         .expect("Failed to run cargo build");
@@ -68,7 +68,7 @@ fn task_build(root: &Path) {
     if !status.success() {
         exit(status.code().unwrap_or(1));
     }
-    println!("✅ Build complete: target/release/night-pinnacle");
+    println!("✅ Build complete: target/release/night-pinnacle and target/release/nightctl");
 }
 
 fn task_install(root: &Path) {
@@ -79,33 +79,44 @@ fn task_install(root: &Path) {
 
     let home = dirs::home_dir().expect("Could not determine user home directory");
     let cargo_bin = home.join(".cargo/bin");
-    fs::create_dir_all(&cargo_bin).expect("Failed to create ~/.cargo/bin");
+    let _ = fs::create_dir_all(&cargo_bin);
 
-    // 2. Install binary to ~/.cargo/bin
-    let source_bin = root.join("target/release/night-pinnacle");
-    let target_bin = cargo_bin.join("night-pinnacle");
-
-    println!("==> Copying binary to {}", target_bin.display());
-    fs::copy(&source_bin, &target_bin).expect("Failed to copy binary to ~/.cargo/bin");
+    // 2. Install binaries to ~/.cargo/bin
+    for bin_name in ["night-pinnacle", "nightctl"] {
+        let source_bin = root.join("target/release").join(bin_name);
+        let target_bin = cargo_bin.join(bin_name);
+        println!("==> Copying binary to {}", target_bin.display());
+        if let Err(e) = fs::copy(&source_bin, &target_bin) {
+            println!("⚠️ Notice: Could not copy binary to {}: {e}", target_bin.display());
+        }
+    }
 
     // 3. Link pinnacle.toml to ~/.config/pinnacle/pinnacle.toml using `dirs::config_dir()`
     let config_dir = dirs::config_dir()
         .expect("Could not determine config directory")
         .join("pinnacle");
-    fs::create_dir_all(&config_dir).expect("Failed to create ~/.config/pinnacle");
+    let _ = fs::create_dir_all(&config_dir);
 
     let source_toml = root.join("pinnacle.toml");
     let target_toml = config_dir.join("pinnacle.toml");
 
-    let _ = fs::remove_file(&target_toml);
-    println!("==> Symlinking {} -> {}", source_toml.display(), target_toml.display());
-    symlink(&source_toml, &target_toml).expect("Failed to create symlink for pinnacle.toml");
+    if target_toml.exists() || fs::symlink_metadata(&target_toml).is_ok() {
+        let _ = fs::remove_file(&target_toml);
+    }
+    println!("==> Linking {} -> {}", source_toml.display(), target_toml.display());
+    if let Err(e) = symlink(&source_toml, &target_toml) {
+        if let Err(copy_err) = fs::copy(&source_toml, &target_toml) {
+            println!("⚠️ Notice: Could not link or copy pinnacle.toml to {}: {e} / {copy_err}", target_toml.display());
+        } else {
+            println!("==> Copied pinnacle.toml to {}", target_toml.display());
+        }
+    }
 
     // 4. Setup default user configurations (~/.config/night/)
     let night_user_dir = dirs::config_dir()
         .expect("Could not determine config directory")
         .join("night");
-    fs::create_dir_all(&night_user_dir).expect("Failed to create ~/.config/night");
+    let _ = fs::create_dir_all(&night_user_dir);
 
     let default_config_dir = root.join("config");
     if default_config_dir.exists() {
@@ -125,6 +136,7 @@ fn task_install(root: &Path) {
     if let Some(cfg) = dirs::config_dir() {
         let tool_deployments = [
             ("config/alacritty.toml", cfg.join("alacritty/alacritty.toml")),
+            ("config/ironbar.toml", cfg.join("ironbar/config.toml")),
             ("config/ironbar.css", cfg.join("ironbar/style.css")),
             ("config/anyrun.css", cfg.join("anyrun/style.css")),
             ("config/veila.toml", cfg.join("veila/config.toml")),
@@ -216,6 +228,27 @@ window#ironbar {
 "##;
     fs::write(config_dir.join("ironbar.css"), ironbar_css).expect("Failed to write ironbar.css");
 
+    // 2b. Ironbar TOML Configuration
+    let ironbar_toml = r##"# 🌙 Tokyo Night status bar configuration for Ironbar (GTK4-layer-shell)
+position = "top"
+height = 34
+icon_theme = "Papirus-Dark"
+
+[start]
+workspaces = { type = "workspaces", all_monitors = false }
+layout = { type = "custom", bar = ["label"], exec = "nightctl stream --format '󰕰 {layout}'", on_click_left = "nightctl layout next" }
+focused = { type = "focused", show_icon = true, max_length = 40 }
+
+[center]
+clock = { type = "clock", format = "%a %d %b  %H:%M" }
+
+[end]
+sys_info = { type = "sys_info", interval = 3 }
+volume = { type = "volume", format = "{icon} {percentage}%", max_volume = 100 }
+tray = { type = "tray", icon_size = 16 }
+"##;
+    fs::write(config_dir.join("ironbar.toml"), ironbar_toml).expect("Failed to write ironbar.toml");
+
     // 3. Anyrun
     let anyrun_css = r##"/* 🌙 Tokyo Night GTK4 stylesheet for Anyrun generated by Night Desktop */
 #window {
@@ -269,10 +302,13 @@ fn task_uninstall(_root: &Path) {
     println!("🗑️ Uninstalling Project Night...");
     let home = dirs::home_dir().expect("Could not determine user home directory");
 
-    let bin = home.join(".cargo/bin/night-pinnacle");
-    if bin.exists() {
-        let _ = fs::remove_file(&bin);
-        println!("Removed {}", bin.display());
+    let cargo_bin = home.join(".cargo/bin");
+    for bin_name in ["night-pinnacle", "nightctl"] {
+        let bin = cargo_bin.join(bin_name);
+        if bin.exists() {
+            let _ = fs::remove_file(&bin);
+            println!("Removed {}", bin.display());
+        }
     }
 
     if let Some(cfg) = dirs::config_dir() {
@@ -311,6 +347,7 @@ async fn task_msg(args: Vec<String>) {
         }
         "close" => night_core::ipc::IpcCommand::CloseFocused,
         "status" => night_core::ipc::IpcCommand::GetStatus,
+        "scratchpad" => night_core::ipc::IpcCommand::ToggleScratchpad,
         "layout" => {
             if args.len() > 1 && args[1] == "next" {
                 night_core::ipc::IpcCommand::CycleLayout
@@ -325,6 +362,18 @@ async fn task_msg(args: Vec<String>) {
             }
             let delta: f32 = args[1].parse().unwrap_or(2.0);
             night_core::ipc::IpcCommand::AdjustGaps(delta)
+        }
+        "overlay" | "binds" => night_core::ipc::IpcCommand::ShowBinds,
+        "quit-prompt" => night_core::ipc::IpcCommand::ShowQuit,
+        "stream" => {
+            println!("📡 Subscribing to real-time Night status stream...");
+            let res = night_core::ipc::subscribe_status(|s| {
+                println!("[{}] Tag {} | Window: {}", s.layout, s.active_tag, s.active_window.as_deref().unwrap_or("None"));
+            }).await;
+            if let Err(e) = res {
+                eprintln!("❌ Stream disconnected: {e}");
+            }
+            return;
         }
         other => {
             eprintln!("Unknown IPC command: '{other}'");
@@ -429,23 +478,26 @@ fn task_session(root: &Path) {
     println!("📦 Installing Wayland desktop session entry...");
     let home = dirs::home_dir().expect("Failed to locate home directory");
 
-    // 1. Install night-session to ~/.cargo/bin/night-session
+    // 1. Install night-session and desktop scripts to ~/.cargo/bin
     let bin_dir = home.join(".cargo/bin");
-    fs::create_dir_all(&bin_dir).expect("Failed to create ~/.cargo/bin");
-    let session_script_src = root.join("assets/night-session");
-    let session_script_dst = bin_dir.join("night-session");
-    if session_script_src.exists() {
-        fs::copy(&session_script_src, &session_script_dst).expect("Failed to install night-session");
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if let Ok(meta) = fs::metadata(&session_script_dst) {
-                let mut perms = meta.permissions();
-                perms.set_mode(0o755);
-                let _ = fs::set_permissions(&session_script_dst, perms);
+    let _ = fs::create_dir_all(&bin_dir);
+    for script_name in ["night-session", "wallpaper.sh", "screenshot.sh", "record.sh"] {
+        let script_src = root.join("assets").join(script_name);
+        let script_dst = bin_dir.join(script_name);
+        if script_src.exists() {
+            if let Ok(_) = fs::copy(&script_src, &script_dst) {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    if let Ok(meta) = fs::metadata(&script_dst) {
+                        let mut perms = meta.permissions();
+                        perms.set_mode(0o755);
+                        let _ = fs::set_permissions(&script_dst, perms);
+                    }
+                }
+                println!("==> Installed launcher script to {}", script_dst.display());
             }
         }
-        println!("==> Installed launcher script to {}", session_script_dst.display());
     }
 
     // 2. Install night.desktop to ~/.local/share/wayland-sessions/night.desktop
@@ -472,15 +524,15 @@ USAGE:
     cargo xtask <SUBCOMMAND>
 
 SUBCOMMANDS:
-    install      Builds release binary, copies to ~/.cargo/bin, links pinnacle.toml, deploys session & theme
+    install      Builds release binaries (night-pinnacle, nightctl), copies to ~/.cargo/bin, links configs
     doctor       Performs system diagnostics on all 100% Rust-native components and environment
     session      Installs Wayland session desktop entry for login managers (GDM, SDDM, Ly, greetd)
     theme        Generates Tokyo Night configurations for external suite (Alacritty, Ironbar, Anyrun, Veila)
     check        Runs `cargo check` across all workspace crates
-    build        Builds `night-pinnacle` in release mode
+    build        Builds `night-pinnacle` and `nightctl` in release mode
     run          Builds and launches the Pinnacle compositor
-    msg <CMD>    Sends IPC command to running Night (reload, switch-tag, state, layout, gaps, spawn, close, status)
-    uninstall    Removes the installed binary and config symlink
+    msg <CMD>    Sends IPC command to running Night (status, stream, tag, layout, gaps, scratchpad, overlay, quit-prompt)
+    uninstall    Removes installed binaries and config symlinks
     help         Prints this help message
 "#
     );
