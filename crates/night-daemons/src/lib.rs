@@ -4,6 +4,10 @@
 use night_core::exec::{spawn, spawn_shell};
 use tracing::{info, warn};
 
+pub mod config_watcher;
+pub mod power_watcher;
+pub mod wallpaper;
+
 /// Background daemon specification
 pub struct DaemonSpec {
     pub name: &'static str,
@@ -83,6 +87,19 @@ pub async fn start_all() {
         info!("Starting Wayland clipboard history recorder via wl-paste fallback");
         spawn_shell("wl-paste --type text --watch nightctl clip-record >/dev/null 2>&1 &");
     }
+
+    // Synchronize wallpaper with current Tokyo Night theme variant
+    wallpaper::sync_wallpaper_theme(user_cfg.general.theme);
+
+    // Spawn background battery power monitoring & low-energy notification alerts
+    tokio::spawn(async {
+        power_watcher::supervise_power_alerts().await;
+    });
+
+    // Spawn background configuration file auto-reloader (rules.ron, monitors.ron, night.toml)
+    tokio::spawn(async {
+        config_watcher::supervise_config_watcher().await;
+    });
 
     info!("Night daemon supervisor initialization finished.");
 }
