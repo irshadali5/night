@@ -56,6 +56,8 @@ fn current_desktop_status() -> DesktopStatus {
         media_info,
         active_tag_glyph: Some(glyph.to_string()),
         theme: Some(theme_str),
+        battery: night_core::power::read_battery(),
+        volume: night_core::audio::get_volume(),
     }
 }
 
@@ -240,6 +242,7 @@ async fn config() {
                     let mut cfg = UserConfig::load();
                     cfg.general.theme = variant;
                     let _ = cfg.save();
+                    night_daemons::wallpaper::sync_wallpaper_theme(variant);
                     night_core::ipc::broadcast_status(current_desktop_status());
                     IpcResponse::Theme(variant)
                 }
@@ -346,6 +349,17 @@ async fn config() {
                         night_core::ipc::DpmsAction::Toggle => night_tags::toggle_dpms(),
                     }
                     IpcResponse::Ok
+                }
+                IpcCommand::Volume(action) => {
+                    let vol = night_core::audio::handle_volume_action(action);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Volume(vol)
+                }
+                IpcCommand::GetBattery => {
+                    IpcResponse::Battery(night_core::power::read_battery())
+                }
+                IpcCommand::GetVolume => {
+                    IpcResponse::Volume(night_core::audio::get_volume())
                 }
                 IpcCommand::Subscribe => {
                     IpcResponse::Status(current_desktop_status())
