@@ -180,6 +180,21 @@ pub fn adjust_gaps(delta: f32) {
     request_relayout();
 }
 
+/// Sets gaps to explicit values in real-time
+pub fn set_gaps(inner: Option<f32>, outer: Option<f32>) {
+    {
+        let mut guard = state().lock().unwrap();
+        if let Some(i) = inner {
+            guard.inner_gaps = i.max(0.0);
+        }
+        if let Some(o) = outer {
+            guard.outer_gaps = o.max(0.0);
+        }
+        info!(inner = guard.inner_gaps, outer = guard.outer_gaps, "Explicitly set layout gaps");
+    }
+    request_relayout();
+}
+
 /// Returns the current active layout kind
 pub fn current_layout() -> LayoutKind {
     let active_tag = night_core::SessionState::load()

@@ -100,6 +100,11 @@ pub enum IpcCommand {
     CycleLayout,
     /// Adjusts layout gaps by a delta value
     AdjustGaps(f32),
+    /// Sets layout gaps to explicit values
+    SetGaps {
+        inner: Option<f32>,
+        outer: Option<f32>,
+    },
     /// Queries current active layout name
     GetLayout,
     /// Queries full desktop status
