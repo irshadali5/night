@@ -6,12 +6,14 @@ pub mod config;
 pub mod defaults;
 pub mod exec;
 pub mod ipc;
+pub mod monitors;
 pub mod state;
 pub mod theme;
 
 pub use config::UserConfig;
 pub use defaults::Defaults;
 pub use exec::{spawn, spawn_shell};
-pub use ipc::{IpcCommand, IpcResponse};
+pub use ipc::{DpmsAction, IpcCommand, IpcResponse, OutputNav};
+pub use monitors::{MonitorMode, MonitorPosition, MonitorProfile, MonitorTransform, MonitorVrr};
 pub use state::SessionState;
 pub use theme::Palette;
