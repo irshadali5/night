@@ -21,7 +21,7 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15
+Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16
 [Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS]
 ```
 
@@ -280,6 +280,35 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
   * [x] Hardware multimedia keys mapped in `night-binds`: `XF86AudioPlay`, `XF86AudioPause`, `XF86AudioNext`, `XF86AudioPrev`, `XF86AudioStop`.
   * [x] CLI control: `nightctl media <play-pause|next|prev|stop|status>`.
   * [x] Live media metadata (`{{artist}} - {{title}}`) tracked in `DesktopStatus::media_info` for status bar streaming and `night-settings` integration.
+
+---
+
+### Phase 16: Interactive Tokyo Night Snipping Modal, Workspace Tag Glyphs & 4-Variant Theme Engine
+* [x] **Interactive Tokyo Night Snipping & Capture Modal (`crates/night-binds/src/snipping.rs`)**:
+  * [x] Snowcap layer-shell modal (`KeyboardInteractivity::Exclusive`, `ZLayer::Overlay`) with instant responsive shortcuts:
+    * `[R]`: Snip Region & Annotate (`wayshot -s "$(slurp)" --stdout | satty --filename -`).
+    * `[W]`: Snip Focused Window (auto-calculates geometry from `win.loc()` and `win.size()`).
+    * `[F]`: Full Screen to File (`~/Pictures/Screenshots/Screenshot_...png`).
+    * `[C]`: Full Screen directly to System Clipboard (`wl-copy`).
+    * `[V]`: Hardware-accelerated 60fps MP4 Screen Video (`wl-screenrec`).
+    * `[G]`: Animated Region Recording as GIF (`wl-screenrec -g "$(slurp)" --output-format gif`).
+    * `[Esc] / [Q]`: Close & dismiss modal immediately.
+  * [x] Keybound to `Super + Shift + s` in `night-binds`.
+  * [x] CLI entrypoint: `nightctl snip [region|window|full|copy|record|gif]`.
+* [x] **Rich Workspace Tag Glyphs & Labels (`crates/night-tags/src/lib.rs`)**:
+  * [x] Standard Nerd Font glyphs: `󰣆` (Code), `󰈹` (Web), `󰉋` (Files), `󰎆` (Media), `󰙯` (Chat), `󰌨` (Dev), `󰈙` (Docs), `󰭹` (Comm), `󰝰` (Misc).
+  * [x] Lookup functions `tag_glyph(name)` and `tag_label(name)`.
+  * [x] Integrated into `DesktopStatus::active_tag_glyph`, JSON serialization, and template placeholders `{tag_glyph}` / `{glyph}`.
+* [x] **Official 4-Variant Tokyo Night Theme Engine (`crates/night-core/src/theme.rs`)**:
+  * [x] Full support for all 4 official variants: `Night` (Classic), `Storm` (Slate), `Moon` (Indigo), and `Day` (Light).
+  * [x] Palette specifications: darkest/primary/secondary/highlight backgrounds, primary/muted/dark text, and standard accent colors.
+  * [x] Configurable in `night.toml` under `[general] theme = "Night"`.
+  * [x] Real-time IPC commands `SetTheme` / `GetTheme` and live status broadcasting.
+  * [x] CLI controls: `nightctl theme <set <night|storm|moon|day>|toggle|status>`.
+  * [x] `cargo xtask theme [night|storm|moon|day]` generating variant-tailored `alacritty.toml` and `ironbar.css`.
+* [x] **Slint Settings Control Center Theme & Snipping Integration (`crates/night-settings`)**:
+  * [x] Interactive theme variant selector buttons (`Night`, `Storm`, `Moon`, `Day`) in Tab 0 (Appearance) with live IPC updating and persistent disk saving.
+  * [x] Quick launch button for Tokyo Night Snipping Modal in Tab 3 (System & Session).
 
 
 
