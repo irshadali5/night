@@ -5,6 +5,7 @@ members = [
     "crates/night-core",
     "crates/night-daemons",
     "crates/night-tags",
+    "crates/night-layout",
     "crates/night-binds",
     "crates/night-rules",
     "crates/night-pinnacle",
@@ -43,5 +44,6 @@ postcard = { version = "1.1", features = ["alloc", "use-std"] } # For ultra-fast
 night-core = { path = "crates/night-core" }
 night-daemons = { path = "crates/night-daemons" }
 night-tags = { path = "crates/night-tags" }
+night-layout = { path = "crates/night-layout" }
 night-binds = { path = "crates/night-binds" }
 night-rules = { path = "crates/night-rules" }

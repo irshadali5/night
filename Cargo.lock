@@ -698,6 +698,7 @@ name = "night-binds"
 version = "0.1.0"
 dependencies = [
  "night-core",
+ "night-layout",
  "night-tags",
  "pinnacle-api",
  "tokio",
@@ -733,12 +734,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "night-layout"
+version = "0.1.0"
+dependencies = [
+ "night-core",
+ "pinnacle-api",
+ "serde",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "night-pinnacle"
 version = "0.1.0"
 dependencies = [
  "night-binds",
  "night-core",
  "night-daemons",
+ "night-layout",
  "night-rules",
  "night-tags",
  "pinnacle-api",
