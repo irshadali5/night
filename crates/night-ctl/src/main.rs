@@ -229,6 +229,35 @@ enum Commands {
         /// Optional path to wallpaper image file
         path: Option<String>,
     },
+
+    /// Inspect or follow recent desktop logs (night, settings, ctl, session)
+    #[command(alias = "logs")]
+    Log {
+        /// Target service: night, settings, ctl, session (default: "night")
+        #[arg(default_value = "night")]
+        service: String,
+
+        /// Number of recent lines to display (default: 50)
+        #[arg(short = 'n', long, default_value_t = 50)]
+        lines: usize,
+
+        /// Follow log file output continuously in real time
+        #[arg(short = 'f', long)]
+        follow: bool,
+    },
+
+    /// Trigger on-screen display (OSD) visual HUD overlay
+    Osd {
+        /// Target: volume, brightness, dnd, gamma, layout, or profile name
+        #[arg(default_value = "volume")]
+        target: String,
+    },
+
+    /// Switch or list workspace layout profiles (coding, reading, multitask, ultrawide)
+    Profile {
+        /// Profile name: coding, reading, multitask, ultrawide
+        name: Option<String>,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -417,6 +446,7 @@ enum WindowOpArg {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    night_core::exec::ensure_desktop_env();
     let cli = Cli::parse();
 
     match cli.command {
@@ -1038,6 +1068,70 @@ async fn main() {
                     println!("🖼️ Current Wallpaper: {c}");
                 } else {
                     println!("🖼️ swww daemon not responding or no wallpaper set.");
+                }
+            }
+        }
+
+        Commands::Log { service, lines, follow } => {
+            let path = night_core::logging::log_file_path(&service);
+            println!("🌙 Project Night Logs — Service: `{service}`");
+            println!("📁 File: {}\n", path.display());
+
+            let recent = night_core::logging::read_recent_logs(&service, lines);
+            for line in recent {
+                println!("{line}");
+            }
+
+            if follow {
+                println!("\n📡 Following live logs (Ctrl+C to stop)...");
+                let mut last_len = match std::fs::metadata(&path) {
+                    Ok(m) => m.len(),
+                    Err(_) => 0,
+                };
+                loop {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    if let Ok(metadata) = std::fs::metadata(&path) {
+                        let current_len = metadata.len();
+                        if current_len > last_len {
+                            use std::io::{BufRead, Seek, SeekFrom};
+                            if let Ok(mut file) = std::fs::File::open(&path) {
+                                if file.seek(SeekFrom::Start(last_len)).is_ok() {
+                                    let reader = std::io::BufReader::new(file);
+                                    for line in reader.lines().map_while(Result::ok) {
+                                        println!("{line}");
+                                    }
+                                }
+                            }
+                            last_len = current_len;
+                        } else if current_len < last_len {
+                            last_len = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        Commands::Osd { target } => {
+            run_cmd(IpcCommand::ShowOsd(target)).await;
+        }
+
+        Commands::Profile { name } => {
+            if let Some(n) = name {
+                match send_command(&IpcCommand::SetLayoutProfile(n.clone())).await {
+                    Ok(IpcResponse::Profile(applied)) => {
+                        println!("📐 Applied Layout Profile: {applied}");
+                    }
+                    Ok(IpcResponse::Error(err)) => {
+                        eprintln!("❌ Layout profile error: {err}");
+                        exit(1);
+                    }
+                    Ok(other) => println!("{other:?}"),
+                    Err(e) => fatal(e),
+                }
+            } else {
+                println!("📐 Available Tokyo Night Workspace Layout Profiles:");
+                for p in night_layout::LayoutProfile::all() {
+                    println!("  {} {:<14} : {}", p.icon(), p.name(), p.description());
                 }
             }
         }

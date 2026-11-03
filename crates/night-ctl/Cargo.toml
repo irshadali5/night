@@ -8,6 +8,7 @@ license.workspace = true
 
 [dependencies]
 night-core.workspace = true
+night-layout.workspace = true
 tokio.workspace = true
 postcard.workspace = true
 serde.workspace = true
