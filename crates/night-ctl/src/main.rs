@@ -198,11 +198,69 @@ enum Commands {
         action: Option<SinkCommand>,
     },
 
+    /// Manage display backlight brightness
+    #[command(alias = "bl")]
+    Brightness {
+        #[command(subcommand)]
+        action: Option<BrightnessCommand>,
+    },
+
+    /// Toggle or query Do Not Disturb (DND) mode
+    Dnd {
+        /// Optional action: "toggle", "on", "off", or "status"
+        action: Option<String>,
+    },
+
+    /// Inspect notification history or open notification center
+    #[command(alias = "notifications")]
+    Notify {
+        #[command(subcommand)]
+        action: Option<NotifyCommand>,
+    },
+
+    /// Save or restore workspace window session state
+    Session {
+        #[command(subcommand)]
+        action: SessionCommand,
+    },
+
     /// Query or set Tokyo Night desktop wallpaper
     Wallpaper {
         /// Optional path to wallpaper image file
         path: Option<String>,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum BrightnessCommand {
+    /// Raise display brightness by percentage (default 5%)
+    Raise { delta: Option<u8> },
+    /// Lower display brightness by percentage (default 5%)
+    Lower { delta: Option<u8> },
+    /// Set explicit display brightness percentage (0..100)
+    Set { percentage: u8 },
+    /// Query current brightness level
+    Status,
+}
+
+#[derive(Subcommand, Debug)]
+enum NotifyCommand {
+    /// List recent desktop notification history
+    List,
+    /// Clear all notification history
+    Clear,
+    /// Open the Snowcap interactive notification center modal
+    Menu,
+}
+
+#[derive(Subcommand, Debug)]
+enum SessionCommand {
+    /// Save current running window session layout
+    Save,
+    /// Restore saved window session layout
+    Restore,
+    /// Clear saved window session file
+    Clear,
 }
 
 #[derive(Subcommand, Debug)]
@@ -848,6 +906,116 @@ async fn main() {
             }
         },
 
+        Commands::Brightness { action } => {
+            let act = match action {
+                Some(BrightnessCommand::Raise { delta }) => {
+                    night_core::backlight::BacklightAction::Raise(delta.unwrap_or(5))
+                }
+                Some(BrightnessCommand::Lower { delta }) => {
+                    night_core::backlight::BacklightAction::Lower(delta.unwrap_or(5))
+                }
+                Some(BrightnessCommand::Set { percentage }) => {
+                    night_core::backlight::BacklightAction::Set(percentage)
+                }
+                Some(BrightnessCommand::Status) | None => night_core::backlight::BacklightAction::Query,
+            };
+
+            match send_command(&IpcCommand::Backlight(act)).await {
+                Ok(IpcResponse::Backlight(Some(bl))) => {
+                    println!("🔆 Display Backlight: {} (device: {})", bl.display_string(), bl.device_name);
+                }
+                Ok(IpcResponse::Backlight(None)) => {
+                    println!("🔆 Display Backlight: No controllable hardware backlight detected.");
+                }
+                Ok(other) => println!("{other:?}"),
+                Err(e) => fatal(e),
+            }
+        }
+
+        Commands::Dnd { action } => {
+            let toggle = match action.as_deref() {
+                Some("toggle") | None => true,
+                Some("status") => false,
+                Some("on") | Some("enable") => {
+                    if !night_core::notifications::NotificationHistory::is_dnd() {
+                        true
+                    } else {
+                        false
+                    }
+                }
+                Some("off") | Some("disable") => {
+                    if night_core::notifications::NotificationHistory::is_dnd() {
+                        true
+                    } else {
+                        false
+                    }
+                }
+                _ => true,
+            };
+
+            if toggle {
+                match send_command(&IpcCommand::ToggleDnd).await {
+                    Ok(IpcResponse::Dnd(dnd)) => {
+                        let icon = night_core::notifications::NotificationHistory::glyph_dnd(dnd);
+                        println!("{icon} Do Not Disturb: {}", if dnd { "ENABLED (Notifications Muted)" } else { "DISABLED (Normal)" });
+                    }
+                    Ok(other) => println!("{other:?}"),
+                    Err(e) => fatal(e),
+                }
+            } else {
+                match send_command(&IpcCommand::GetDnd).await {
+                    Ok(IpcResponse::Dnd(dnd)) => {
+                        let icon = night_core::notifications::NotificationHistory::glyph_dnd(dnd);
+                        println!("{icon} Do Not Disturb: {}", if dnd { "ENABLED" } else { "DISABLED" });
+                    }
+                    Ok(other) => println!("{other:?}"),
+                    Err(e) => fatal(e),
+                }
+            }
+        }
+
+        Commands::Notify { action } => match action {
+            Some(NotifyCommand::List) | None => {
+                let history = night_core::notifications::NotificationHistory::load();
+                println!("󰂚 Notification History ({} items • DND: {}):", history.items.len(), if history.dnd_enabled { "ON" } else { "OFF" });
+                if history.items.is_empty() {
+                    println!("  No notifications recorded.");
+                } else {
+                    for item in history.items.iter().take(10) {
+                        println!("  • [{}] {} — {}", item.app_name, item.summary, item.body.replace('\n', " "));
+                    }
+                }
+            }
+            Some(NotifyCommand::Clear) => {
+                night_core::notifications::NotificationHistory::clear_all();
+                println!("󰂚 Notification history cleared.");
+            }
+            Some(NotifyCommand::Menu) => {
+                run_cmd(IpcCommand::ShowNotifications).await;
+            }
+        },
+
+        Commands::Session { action } => match action {
+            SessionCommand::Save => {
+                run_cmd(IpcCommand::SaveSession).await;
+                println!("💾 Current window session and workspace assignments saved to disk.");
+            }
+            SessionCommand::Restore => match send_command(&IpcCommand::RestoreSession).await {
+                Ok(IpcResponse::SavedSession(Some(s))) => {
+                    println!("🔄 Restored window session from timestamp {} ({} windows)", s.timestamp, s.windows.len());
+                }
+                Ok(IpcResponse::SavedSession(None)) => {
+                    println!("🔄 No saved session file found on disk.");
+                }
+                Ok(other) => println!("{other:?}"),
+                Err(e) => fatal(e),
+            },
+            SessionCommand::Clear => {
+                night_core::session_restore::SavedSession::clear();
+                println!("🗑️ Saved window session file removed.");
+            }
+        },
+
         Commands::Wallpaper { path } => {
             if let Some(p) = path {
                 let cmd = format!("swww img \"{p}\" --transition-type wipe --transition-angle 30 --transition-duration 1.5");
@@ -920,6 +1088,10 @@ fn print_status_table(status: &DesktopStatus) {
     if let Some(ref bt) = status.bluetooth {
         println!("  Bluetooth Status     : {}", bt.display_string());
     }
+    if let Some(ref bl) = status.backlight {
+        println!("  Display Backlight    : {}", bl.display_string());
+    }
+    println!("  Do Not Disturb (DND) : {}", if status.dnd { "󰂛 Enabled (Muted)" } else { "󰂚 Disabled (Normal)" });
     println!("  Night Light (Gamma)  : {}K", status.gamma_temp.unwrap_or(6500));
     println!("  Idle Inhibition Mode : {}", if status.inhibited { "☕ Enabled (Sleep Suspended)" } else { "🌙 Normal Power Saving" });
     if let Some(ref m) = status.media_info {
