@@ -107,6 +107,21 @@ pub fn register_all() {
         }
     });
 
+    // Super + s -> Toggle Sticky Window (pinned across all workspace tags)
+    input::keybind(Mod::SUPER, 's').on_press(|| {
+        toggle_sticky();
+    });
+
+    // Super + p -> Toggle Picture-in-Picture (PiP) Floating Mode
+    input::keybind(Mod::SUPER, 'p').on_press(|| {
+        toggle_pip();
+    });
+
+    // Super + c -> Center Focused Floating Window
+    input::keybind(Mod::SUPER, 'c').on_press(|| {
+        center_focused_window();
+    });
+
     // Directional Window Navigation (Vim Keys: h/j/k/l)
     let nav_keys = [
         ('h', Direction::Left),
@@ -191,6 +206,11 @@ pub fn register_all() {
     // Super + slash -> Snowcap Interactive Keybinds Cheatsheet Overlay
     input::keybind(Mod::SUPER, "slash").on_press(|| {
         show_bind_overlay();
+    });
+
+    // Super + BackSpace -> Snowcap Tokyo Night Session Flyout Menu
+    input::keybind(Mod::SUPER, "BackSpace").on_press(|| {
+        show_session_menu();
     });
 
     // Super + Shift + r -> Reload config
@@ -353,4 +373,255 @@ pub fn show_quit_prompt() {
     prompt.height = 140;
     prompt.show();
 }
+
+/// Toggles sticky state on the focused window (visible across all workspace tags)
+pub fn toggle_sticky() {
+    if let (Some(focused_win), Some(focused_op)) = (window::get_focused(), output::get_focused()) {
+        let all_count = DEFAULT_TAG_NAMES.len();
+        let win_tags_count = focused_win.tags().count();
+        if win_tags_count >= all_count {
+            if let Some(active_tag) = focused_op.active_tags().next() {
+                for name in DEFAULT_TAG_NAMES {
+                    if let Some(t) = pinnacle_api::tag::get_on_output(name, &focused_op) {
+                        if t != active_tag {
+                            focused_win.set_tag(&t, false);
+                        }
+                    }
+                }
+            }
+            info!("Focused window unpinned from sticky mode");
+        } else {
+            for name in DEFAULT_TAG_NAMES {
+                if let Some(t) = pinnacle_api::tag::get_on_output(name, &focused_op) {
+                    focused_win.set_tag(&t, true);
+                }
+            }
+            info!("Focused window pinned sticky across all workspace tags");
+        }
+    }
+}
+
+/// Toggles Picture-in-Picture (PiP) mode (bottom-right floating + sticky)
+pub fn toggle_pip() {
+    if let (Some(focused_win), Some(focused_op)) = (window::get_focused(), output::get_focused()) {
+        if focused_win.floating() && focused_win.tags().count() > 1 {
+            focused_win.set_floating(false);
+            if let Some(active_tag) = focused_op.active_tags().next() {
+                for name in DEFAULT_TAG_NAMES {
+                    if let Some(t) = pinnacle_api::tag::get_on_output(name, &focused_op) {
+                        if t != active_tag {
+                            focused_win.set_tag(&t, false);
+                        }
+                    }
+                }
+            }
+            info!("Window restored from Picture-in-Picture mode");
+        } else {
+            focused_win.set_floating(true);
+            for name in DEFAULT_TAG_NAMES {
+                if let Some(t) = pinnacle_api::tag::get_on_output(name, &focused_op) {
+                    focused_win.set_tag(&t, true);
+                }
+            }
+            let op_size = focused_op
+                .logical_size()
+                .unwrap_or(pinnacle_api::util::Size { w: 1920, h: 1080 });
+            let op_loc = focused_op
+                .loc()
+                .unwrap_or(pinnacle_api::util::Point { x: 0, y: 0 });
+            let pip_w = 480;
+            let pip_h = 270;
+            let pad = 24;
+            let x = op_loc.x + (op_size.w as i32) - pip_w - pad;
+            let y = op_loc.y + (op_size.h as i32) - pip_h - pad;
+            focused_win.set_geometry(x, y, pip_w as u32, pip_h as u32);
+            focused_win.raise();
+            info!("Window placed in Picture-in-Picture bottom-right overlay");
+        }
+    }
+}
+
+/// Centers the currently focused floating window on the active display
+pub fn center_focused_window() {
+    if let (Some(focused_win), Some(focused_op)) = (window::get_focused(), output::get_focused()) {
+        focused_win.set_floating(true);
+        let op_size = focused_op
+            .logical_size()
+            .unwrap_or(pinnacle_api::util::Size { w: 1920, h: 1080 });
+        let op_loc = focused_op
+            .loc()
+            .unwrap_or(pinnacle_api::util::Point { x: 0, y: 0 });
+        let win_size = focused_win
+            .size()
+            .unwrap_or(pinnacle_api::util::Size { w: 800, h: 500 });
+        let x = op_loc.x + ((op_size.w as i32) - (win_size.w as i32)) / 2;
+        let y = op_loc.y + ((op_size.h as i32) - (win_size.h as i32)) / 2;
+        focused_win.set_geometry(x, y, win_size.w, win_size.h);
+        focused_win.raise();
+        info!("Centered focused floating window on active display");
+    }
+}
+
+/// Interactive Tokyo Night Session Manager Flyout Modal
+#[derive(Clone, Debug)]
+pub struct SessionFlyout {
+    pub border_radius: f32,
+    pub border_thickness: f32,
+    pub background_color: [f32; 4],
+    pub border_color: [f32; 4],
+    pub font: pinnacle_api::experimental::snowcap_api::widget::font::Font,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Default for SessionFlyout {
+    fn default() -> Self {
+        use pinnacle_api::experimental::snowcap_api::widget::font::{Family, Font};
+        Self {
+            border_radius: 14.0,
+            border_thickness: 2.0,
+            background_color: [0.10, 0.11, 0.15, 0.96],
+            border_color: [0.48, 0.64, 0.97, 1.0],
+            font: Font::new_with_family(Family::Name("Ubuntu".into())),
+            width: 560,
+            height: 240,
+        }
+    }
+}
+
+impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout {
+    type Message = ();
+
+    fn update(&mut self, _msg: Self::Message) {}
+
+    fn view(
+        &self,
+    ) -> Option<pinnacle_api::experimental::snowcap_api::widget::WidgetDef<Self::Message>> {
+        use pinnacle_api::experimental::snowcap_api::widget::{
+            column::Column,
+            container::Container,
+            font::Weight,
+            row::Row,
+            text::{self, Text},
+            Alignment, Background, Length, Padding,
+        };
+
+        let title = Text::new("🌙 Tokyo Night Session Manager").style(
+            text::Style::new()
+                .font(self.font.clone().weight(Weight::Bold))
+                .pixels(20.0),
+        );
+
+        let subtitle = Text::new("Select an action via keyboard shortcut:")
+            .style(text::Style::new().font(self.font.clone()).pixels(13.0));
+
+        let actions_row1 = Row::new_with_children([Text::new(
+            "  [L] Lock Screen      [S] Sleep (DPMS)      [R] Reload Config",
+        )
+        .style(
+            text::Style::new()
+                .font(self.font.clone().weight(Weight::Bold))
+                .pixels(14.0),
+        )
+        .into()]);
+
+        let actions_row2 = Row::new_with_children([Text::new(
+            "  [Q] Exit Desktop     [P] Power Off         [B] Reboot System",
+        )
+        .style(
+            text::Style::new()
+                .font(self.font.clone().weight(Weight::Bold))
+                .pixels(14.0),
+        )
+        .into()]);
+
+        let hint = Text::new("Press ESCAPE to cancel")
+            .style(text::Style::new().font(self.font.clone()).pixels(12.0));
+
+        let widget = Container::new(Column::new_with_children([
+            title.into(),
+            Text::new("").style(text::Style::new().pixels(6.0)).into(),
+            subtitle.into(),
+            Text::new("").style(text::Style::new().pixels(12.0)).into(),
+            actions_row1.into(),
+            Text::new("").style(text::Style::new().pixels(8.0)).into(),
+            actions_row2.into(),
+            Text::new("").style(text::Style::new().pixels(14.0)).into(),
+            hint.into(),
+        ]))
+        .width(Length::Fixed(self.width as f32))
+        .height(Length::Fixed(self.height as f32))
+        .padding(Padding {
+            top: 20.0,
+            right: 20.0,
+            bottom: 20.0,
+            left: 20.0,
+        })
+        .vertical_alignment(Alignment::Center)
+        .horizontal_alignment(Alignment::Center)
+        .style(
+            pinnacle_api::experimental::snowcap_api::widget::container::Style {
+                text_color: None,
+                background: Some(Background::Color(self.background_color.into())),
+                border: Some(pinnacle_api::experimental::snowcap_api::widget::Border {
+                    color: Some(self.border_color.into()),
+                    width: Some(self.border_thickness),
+                    radius: Some(self.border_radius.into()),
+                }),
+            },
+        );
+
+        Some(widget.into())
+    }
+}
+
+/// Displays the interactive Tokyo Night Session Flyout Modal via Snowcap
+pub fn show_session_menu() {
+    let flyout = SessionFlyout::default();
+    let lock_cmd = UserConfig::load().apps.lock_cmd;
+
+    use pinnacle_api::experimental::snowcap_api::layer::{
+        new_widget, ExclusiveZone, KeyboardInteractivity, ZLayer,
+    };
+    use pinnacle_api::Keysym;
+
+    let _ = new_widget(
+        flyout,
+        None,
+        KeyboardInteractivity::Exclusive,
+        ExclusiveZone::Respect,
+        ZLayer::Overlay,
+    )
+    .map(|handle| {
+        handle.on_key_press(move |h, key, _mods| match key {
+            Keysym::l | Keysym::L => {
+                spawn_shell(&lock_cmd);
+                h.close();
+            }
+            Keysym::s | Keysym::S => {
+                night_tags::set_dpms(false);
+                h.close();
+            }
+            Keysym::r | Keysym::R => {
+                pinnacle_api::pinnacle::reload_config();
+                h.close();
+            }
+            Keysym::q | Keysym::Q => {
+                pinnacle_api::pinnacle::quit();
+            }
+            Keysym::p | Keysym::P => {
+                spawn_shell("systemctl poweroff");
+                h.close();
+            }
+            Keysym::b | Keysym::B => {
+                spawn_shell("systemctl reboot");
+                h.close();
+            }
+            _ => {
+                h.close();
+            }
+        });
+    });
+}
+
 
