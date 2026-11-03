@@ -61,6 +61,8 @@ fn current_desktop_status() -> DesktopStatus {
         network: night_core::network::read_network(),
         system: Some(night_core::sysinfo::read_system_stats()),
         bluetooth: night_core::bluetooth::read_bluetooth(),
+        backlight: night_core::backlight::get_backlight(),
+        dnd: night_core::notifications::NotificationHistory::is_dnd(),
     }
 }
 
@@ -393,6 +395,60 @@ async fn config() {
                 IpcCommand::ShowAudioSinkMenu => {
                     night_binds::show_audio_sink_modal();
                     IpcResponse::Ok
+                }
+                IpcCommand::Backlight(action) => {
+                    let bl = night_core::backlight::handle_backlight_action(action);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Backlight(bl)
+                }
+                IpcCommand::GetBacklight => {
+                    IpcResponse::Backlight(night_core::backlight::get_backlight())
+                }
+                IpcCommand::ToggleDnd => {
+                    let dnd = night_core::notifications::NotificationHistory::toggle_dnd();
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Dnd(dnd)
+                }
+                IpcCommand::GetDnd => {
+                    IpcResponse::Dnd(night_core::notifications::NotificationHistory::is_dnd())
+                }
+                IpcCommand::ShowNotifications => {
+                    night_binds::show_notifications_modal();
+                    IpcResponse::Ok
+                }
+                IpcCommand::SaveSession => {
+                    let state = SessionState::load().unwrap_or(SessionState {
+                        active_tag: "1".into(),
+                        last_reload_timestamp: 0,
+                    });
+                    let user_cfg = UserConfig::load();
+                    let mut windows = Vec::new();
+                    for win in pinnacle_api::window::get_all() {
+                        windows.push(night_core::session_restore::SavedWindow {
+                            app_id: win.app_id().to_string(),
+                            title: win.title().to_string(),
+                            tag: state.active_tag.clone(),
+                            is_floating: win.floating(),
+                        });
+                    }
+                    night_core::session_restore::SavedSession::save(
+                        &state.active_tag,
+                        user_cfg.general.theme.name(),
+                        windows,
+                    );
+                    IpcResponse::Ok
+                }
+                IpcCommand::RestoreSession => {
+                    let saved = night_core::session_restore::SavedSession::load();
+                    if let Some(ref s) = saved {
+                        info!(windows = s.windows.len(), "Restoring saved desktop session");
+                        for w in &s.windows {
+                            if which::which(&w.app_id).is_ok() {
+                                night_core::exec::spawn_shell(&w.app_id);
+                            }
+                        }
+                    }
+                    IpcResponse::SavedSession(saved)
                 }
                 IpcCommand::Subscribe => {
                     IpcResponse::Status(current_desktop_status())
