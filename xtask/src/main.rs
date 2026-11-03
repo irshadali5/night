@@ -111,6 +111,18 @@ enum MsgCommand {
         /// Optional variant to set (night, storm, moon, day)
         variant: Option<String>,
     },
+    /// Manages audio volume (raise, lower, mute, status)
+    Volume {
+        /// Volume action: "raise", "lower", "mute", or omit to query
+        action: Option<String>,
+    },
+    /// Queries battery and power supply status
+    Power,
+    /// Sets or queries desktop wallpaper via swww
+    Wallpaper {
+        /// Optional path to wallpaper file
+        path: Option<String>,
+    },
     /// Subscribes to real-time status updates stream
     Stream,
 }
@@ -536,6 +548,23 @@ async fn task_msg(command: MsgCommand) {
                 night_core::ipc::IpcCommand::GetTheme
             }
         }
+        MsgCommand::Volume { action } => {
+            let act = match action.as_deref() {
+                Some("raise") | Some("up") => night_core::audio::VolumeAction::Raise(5),
+                Some("lower") | Some("down") => night_core::audio::VolumeAction::Lower(5),
+                Some("mute") | Some("toggle") => night_core::audio::VolumeAction::MuteToggle,
+                _ => night_core::audio::VolumeAction::Query,
+            };
+            night_core::ipc::IpcCommand::Volume(act)
+        }
+        MsgCommand::Power => night_core::ipc::IpcCommand::GetBattery,
+        MsgCommand::Wallpaper { path } => {
+            if let Some(p) = path {
+                night_core::ipc::IpcCommand::Spawn(format!("swww img \"{p}\" --transition-type wipe --transition-duration 1.5"))
+            } else {
+                night_core::ipc::IpcCommand::Spawn("swww query".into())
+            }
+        }
         MsgCommand::Stream => {
             println!("📡 Subscribing to real-time Night status stream...");
             let res = night_core::ipc::subscribe_status(|s| {
@@ -566,7 +595,25 @@ async fn task_msg(command: MsgCommand) {
                 "  Focused Window       : {}",
                 s.active_window.unwrap_or_else(|| "None".into())
             );
+            if let Some(ref v) = s.volume {
+                println!("  Audio Volume         : {}", v.display_string());
+            }
+            if let Some(ref b) = s.battery {
+                println!("  Battery Power        : {} ({})", b.display_string(), b.status);
+            }
             println!("  Last Reload Timestamp: {}", s.last_reload);
+        }
+        Ok(night_core::ipc::IpcResponse::Battery(Some(bat))) => {
+            println!("⚡ Battery Status: {} ({})", bat.display_string(), bat.status);
+        }
+        Ok(night_core::ipc::IpcResponse::Battery(None)) => {
+            println!("⚡ Running on AC Power (no battery detected)");
+        }
+        Ok(night_core::ipc::IpcResponse::Volume(Some(vol))) => {
+            println!("🔊 Audio Volume: {}", vol.display_string());
+        }
+        Ok(night_core::ipc::IpcResponse::Volume(None)) => {
+            println!("🔊 Audio: No active sink");
         }
         Ok(resp) => println!("✅ Response: {resp:?}"),
         Err(e) => {
