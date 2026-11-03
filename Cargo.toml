@@ -29,6 +29,7 @@ pinnacle-api = { git = "https://github.com/pinnacle-comp/pinnacle" }
 tokio = { version = "1.40", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
 thiserror = "2.0"
 
 # Standard Ecosystem Crates (avoiding custom from-scratch boilerplate)
