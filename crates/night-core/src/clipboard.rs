@@ -118,13 +118,12 @@ impl ClipboardHistory {
     }
 }
 
-/// Places text into active Wayland clipboard selection using pure-Rust `rsclipd`
-/// with seamless fallback to `wl-copy`.
+/// Places text into active Wayland clipboard selection using pure-Rust `rsclipd`.
 pub fn copy_to_system_clipboard(text: &str) {
     use std::io::Write;
     use std::process::{Command, Stdio};
 
-    // 1. Prefer pure-Rust native rsclipd
+    // Pure-Rust native rsclipd
     if which::which("rsclipd").is_ok() {
         if let Ok(mut child) = Command::new("rsclipd")
             .args(["store", "--mime", "text/plain"])
@@ -142,23 +141,6 @@ pub fn copy_to_system_clipboard(text: &str) {
         }
     }
 
-    // 2. Fallback to wl-copy if installed
-    if which::which("wl-copy").is_ok() {
-        if let Ok(mut child) = Command::new("wl-copy")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-        {
-            if let Some(mut stdin) = child.stdin.take() {
-                let _ = stdin.write_all(text.as_bytes());
-            }
-            let _ = child.wait();
-            info!(length = text.len(), "Pushed entry to Wayland system clipboard via wl-copy fallback");
-            return;
-        }
-    }
-
-    warn!("Neither rsclipd nor wl-copy found on PATH; cannot write to Wayland clipboard");
+    warn!("Pure-Rust rsclipd not found on PATH; install rsclip (github.com/jR4dh3y/rsclip)");
 }
 
