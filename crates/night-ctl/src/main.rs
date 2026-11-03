@@ -55,11 +55,20 @@ enum Commands {
         action: Option<String>,
     },
 
-    /// Adjust tiling layout gaps in real-time by delta pixels
+    /// Adjust or set tiling layout gaps in real-time
     Gaps {
         /// Delta value in pixels (e.g. 2.0, -2.0)
-        delta: f32,
+        delta: Option<f32>,
+        /// Explicit inner gap in pixels
+        #[arg(long)]
+        inner: Option<f32>,
+        /// Explicit outer gap in pixels
+        #[arg(long)]
+        outer: Option<f32>,
     },
+
+    /// Launch the Slint-based GUI Control Center & Settings app
+    Settings,
 
     /// Manage multi-monitor focus and window placement across displays
     #[command(alias = "monitor")]
@@ -208,8 +217,18 @@ async fn main() {
             }
         }
 
-        Commands::Gaps { delta } => {
-            run_cmd(IpcCommand::AdjustGaps(delta)).await;
+        Commands::Gaps { delta, inner, outer } => {
+            if inner.is_some() || outer.is_some() {
+                run_cmd(IpcCommand::SetGaps { inner, outer }).await;
+            } else if let Some(d) = delta {
+                run_cmd(IpcCommand::AdjustGaps(d)).await;
+            } else {
+                eprintln!("Error: Specify a delta (e.g. `nightctl gaps 5`) or `--inner`/`--outer`");
+            }
+        }
+
+        Commands::Settings => {
+            run_cmd(IpcCommand::Spawn("night-settings".into())).await;
         }
 
         Commands::Output { action } => match action {
