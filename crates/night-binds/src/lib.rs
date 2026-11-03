@@ -9,10 +9,12 @@ use pinnacle_api::util::Direction;
 use pinnacle_api::{output, pinnacle, window};
 use tracing::info;
 
+pub mod audio_ui;
 pub mod clipboard_ui;
 pub mod launcher;
 pub mod snipping;
 pub mod switcher;
+pub use audio_ui::show_audio_sink_modal;
 pub use clipboard_ui::show_clipboard_modal;
 pub use launcher::{scan_desktop_applications, show_launcher_modal, AppEntry};
 pub use snipping::show_snipping_modal;
@@ -319,6 +321,11 @@ pub fn register_all() {
     // Audio Mute Toggle
     input::keybind(Mod::empty(), "XF86AudioMute").on_press(|| {
         night_core::audio::handle_volume_action(night_core::audio::VolumeAction::MuteToggle);
+    });
+
+    // Super + Shift + a -> Audio Output Sink Switcher Modal
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'a').on_press(|| {
+        show_audio_sink_modal();
     });
 
     // Brightness Up
@@ -716,7 +723,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
         .into()]);
 
         let actions_row4 = Row::new_with_children([Text::new(
-            "  [V] Clipboard (rsclip)                     [Space] App Launcher",
+            "  [V] Clipboard        [Space] App Launcher        [A] Audio Sinks",
         )
         .style(
             text::Style::new()
@@ -830,6 +837,10 @@ pub fn show_session_menu() {
             Keysym::space => {
                 h.close();
                 show_launcher_modal();
+            }
+            Keysym::a | Keysym::A => {
+                h.close();
+                show_audio_sink_modal();
             }
             _ => {
                 h.close();
