@@ -20,6 +20,7 @@ file_manager = "favnyr"
 term_file_manager = "yazi"
 browser = "zen-browser"
 alt_browser = "brave"
+media_player = "vivi"
 lock_cmd = "veila"
 
 [gamma]

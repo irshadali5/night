@@ -52,7 +52,13 @@ pub struct AppsConfig {
     pub term_file_manager: String,
     pub browser: String,
     pub alt_browser: String,
+    #[serde(default = "default_media_player")]
+    pub media_player: String,
     pub lock_cmd: String,
+}
+
+fn default_media_player() -> String {
+    "vivi".to_string()
 }
 
 impl Default for AppsConfig {
@@ -66,6 +72,7 @@ impl Default for AppsConfig {
             term_file_manager: "yazi".to_string(),
             browser: "zen-browser".to_string(),
             alt_browser: "brave".to_string(),
+            media_player: "vivi".to_string(),
             lock_cmd: "veila".to_string(),
         }
     }

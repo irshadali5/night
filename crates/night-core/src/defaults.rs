@@ -27,6 +27,13 @@ impl Defaults {
     /// Privacy-focused alternative browser
     pub const ALT_BROWSER: &'static str = "brave";
 
+    /// Modern lightweight Rust+Slint media player
+    pub const MEDIA_PLAYER: &'static str = "vivi";
+
+    /// Pure-Rust Wayland clipboard manager and daemon
+    pub const CLIPBOARD_DAEMON: &'static str = "rsclipd";
+    pub const CLIPBOARD_MANAGER: &'static str = "rsclip";
+
     /// Pure-Rust Wayland screen locker
     pub const LOCKER: &'static str = "veila";
 
