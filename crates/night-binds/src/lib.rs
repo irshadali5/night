@@ -6,7 +6,7 @@ use night_core::{Defaults, UserConfig};
 use night_tags::DEFAULT_TAG_NAMES;
 use pinnacle_api::input::{self, Mod, MouseButton};
 use pinnacle_api::util::Direction;
-use pinnacle_api::{pinnacle, tag, window};
+use pinnacle_api::{output, pinnacle, tag, window};
 use tracing::info;
 
 /// Registers all user keybindings and interactive mouse bindings with the Pinnacle compositor
@@ -67,6 +67,11 @@ pub fn register_all() {
     let lock_cmd = user_cfg.apps.lock_cmd.clone();
     input::keybind(Mod::SUPER, "Escape").on_press(move || {
         spawn_shell(&lock_cmd);
+    });
+
+    // Super + grave (tilde) -> Toggle Quake-style Dropdown Scratchpad Terminal
+    input::keybind(Mod::SUPER, "grave").on_press(|| {
+        toggle_scratchpad();
     });
 
     // -------------------------------------------------------------------------
@@ -178,6 +183,16 @@ pub fn register_all() {
         pinnacle::quit();
     });
 
+    // Super + Shift + e -> Snowcap Quit Confirmation Prompt
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'e').on_press(|| {
+        show_quit_prompt();
+    });
+
+    // Super + slash -> Snowcap Interactive Keybinds Cheatsheet Overlay
+    input::keybind(Mod::SUPER, "slash").on_press(|| {
+        show_bind_overlay();
+    });
+
     // Super + Shift + r -> Reload config
     input::keybind(Mod::SUPER | Mod::SHIFT, 'r').on_press(|| {
         pinnacle::reload_config();
@@ -257,3 +272,50 @@ pub fn register_all() {
 
     info!("All keybindings and interactive mouse controls registered successfully.");
 }
+
+/// Toggles the interactive Quake-style dropdown scratchpad terminal
+pub fn toggle_scratchpad() {
+    let all_windows = window::get_all().collect::<Vec<_>>();
+    let scratch = all_windows
+        .into_iter()
+        .find(|w| w.app_id().to_lowercase() == "night-scratchpad");
+
+    if let Some(scratch_win) = scratch {
+        if let Some(active_tag) = output::get_focused().and_then(|op| op.active_tags().next()) {
+            if scratch_win.is_on_active_tag() {
+                scratch_win.set_tag(&active_tag, false);
+            } else {
+                scratch_win.set_tag(&active_tag, true);
+                scratch_win.raise();
+                scratch_win.set_focused(true);
+            }
+        }
+    } else {
+        spawn("alacritty", &["--class", "night-scratchpad"]);
+    }
+}
+
+/// Displays the interactive Tokyo Night keybinding cheatsheet overlay via Snowcap
+pub fn show_bind_overlay() {
+    let mut overlay = pinnacle_api::snowcap::BindOverlay::new();
+    overlay.border_radius = 12.0;
+    overlay.border_thickness = 2.0;
+    overlay.background_color = [0.10, 0.11, 0.15, 0.92].into(); // Tokyo Night Dark #1a1b26
+    overlay.border_color = [0.48, 0.64, 0.97].into(); // Tokyo Night Blue #7aa2f7
+    overlay.width = 760;
+    overlay.height = 560;
+    overlay.show();
+}
+
+/// Displays the interactive Tokyo Night quit confirmation prompt via Snowcap
+pub fn show_quit_prompt() {
+    let mut prompt = pinnacle_api::snowcap::QuitPrompt::new();
+    prompt.border_radius = 12.0;
+    prompt.border_thickness = 2.0;
+    prompt.background_color = [0.10, 0.11, 0.15, 0.95].into();
+    prompt.border_color = [0.97, 0.46, 0.56].into(); // Tokyo Night Red #f7768e
+    prompt.width = 320;
+    prompt.height = 140;
+    prompt.show();
+}
+
