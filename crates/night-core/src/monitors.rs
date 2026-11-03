@@ -50,6 +50,9 @@ pub enum MonitorTransform {
     Rotate180,
     Rotate270,
     Flipped,
+    Flipped90,
+    Flipped180,
+    Flipped270,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -136,16 +139,25 @@ impl MonitorProfile {
             op.set_loc(pos.x, pos.y);
         }
 
-        if let Some(transform) = self.transform {
-            use pinnacle_api::output::Transform;
-            let p_transform = match transform {
-                MonitorTransform::Normal => Transform::Normal,
-                MonitorTransform::Rotate90 => Transform::_90,
-                MonitorTransform::Rotate180 => Transform::_180,
-                MonitorTransform::Rotate270 => Transform::_270,
-                MonitorTransform::Flipped => Transform::Flipped,
-            };
-            op.set_transform(p_transform);
+        // When running nested in winit ("Pinnacle Window"), Pinnacle internally configures
+        // Flipped180 for correct OpenGL surface orientation. Never overwrite it with Normal
+        // unless explicitly specified with name="Pinnacle Window".
+        let is_nested = name.contains("Pinnacle") || name.contains("Winit") || name.contains("winit");
+        if !is_nested || self.name == name {
+            if let Some(transform) = self.transform {
+                use pinnacle_api::output::Transform;
+                let p_transform = match transform {
+                    MonitorTransform::Normal => Transform::Normal,
+                    MonitorTransform::Rotate90 => Transform::_90,
+                    MonitorTransform::Rotate180 => Transform::_180,
+                    MonitorTransform::Rotate270 => Transform::_270,
+                    MonitorTransform::Flipped => Transform::Flipped,
+                    MonitorTransform::Flipped90 => Transform::Flipped90,
+                    MonitorTransform::Flipped180 => Transform::Flipped180,
+                    MonitorTransform::Flipped270 => Transform::Flipped270,
+                };
+                op.set_transform(p_transform);
+            }
         }
 
         if let Some(vrr) = self.vrr {
