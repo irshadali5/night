@@ -40,6 +40,10 @@
         app_id: "blueman-manager",
         action: Float,
     ),
+    Rule(
+        app_id: "rsclip",
+        action: Float,
+    ),
 
     // Application tag assignments
     Rule(
@@ -53,6 +57,10 @@
     Rule(
         app_id: "favnyr",
         action: MoveToTag("3"),
+    ),
+    Rule(
+        app_id: "vivi",
+        action: MoveToTag("4"),
     ),
     Rule(
         app_id: "discord",
