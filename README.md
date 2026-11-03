@@ -34,6 +34,9 @@ night/
 │   ├── Cargo.toml
 │   └── src/main.rs
 │
+├── packaging/                    # Arch Linux & AUR packaging specifications
+│   └── PKGBUILD
+│
 └── crates/                       # Production desktop crates
     ├── night-core/               # TOML config parsing, postcard state caching, theme constants
     ├── night-daemons/            # Autostart supervisor for background services
@@ -41,6 +44,7 @@ night/
     ├── night-layout/             # Dynamic layout engine (MasterStack, Dwindle, Spiral, Fair)
     ├── night-rules/              # RON-powered declarative window placement & auto-floating
     ├── night-binds/              # Keyboard shortcuts, media keys, and screenshot binds
+    ├── night-ctl/                # High-performance CLI client & real-time status streaming tool
     └── night-pinnacle/           # Main binary entrypoint orchestrating all crates
 ```
 
@@ -85,6 +89,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + y` $\rightarrow$ Launch **Yazi** (Async Terminal File Manager)
 * `Super + b` $\rightarrow$ Launch **Zen Browser** (Primary Web Browser)
 * `Super + Shift + b` $\rightarrow$ Launch **Brave Browser** (Alternative Browser)
+* `Super + ` ` ` (tilde) $\rightarrow$ Toggle **Scratchpad** Dropdown Terminal
 * `Super + Escape` $\rightarrow$ Lock Session (**Veila** - Pure Rust Locker)
 
 ### Window Navigation & Layout
@@ -103,8 +108,10 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Shift + [1..9]` $\rightarrow$ Move Window to Tag 1–9
 
 ### Multimedia, Screenshots & Session
+* `Super + /` $\rightarrow$ Open **Snowcap** Keybinds Cheatsheet Overlay (Tokyo Night themed)
+* `Super + Shift + e` $\rightarrow$ Open **Snowcap** Quit Confirmation Prompt
 * `Super + Shift + r` $\rightarrow$ Reload Pinnacle Configuration
-* `Super + Shift + x` $\rightarrow$ Exit Pinnacle Session
+* `Super + Shift + x` $\rightarrow$ Instant Exit Pinnacle Session
 * `Print` $\rightarrow$ Interactive Region Screenshot & Annotate (**Wayshot** + **Satty**)
 * `Super + Print` $\rightarrow$ Fullscreen Screenshot to `~/Pictures`
 * `Super + Alt + r` $\rightarrow$ Toggle Screen Recording (**wl-screenrec**)
@@ -112,20 +119,43 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 
 ---
 
-## 📡 Remote IPC Control (`cargo xtask msg`)
+## ⚡ Instant Remote Control & Live Status Streaming (`nightctl`)
 
-Night includes an ultra-fast Unix domain socket server (`$XDG_RUNTIME_DIR/night.sock`) powered by `postcard` binary serialization. You can control your desktop from external scripts, Ironbar status widgets, or terminals:
+Night provides a dedicated, blazing-fast pure-Rust CLI tool `nightctl` installed to `~/.cargo/bin/nightctl` for sub-millisecond IPC communication, window management, and real-time event streaming:
 
 ```bash
-cargo xtask msg status              # Full status: active tag, layout, gaps, monitors, focused win
-cargo xtask msg reload              # Reloads configuration
-cargo xtask msg switch-tag 3        # Switches active tag to 3
-cargo xtask msg layout next         # Cycles to next layout (MasterStack, Dwindle, Spiral, Fair)
-cargo xtask msg gaps 2.0            # Dynamically adjusts gaps
-cargo xtask msg state               # Queries session state
-cargo xtask msg spawn alacritty     # Launches an application
-cargo xtask msg close               # Closes currently focused window
+# Query comprehensive desktop status (active tag, layout, gaps, monitors, focused window)
+nightctl status
+nightctl status --json
+
+# Stream real-time status updates without polling lag (ideal for Ironbar, Waybar, or scripts)
+nightctl stream
+nightctl stream --format "󰕰 {layout} | 󱂬 {active_tag} | {active_window}"
+
+# Control workspace tags and window tiling
+nightctl tag 2
+nightctl layout next
+nightctl gaps +2
+nightctl gaps -2
+
+# Toggle dropdown scratchpad terminal and Snowcap modals
+nightctl scratchpad
+nightctl overlay
+nightctl quit-prompt
 ```
+
+Alternatively, remote commands can be delivered via `cargo xtask msg <CMD>`:
+* `cargo xtask msg status` $\rightarrow$ Prints detailed desktop status.
+* `cargo xtask msg stream` $\rightarrow$ Streams live compositor events.
+* `cargo xtask msg switch-tag <TAG>` $\rightarrow$ Switch to tag `[1..9]`.
+* `cargo xtask msg layout [next]` $\rightarrow$ Query or cycle tiling layouts.
+* `cargo xtask msg gaps <delta>` $\rightarrow$ Adjust gaps by numeric delta (e.g. `2.0` or `-2.0`).
+* `cargo xtask msg scratchpad` $\rightarrow$ Toggles Quake dropdown terminal.
+* `cargo xtask msg overlay` $\rightarrow$ Triggers Snowcap keybind overlay.
+* `cargo xtask msg quit-prompt` $\rightarrow$ Triggers Snowcap quit prompt.
+* `cargo xtask msg reload` $\rightarrow$ Reloads compositor configuration.
+* `cargo xtask msg close` $\rightarrow$ Closes currently focused window.
+* `cargo xtask msg spawn <CMD>` $\rightarrow$ Spawns a command string through Night.
 
 ---
 
