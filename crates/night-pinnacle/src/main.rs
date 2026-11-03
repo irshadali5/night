@@ -102,6 +102,24 @@ async fn config() {
         })),
     )));
 
+    let _op_connect_signal = Box::leak(Box::new(pinnacle_api::output::connect_signal(
+        pinnacle_api::signal::OutputSignal::Connect(Box::new(|_op| {
+            night_core::ipc::broadcast_status(current_desktop_status());
+        })),
+    )));
+
+    let _op_disconnect_signal = Box::leak(Box::new(pinnacle_api::output::connect_signal(
+        pinnacle_api::signal::OutputSignal::Disconnect(Box::new(|_op| {
+            night_core::ipc::broadcast_status(current_desktop_status());
+        })),
+    )));
+
+    let _op_focused_signal = Box::leak(Box::new(pinnacle_api::output::connect_signal(
+        pinnacle_api::signal::OutputSignal::Focused(Box::new(|_op| {
+            night_core::ipc::broadcast_status(current_desktop_status());
+        })),
+    )));
+
     // -------------------------------------------------------------------------
     // 9. Start Desktop IPC Server (Unix Socket via `postcard` binary serialization)
     // -------------------------------------------------------------------------
@@ -164,6 +182,32 @@ async fn config() {
                 }
                 IpcCommand::ShowQuit => {
                     night_binds::show_quit_prompt();
+                    IpcResponse::Ok
+                }
+                IpcCommand::FocusOutput(nav) => {
+                    match nav {
+                        night_core::ipc::OutputNav::Next => night_tags::focus_next_output(),
+                        night_core::ipc::OutputNav::Prev => night_tags::focus_prev_output(),
+                        night_core::ipc::OutputNav::Name(n) => night_tags::focus_output_by_name(&n),
+                    }
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Ok
+                }
+                IpcCommand::MoveWindowToOutput(nav) => {
+                    match nav {
+                        night_core::ipc::OutputNav::Next => night_tags::move_focused_to_next_output(),
+                        night_core::ipc::OutputNav::Prev => night_tags::move_focused_to_prev_output(),
+                        night_core::ipc::OutputNav::Name(n) => night_tags::move_focused_to_output_by_name(&n),
+                    }
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::Ok
+                }
+                IpcCommand::Dpms(action) => {
+                    match action {
+                        night_core::ipc::DpmsAction::On => night_tags::set_dpms(true),
+                        night_core::ipc::DpmsAction::Off => night_tags::set_dpms(false),
+                        night_core::ipc::DpmsAction::Toggle => night_tags::toggle_dpms(),
+                    }
                     IpcResponse::Ok
                 }
                 IpcCommand::Subscribe => {
