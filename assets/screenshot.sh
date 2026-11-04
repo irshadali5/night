@@ -24,8 +24,8 @@ case "$MODE" in
         wayshot -f "$TARGET_FILE"
         if command -v rsclipd > /dev/null 2>&1; then
             rsclipd store --mime image/png < "$TARGET_FILE"
-        elif command -v wl-copy > /dev/null 2>&1; then
-            wl-copy < "$TARGET_FILE"
+        elif command -v rsclip > /dev/null 2>&1; then
+            rsclip copy --mime image/png < "$TARGET_FILE"
         fi
         if command -v wired > /dev/null 2>&1 || command -v notify-send > /dev/null 2>&1; then
             notify-send -a "Night Desktop" "Screenshot Saved" "Captured to $TARGET_FILE and copied to clipboard."
