@@ -210,6 +210,83 @@ pub fn set_dpms(powered: bool) {
     }
 }
 
+/// Swaps active workspaces and windows between primary and secondary display outputs
+pub fn swap_active_outputs() {
+    let outputs: Vec<_> = output::get_all_enabled().collect();
+    if outputs.len() < 2 {
+        info!("Output swap requires at least 2 connected and enabled displays");
+        return;
+    }
+    let current_idx = outputs.iter().position(|op| op.focused()).unwrap_or(0);
+    let next_idx = (current_idx + 1) % outputs.len();
+    let op_a = &outputs[current_idx];
+    let op_b = &outputs[next_idx];
+
+    let all_windows = window::get_all().collect::<Vec<_>>();
+    let a_tag = op_a.active_tags().next();
+    let b_tag = op_b.active_tags().next();
+
+    if let (Some(tag_a), Some(tag_b)) = (a_tag, b_tag) {
+        let name_a = tag_a.name();
+        let name_b = tag_b.name();
+
+        for win in &all_windows {
+            let on_a = win.tags().any(|t| t == tag_a);
+            let on_b = win.tags().any(|t| t == tag_b);
+
+            if on_a && !on_b {
+                if let Some(target_tag) = tag::get_on_output(&name_a, op_b) {
+                    win.set_tag(&tag_a, false);
+                    win.set_tag(&target_tag, true);
+                    win.move_to_output(op_b);
+                }
+            } else if on_b && !on_a {
+                if let Some(target_tag) = tag::get_on_output(&name_b, op_a) {
+                    win.set_tag(&tag_b, false);
+                    win.set_tag(&target_tag, true);
+                    win.move_to_output(op_a);
+                }
+            }
+        }
+        info!(
+            op_a = %op_a.name(),
+            op_b = %op_b.name(),
+            "Swapped active workspaces and windows between outputs"
+        );
+    }
+}
+
+/// Mirrors windows on focused display output onto the secondary display
+pub fn mirror_active_output_to_next() {
+    let outputs: Vec<_> = output::get_all_enabled().collect();
+    if outputs.len() < 2 {
+        info!("Output mirroring requires at least 2 connected and enabled displays");
+        return;
+    }
+    let current_idx = outputs.iter().position(|op| op.focused()).unwrap_or(0);
+    let next_idx = (current_idx + 1) % outputs.len();
+    let op_a = &outputs[current_idx];
+    let op_b = &outputs[next_idx];
+
+    if let Some(tag_a) = op_a.active_tags().next() {
+        let name = tag_a.name();
+        if let Some(tag_b) = tag::get_on_output(&name, op_b) {
+            for win in window::get_all() {
+                if win.tags().any(|t| t == tag_a) {
+                    win.set_tag(&tag_b, true);
+                }
+            }
+            tag_b.switch_to();
+            info!(
+                source = %op_a.name(),
+                target = %op_b.name(),
+                tag = %name,
+                "Mirrored active workspace tag to secondary display"
+            );
+        }
+    }
+}
+
 /// Toggles DPMS power state across all connected monitors
 pub fn toggle_dpms() {
     info!("Toggling DPMS display power state on all outputs");
