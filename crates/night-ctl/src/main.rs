@@ -265,6 +265,9 @@ enum Commands {
     /// Trigger the interactive Tokyo Night Window Switcher & Overview modal
     Overview,
 
+    /// Trigger the interactive Tokyo Night 3x3 Workspace Grid (Exposé) modal
+    Grid,
+
     /// Snap the focused window to a geometric target (center, left, right, top, bottom, top-left, top-right, bottom-left, bottom-right, pip, max)
     Snap {
         /// Geometric snap position
@@ -431,6 +434,10 @@ enum OutputCommand {
         /// Target output ("next", "prev", or connector name)
         target: String,
     },
+    /// Swap active workspaces and windows between connected monitors
+    Swap,
+    /// Mirror active workspace tag to the secondary display output
+    Mirror,
 }
 
 #[derive(Subcommand, Debug)]
@@ -492,6 +499,8 @@ enum WindowOpArg {
     Float,
     Fullscreen,
     Maximize,
+    Swallow,
+    Unswallow,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -633,6 +642,14 @@ async fn main() {
                 };
                 run_cmd(IpcCommand::MoveWindowToOutput(nav)).await;
             }
+            OutputCommand::Swap => {
+                run_cmd(IpcCommand::FocusOutput(OutputNav::Swap)).await;
+                println!("🔄 Swapped active workspaces between displays.");
+            }
+            OutputCommand::Mirror => {
+                run_cmd(IpcCommand::FocusOutput(OutputNav::Mirror)).await;
+                println!("📽️ Mirrored active workspace tag to secondary display.");
+            }
         },
 
         Commands::Dpms { action } => {
@@ -760,6 +777,8 @@ async fn main() {
                 WindowOpArg::Float => night_core::ipc::WindowAction::ToggleFloat,
                 WindowOpArg::Fullscreen => night_core::ipc::WindowAction::ToggleFullscreen,
                 WindowOpArg::Maximize => night_core::ipc::WindowAction::ToggleMaximize,
+                WindowOpArg::Swallow => night_core::ipc::WindowAction::Swallow,
+                WindowOpArg::Unswallow => night_core::ipc::WindowAction::Unswallow,
             };
             run_cmd(IpcCommand::WindowOp(action)).await;
         }
@@ -1186,6 +1205,9 @@ async fn main() {
         }
         Commands::Overview => {
             run_cmd(IpcCommand::ShowOverview).await;
+        }
+        Commands::Grid => {
+            run_cmd(IpcCommand::ShowGrid).await;
         }
         Commands::Snap { position } => {
             if let Some(pos) = night_core::ipc::SnapPosition::parse(&position) {
