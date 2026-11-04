@@ -86,6 +86,9 @@ export component SettingsWindow inherits Window {
     in-out property <float> inner-gaps: 6.0;
     in-out property <float> outer-gaps: 10.0;
     in-out property <int> border-width: 2;
+    in-out property <bool> enable-decorations: true;
+    in-out property <bool> enable-titlebars: false;
+    in-out property <int> titlebar-height: 18;
     in-out property <string> current-layout: "MasterStack";
 
     // Application preferences
@@ -131,7 +134,11 @@ export component SettingsWindow inherits Window {
 
     // Callbacks to Rust backend
     callback apply-gaps-preview(float, float);
-    callback save-appearance-config(float, float, int);
+    callback save-appearance-config(float, float, int, bool, bool, int);
+    callback toggle-decorations();
+    callback toggle-titlebars();
+    callback set-border-width(int);
+    callback set-titlebar-height(int);
     callback cycle-layout();
     callback save-apps-config(string, string, string, string, string, string, string, string, string, string);
     callback save-monitor-config(string, float, int, int, int, string, string);
@@ -487,11 +494,12 @@ export component SettingsWindow inherits Window {
                                         }
                                     }
                                     Slider {
-                                        minimum: 0;
-                                        maximum: 8;
+                                        minimum: 1;
+                                        maximum: 10;
                                         value: root.border-width;
                                         changed(val) => {
                                             root.border-width = Math.round(val);
+                                            root.set-border-width(Math.round(val));
                                         }
                                     }
                                 }
@@ -503,7 +511,7 @@ export component SettingsWindow inherits Window {
                                         text: "Save to night.toml";
                                         btn-color: #7aa2f7;
                                         clicked => {
-                                            root.save-appearance-config(root.inner-gaps, root.outer-gaps, root.border-width);
+                                            root.save-appearance-config(root.inner-gaps, root.outer-gaps, root.border-width, root.enable-decorations, root.enable-titlebars, root.titlebar-height);
                                         }
                                     }
 
@@ -516,6 +524,80 @@ export component SettingsWindow inherits Window {
                                             root.outer-gaps = 10.0;
                                             root.border-width = 2;
                                             root.apply-gaps-preview(6.0, 10.0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Card: Focus Borders & Titlebars
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: "Window Focus Borders & Titlebars (Snowcap)";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                Text {
+                                    text: "Toggle live focus borders, floating accents, and native titlebar buttons:";
+                                    color: #a9b1d6;
+                                    font-size: 12px;
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    TokyoButton {
+                                        text: root.enable-decorations ? "Borders: Enabled" : "Borders: Disabled";
+                                        btn-color: root.enable-decorations ? #7aa2f7 : #414868;
+                                        clicked => {
+                                            root.enable-decorations = !root.enable-decorations;
+                                            root.toggle-decorations();
+                                        }
+                                    }
+                                    TokyoButton {
+                                        text: root.enable-titlebars ? "Titlebars: Enabled" : "Titlebars: Disabled";
+                                        btn-color: root.enable-titlebars ? #bb9af7 : #414868;
+                                        clicked => {
+                                            root.enable-titlebars = !root.enable-titlebars;
+                                            root.toggle-titlebars();
+                                        }
+                                    }
+                                }
+
+                                // Titlebar Height
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    HorizontalLayout {
+                                        Text {
+                                            text: "Titlebar Height:";
+                                            color: #c0caf5;
+                                            font-size: 13px;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        Text {
+                                            text: root.titlebar-height + " px";
+                                            color: #7dcfff;
+                                            font-weight: 600;
+                                            font-size: 13px;
+                                        }
+                                    }
+                                    Slider {
+                                        minimum: 14;
+                                        maximum: 32;
+                                        value: root.titlebar-height;
+                                        changed(val) => {
+                                            root.titlebar-height = Math.round(val);
+                                            root.set-titlebar-height(Math.round(val));
                                         }
                                     }
                                 }

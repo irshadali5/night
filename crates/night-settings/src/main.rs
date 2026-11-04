@@ -47,6 +47,9 @@ async fn main() -> Result<()> {
         ui.set_inner_gaps(cfg.general.inner_gaps);
         ui.set_outer_gaps(cfg.general.outer_gaps);
         ui.set_border_width(cfg.general.border_width as i32);
+        ui.set_enable_decorations(cfg.general.enable_decorations);
+        ui.set_enable_titlebars(cfg.general.enable_titlebars);
+        ui.set_titlebar_height(cfg.general.titlebar_height as i32);
         ui.set_autostart_daemons(cfg.general.autostart_daemons);
 
         ui.set_app_terminal(cfg.apps.terminal.clone().into());
@@ -181,17 +184,20 @@ async fn main() -> Result<()> {
 
     let ui_weak = ui.as_weak();
     let cfg_clone = Arc::clone(&user_cfg);
-    ui.on_save_appearance_config(move |inner, outer, border| {
+    ui.on_save_appearance_config(move |inner, outer, border, enable_dec, enable_tb, tb_height| {
         let mut cfg = cfg_clone.lock().unwrap();
         cfg.general.inner_gaps = inner;
         cfg.general.outer_gaps = outer;
-        cfg.general.border_width = border.max(0) as u32;
+        cfg.general.border_width = border.max(1) as u32;
+        cfg.general.enable_decorations = enable_dec;
+        cfg.general.enable_titlebars = enable_tb;
+        cfg.general.titlebar_height = tb_height.max(14) as u32;
 
         match cfg.save() {
             Ok(()) => {
                 info!("Appearance configuration saved to night.toml");
                 let _ = ui_weak.upgrade_in_event_loop(|u| {
-                    u.set_notification_msg("Saved appearance settings to ~/.config/night/night.toml".into());
+                    u.set_notification_msg("Saved appearance & decoration settings to ~/.config/night/night.toml".into());
                 });
             }
             Err(e) => {
@@ -208,7 +214,30 @@ async fn main() -> Result<()> {
                 outer: Some(outer),
             })
             .await;
+            let _ = send_command(&IpcCommand::SetBorderWidth(border.max(1) as u32)).await;
         });
+    });
+
+    ui.on_toggle_decorations(move || {
+        tokio::spawn(async {
+            let _ = send_command(&IpcCommand::ToggleDecorations).await;
+        });
+    });
+
+    ui.on_toggle_titlebars(move || {
+        tokio::spawn(async {
+            let _ = send_command(&IpcCommand::ToggleTitlebars).await;
+        });
+    });
+
+    ui.on_set_border_width(move |width| {
+        tokio::spawn(async move {
+            let _ = send_command(&IpcCommand::SetBorderWidth(width.max(1) as u32)).await;
+        });
+    });
+
+    ui.on_set_titlebar_height(move |_height| {
+        // Updated titlebar height applied on save
     });
 
     // -----------------------------------------------------------------
