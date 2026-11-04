@@ -248,6 +248,10 @@ async fn config() {
                     night_binds::show_command_palette();
                     IpcResponse::Ok
                 }
+                IpcCommand::ShowGrid => {
+                    night_binds::show_workspace_grid();
+                    IpcResponse::Ok
+                }
                 IpcCommand::ToggleDecorations => {
                     let state = night_binds::decorations::toggle_decorations();
                     info!(enabled = state, "IPC: ToggleDecorations");
@@ -362,6 +366,19 @@ async fn config() {
                         night_core::ipc::WindowAction::Snap(pos) => {
                             night_binds::snap_focused_window(pos);
                         }
+                        night_core::ipc::WindowAction::Swallow => {
+                            if let Some(focused) = pinnacle_api::window::get_focused() {
+                                for w in pinnacle_api::window::get_all() {
+                                    if w.id() != focused.id() && night_rules::swallow::is_terminal_app(&w.app_id()) {
+                                        night_rules::swallow::swallow(&focused, &w);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        night_core::ipc::WindowAction::Unswallow => {
+                            night_rules::swallow::unswallow_all();
+                        }
                     }
                     night_core::ipc::broadcast_status(current_desktop_status());
                     IpcResponse::Ok
@@ -371,6 +388,8 @@ async fn config() {
                         night_core::ipc::OutputNav::Next => night_tags::focus_next_output(),
                         night_core::ipc::OutputNav::Prev => night_tags::focus_prev_output(),
                         night_core::ipc::OutputNav::Name(n) => night_tags::focus_output_by_name(&n),
+                        night_core::ipc::OutputNav::Swap => night_tags::swap_active_outputs(),
+                        night_core::ipc::OutputNav::Mirror => night_tags::mirror_active_output_to_next(),
                     }
                     night_core::ipc::broadcast_status(current_desktop_status());
                     IpcResponse::Ok
@@ -380,6 +399,8 @@ async fn config() {
                         night_core::ipc::OutputNav::Next => night_tags::move_focused_to_next_output(),
                         night_core::ipc::OutputNav::Prev => night_tags::move_focused_to_prev_output(),
                         night_core::ipc::OutputNav::Name(n) => night_tags::move_focused_to_output_by_name(&n),
+                        night_core::ipc::OutputNav::Swap => night_tags::swap_active_outputs(),
+                        night_core::ipc::OutputNav::Mirror => night_tags::mirror_active_output_to_next(),
                     }
                     night_core::ipc::broadcast_status(current_desktop_status());
                     IpcResponse::Ok
