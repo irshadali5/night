@@ -12,6 +12,7 @@ use tracing::info;
 pub mod audio_ui;
 pub mod clipboard_ui;
 pub mod decorations;
+pub mod grid;
 pub mod launcher;
 pub mod notifications_ui;
 pub mod osd;
@@ -23,6 +24,7 @@ pub use clipboard_ui::show_clipboard_modal;
 pub use decorations::{
     decorate_window, set_border_width, setup_decorations, toggle_decorations, toggle_titlebars,
 };
+pub use grid::show_workspace_grid;
 pub use launcher::{scan_desktop_applications, show_launcher_modal, AppEntry};
 pub use notifications_ui::show_notifications_modal;
 pub use osd::{
@@ -284,6 +286,14 @@ pub fn register_all() {
     });
     input::keybind(Mod::ALT, "Tab").on_press(|| {
         show_window_switcher();
+    });
+
+    // Super + g & Super + Shift + w -> Interactive Workspace Tag Grid (Exposé Matrix)
+    input::keybind(Mod::SUPER, 'g').on_press(|| {
+        show_workspace_grid();
+    });
+    input::keybind(Mod::SUPER | Mod::SHIFT, 'w').on_press(|| {
+        show_workspace_grid();
     });
 
     // Super + Shift + g -> Toggle Night Light / Blue Light Filter
@@ -549,6 +559,11 @@ pub fn register_all() {
     // Super + Shift + Escape -> Toggle DPMS Display Power
     input::keybind(Mod::SUPER | Mod::SHIFT, "Escape").on_press(|| {
         night_tags::toggle_dpms();
+    });
+
+    // Super + Alt + o -> Swap Active Workspaces Between Display Outputs
+    input::keybind(Mod::SUPER | Mod::ALT, 'o').on_press(|| {
+        night_tags::swap_active_outputs();
     });
 
     // -------------------------------------------------------------------------
@@ -839,7 +854,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
         .into()]);
 
         let actions_row4 = Row::new_with_children([Text::new(
-            "  [V] Clip    [Space] Launcher    [C] Palette    [A] Sinks    [N] Notify",
+            "  [V] Clip   [Space] Launcher   [C] Palette   [M] Grid   [A] Sinks   [N] Notify",
         )
         .style(
             text::Style::new()
@@ -957,6 +972,10 @@ pub fn show_session_menu() {
             Keysym::c | Keysym::C => {
                 h.close();
                 show_command_palette();
+            }
+            Keysym::m | Keysym::M => {
+                h.close();
+                show_workspace_grid();
             }
             Keysym::a | Keysym::A => {
                 h.close();
