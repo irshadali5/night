@@ -276,6 +276,23 @@ enum Commands {
         #[command(subcommand)]
         action: Option<IdleCommand>,
     },
+
+    /// Manage window focus borders and titlebar decorations
+    #[command(alias = "borders")]
+    Border {
+        #[command(subcommand)]
+        action: BorderCommand,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum BorderCommand {
+    /// Toggle window focus border decorations on or off
+    Toggle,
+    /// Toggle window titlebars on or off
+    Titlebars,
+    /// Set window border thickness in pixels (1..16)
+    Width { width: u32 },
 }
 
 #[derive(Subcommand, Debug)]
@@ -889,29 +906,13 @@ async fn main() {
         },
 
         Commands::Top => match send_command(&IpcCommand::GetSystemStats).await {
-            Ok(IpcResponse::SystemStats(s)) => {
-                println!("🌙 Tokyo Night System Resource Monitor");
-                println!("   CPU Usage    : {:<22} {:>3}%", ascii_bar(s.cpu_pct, 20), s.cpu_pct);
-                println!(
-                    "  󰍛 Memory (RAM) : {:<22} {:>3}% ({:.1} / {:.1} GiB)",
-                    ascii_bar(s.mem_pct, 20),
-                    s.mem_pct,
-                    s.mem_used_mb as f32 / 1024.0,
-                    s.mem_total_mb as f32 / 1024.0
-                );
-                println!(
-                    "  󰋊 Root Disk    : {:<22} {:>3}% ({} / {} GiB)",
-                    ascii_bar(s.disk_pct, 20),
-                    s.disk_pct,
-                    s.disk_used_gb,
-                    s.disk_total_gb
-                );
-                if let Some(temp) = s.cpu_temp_c {
-                    println!("  󰔏 Temperature  : {}°C", temp);
-                }
-            }
+            Ok(IpcResponse::SystemStats(s)) => print_system_stats(&s),
             Ok(other) => println!("{other:?}"),
-            Err(e) => fatal(e),
+            Err(_) => {
+                // IPC not reachable (e.g. compositor not started) - fallback to direct reading
+                let s = night_core::sysinfo::read_system_stats();
+                print_system_stats(&s);
+            }
         },
 
         Commands::Bt => match send_command(&IpcCommand::GetBluetooth).await {
@@ -1209,6 +1210,20 @@ async fn main() {
                 println!("✅ Woke displays and signaled user activity.");
             }
         },
+        Commands::Border { action } => match action {
+            BorderCommand::Toggle => {
+                run_cmd(IpcCommand::ToggleDecorations).await;
+                println!("🖼️ Window focus border decorations toggled.");
+            }
+            BorderCommand::Titlebars => {
+                run_cmd(IpcCommand::ToggleTitlebars).await;
+                println!("🪟 Window titlebars toggled.");
+            }
+            BorderCommand::Width { width } => {
+                run_cmd(IpcCommand::SetBorderWidth(width)).await;
+                println!("📏 Window border thickness set to {width}px.");
+            }
+        },
     }
 }
 
@@ -1220,7 +1235,7 @@ async fn run_cmd(cmd: IpcCommand) {
     }
 }
 
-fn fatal(msg: String) -> ! {
+fn fatal<E: std::fmt::Display>(msg: E) -> ! {
     eprintln!("❌ nightctl error: {msg}");
     exit(1);
 }
@@ -1229,6 +1244,28 @@ fn ascii_bar(pct: u8, width: usize) -> String {
     let filled = ((pct as usize * width) / 100).min(width);
     let empty = width.saturating_sub(filled);
     format!("[{}{}]", "█".repeat(filled), "░".repeat(empty))
+}
+
+fn print_system_stats(s: &night_core::sysinfo::SystemStats) {
+    println!("🌙 Tokyo Night System Resource Monitor");
+    println!("   CPU Usage    : {:<22} {:>3}%", ascii_bar(s.cpu_pct, 20), s.cpu_pct);
+    println!(
+        "  󰍛 Memory (RAM) : {:<22} {:>3}% ({:.1} / {:.1} GiB)",
+        ascii_bar(s.mem_pct, 20),
+        s.mem_pct,
+        s.mem_used_mb as f32 / 1024.0,
+        s.mem_total_mb as f32 / 1024.0
+    );
+    println!(
+        "  󰋊 Root Disk    : {:<22} {:>3}% ({} / {} GiB)",
+        ascii_bar(s.disk_pct, 20),
+        s.disk_pct,
+        s.disk_used_gb,
+        s.disk_total_gb
+    );
+    if let Some(temp) = s.cpu_temp_c {
+        println!("  󰔏 Temperature  : {}°C", temp);
+    }
 }
 
 fn print_status_table(status: &DesktopStatus) {
