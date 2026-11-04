@@ -7,6 +7,8 @@ use std::fs;
 use std::path::PathBuf;
 use tracing::{info, warn};
 
+pub mod swallow;
+
 /// Actions to apply to matched windows
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum WindowAction {
@@ -14,6 +16,8 @@ pub enum WindowAction {
     Float,
     /// Send window to a specific tag
     MoveToTag(String),
+    /// Swallows the focused parent terminal window
+    Swallow,
 }
 
 /// A declarative window rule defined in RON
@@ -100,6 +104,9 @@ pub fn setup_rules() {
     let rules = load_rules();
     info!(count = rules.len(), "Initializing declarative window rules...");
 
+    // Initialize terminal window swallowing engine
+    swallow::setup_swallow_listeners();
+
     window::add_window_rule(move |window| {
         let app_id = window.app_id().to_lowercase();
 
@@ -114,10 +121,17 @@ pub fn setup_rules() {
                             window.move_to_tag(&t);
                         }
                     }
+                    WindowAction::Swallow => {
+                        if let Some(focused) = window::get_focused() {
+                            if focused.id() != window.id() && swallow::is_terminal_app(&focused.app_id()) {
+                                swallow::swallow(&window, &focused);
+                            }
+                        }
+                    }
                 }
             }
         }
     });
 
-    info!("Window rules active.");
+    info!("Window rules and swallowing engine active.");
 }
