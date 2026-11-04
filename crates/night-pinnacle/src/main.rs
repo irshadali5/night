@@ -248,6 +248,21 @@ async fn config() {
                     night_binds::show_command_palette();
                     IpcResponse::Ok
                 }
+                IpcCommand::ToggleDecorations => {
+                    let state = night_binds::decorations::toggle_decorations();
+                    info!(enabled = state, "IPC: ToggleDecorations");
+                    IpcResponse::Ok
+                }
+                IpcCommand::ToggleTitlebars => {
+                    let state = night_binds::decorations::toggle_titlebars();
+                    info!(titlebars = state, "IPC: ToggleTitlebars");
+                    IpcResponse::Ok
+                }
+                IpcCommand::SetBorderWidth(width) => {
+                    night_binds::decorations::set_border_width(width);
+                    info!(width, "IPC: SetBorderWidth");
+                    IpcResponse::Ok
+                }
                 IpcCommand::SnapWindow(pos) => {
                     night_binds::snap_focused_window(pos);
                     night_core::ipc::broadcast_status(current_desktop_status());
