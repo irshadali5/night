@@ -226,6 +226,8 @@ pub enum OutputNav {
     Next,
     Prev,
     Name(String),
+    Swap,
+    Mirror,
 }
 
 /// Snapping target for floating client windows
@@ -289,6 +291,8 @@ pub enum WindowAction {
     ToggleFullscreen,
     ToggleMaximize,
     Snap(SnapPosition),
+    Swallow,
+    Unswallow,
 }
 
 /// Desktop IPC Request Commands
@@ -403,6 +407,8 @@ pub enum IpcCommand {
     ShowPalette,
     /// Triggers the Snowcap Tokyo Night window overview switcher modal
     ShowOverview,
+    /// Triggers the Snowcap Tokyo Night 3x3 workspace grid (Exposé) matrix modal
+    ShowGrid,
     /// Toggles window focus border decorations
     ToggleDecorations,
     /// Toggles window titlebars
