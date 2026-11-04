@@ -1,12 +1,11 @@
 //! 🌙 System Performance & Hardware Resource Monitor
-//! Zero-dependency Linux procfs & sysfs reader for CPU, RAM, Disk, and Temperature metrics.
-//! Designed for high-frequency status bar streaming with sub-millisecond execution.
+//! Powered by the standard, actively-maintained `sysinfo` crate.
+//! Provides robust, cross-platform CPU delta sampling, memory metrics,
+//! thermal sensor monitoring, and filesystem statistics without manual procfs scraping or shell commands.
 
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
-use std::process::Command;
 use std::sync::{Mutex, OnceLock};
+use sysinfo::{Components, Disks, System};
 
 /// Real-time hardware performance snapshot
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -72,15 +71,16 @@ impl SystemStats {
         )
     }
 
-    /// Formats temperature with icon (e.g. "󰔏 45°C")
+    /// Formats temperature with icon (e.g. "󰔏 52°C")
     pub fn display_temp(&self) -> String {
-        match self.cpu_temp_c {
-            Some(t) => format!("{} {}°C", self.glyph_temp(), t),
-            None => format!("{} N/A", self.glyph_temp()),
+        if let Some(c) = self.cpu_temp_c {
+            format!("{} {c}°C", self.glyph_temp())
+        } else {
+            "󰔏 N/A".to_string()
         }
     }
 
-    /// Formats root disk usage (e.g. "󰋊 120/480 GiB (25%)")
+    /// Formats root disk usage with icon (e.g. "󰋊 120/480 GiB (25%)")
     pub fn display_disk(&self) -> String {
         format!(
             "{} {}/{} GiB ({}%)",
@@ -92,163 +92,77 @@ impl SystemStats {
     }
 }
 
-/// Stores previous CPU idle and total ticks for delta calculation
-static PREV_CPU: OnceLock<Mutex<(u64, u64)>> = OnceLock::new();
+static SYSTEM_INSTANCE: OnceLock<Mutex<System>> = OnceLock::new();
 
-/// Samples current CPU usage percentage from `/proc/stat`
-fn sample_cpu_pct() -> u8 {
-    let stat = match fs::read_to_string("/proc/stat") {
-        Ok(s) => s,
-        Err(_) => return 0,
-    };
-
-    let first_line = match stat.lines().next() {
-        Some(l) if l.starts_with("cpu ") => l,
-        _ => return 0,
-    };
-
-    let parts: Vec<u64> = first_line
-        .split_whitespace()
-        .skip(1)
-        .filter_map(|s| s.parse::<u64>().ok())
-        .collect();
-
-    if parts.len() < 4 {
-        return 0;
-    }
-
-    let user = parts[0];
-    let nice = parts[1];
-    let system = parts[2];
-    let idle = parts[3];
-    let iowait = parts.get(4).copied().unwrap_or(0);
-    let irq = parts.get(5).copied().unwrap_or(0);
-    let softirq = parts.get(6).copied().unwrap_or(0);
-    let steal = parts.get(7).copied().unwrap_or(0);
-
-    let idle_time = idle + iowait;
-    let non_idle_time = user + nice + system + irq + softirq + steal;
-    let total_time = idle_time + non_idle_time;
-
-    let cell = PREV_CPU.get_or_init(|| Mutex::new((idle_time, total_time)));
-    let mut guard = cell.lock().unwrap();
-    let (prev_idle, prev_total) = *guard;
-
-    let total_delta = total_time.saturating_sub(prev_total);
-    let idle_diff = idle_time.saturating_sub(prev_idle);
-
-    *guard = (idle_time, total_time);
-
-    if total_delta == 0 {
-        return 0;
-    }
-
-    let usage = (total_delta.saturating_sub(idle_diff) as f64 / total_delta as f64) * 100.0;
-    (usage.clamp(0.0, 100.0) as u8).min(100)
+fn get_system() -> &'static Mutex<System> {
+    SYSTEM_INSTANCE.get_or_init(|| {
+        let mut sys = System::new();
+        sys.refresh_cpu_usage();
+        sys.refresh_memory();
+        Mutex::new(sys)
+    })
 }
 
-/// Reads RAM total and used megabytes from `/proc/meminfo`
-fn read_mem_mb() -> (u64, u64, u8) {
-    let meminfo = match fs::read_to_string("/proc/meminfo") {
-        Ok(m) => m,
-        Err(_) => return (0, 0, 0),
-    };
-
-    let mut total_kb = 0u64;
-    let mut avail_kb = 0u64;
-
-    for line in meminfo.lines() {
-        if line.starts_with("MemTotal:") {
-            total_kb = line
-                .split_whitespace()
-                .nth(1)
-                .and_then(|v| v.parse().ok())
-                .unwrap_or(0);
-        } else if line.starts_with("MemAvailable:") {
-            avail_kb = line
-                .split_whitespace()
-                .nth(1)
-                .and_then(|v| v.parse().ok())
-                .unwrap_or(0);
-        }
-        if total_kb > 0 && avail_kb > 0 {
-            break;
-        }
-    }
-
-    if total_kb == 0 {
-        return (0, 0, 0);
-    }
-
-    let used_kb = total_kb.saturating_sub(avail_kb);
-    let total_mb = total_kb / 1024;
-    let used_mb = used_kb / 1024;
-    let pct = ((used_kb as f64 / total_kb as f64) * 100.0) as u8;
-
-    (used_mb, total_mb, pct.min(100))
-}
-
-/// Reads CPU temperature in Celsius from `/sys/class/thermal` or hwmon
-fn read_cpu_temp() -> Option<u8> {
-    // 1. Try /sys/class/thermal/thermal_zone0/temp
-    let tz0 = Path::new("/sys/class/thermal/thermal_zone0/temp");
-    if let Ok(content) = fs::read_to_string(tz0) {
-        if let Ok(raw_millideg) = content.trim().parse::<i64>() {
-            let deg = (raw_millideg / 1000).clamp(0, 150) as u8;
-            return Some(deg);
-        }
-    }
-
-    // 2. Try hwmon coretemp
-    let hwmon_dir = Path::new("/sys/class/hwmon");
-    if let Ok(entries) = fs::read_dir(hwmon_dir) {
-        for entry in entries.flatten() {
-            let temp_path = entry.path().join("temp1_input");
-            if let Ok(content) = fs::read_to_string(&temp_path) {
-                if let Ok(raw) = content.trim().parse::<i64>() {
-                    let deg = (raw / 1000).clamp(0, 150) as u8;
-                    return Some(deg);
-                }
-            }
-        }
-    }
-
-    None
-}
-
-/// Reads root filesystem `/` disk metrics (used GB, total GB, %)
-fn read_disk_gb() -> (u64, u64, u8) {
-    let output = match Command::new("df").args(["-k", "/"]).output() {
-        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).to_string(),
-        _ => return (0, 0, 0),
-    };
-
-    let mut lines = output.lines();
-    let _header = lines.next();
-    if let Some(row) = lines.next() {
-        let cols: Vec<&str> = row.split_whitespace().collect();
-        if cols.len() >= 4 {
-            let total_kb = cols[1].parse::<u64>().unwrap_or(0);
-            let used_kb = cols[2].parse::<u64>().unwrap_or(0);
-
-            if total_kb > 0 {
-                let total_gb = total_kb / (1024 * 1024);
-                let used_gb = used_kb / (1024 * 1024);
-                let pct = ((used_kb as f64 / total_kb as f64) * 100.0) as u8;
-                return (used_gb, total_gb, pct.min(100));
-            }
-        }
-    }
-
-    (0, 0, 0)
-}
-
-/// Gathers comprehensive real-time system performance statistics
+/// Gathers comprehensive real-time system performance statistics via `sysinfo`
 pub fn read_system_stats() -> SystemStats {
-    let cpu_pct = sample_cpu_pct();
-    let (mem_used_mb, mem_total_mb, mem_pct) = read_mem_mb();
-    let cpu_temp_c = read_cpu_temp();
-    let (disk_used_gb, disk_total_gb, disk_pct) = read_disk_gb();
+    let (cpu_pct, mem_used_mb, mem_total_mb, mem_pct) = {
+        let mut sys = get_system().lock().unwrap();
+        sys.refresh_cpu_usage();
+        sys.refresh_memory();
+
+        let cpu_pct = (sys.global_cpu_usage().round() as u8).min(100);
+
+        let total_bytes = sys.total_memory();
+        let used_bytes = sys.used_memory();
+        let total_mb = total_bytes / (1024 * 1024);
+        let used_mb = used_bytes / (1024 * 1024);
+        let mem_pct = if total_bytes > 0 {
+            ((used_bytes as f64 / total_bytes as f64) * 100.0) as u8
+        } else {
+            0
+        }
+        .min(100);
+
+        (cpu_pct, used_mb, total_mb, mem_pct)
+    };
+
+    // Thermal sensors via Components
+    let cpu_temp_c = {
+        let components = Components::new_with_refreshed_list();
+        components
+            .iter()
+            .filter_map(|c| c.temperature())
+            .map(|t| (t.round() as u8).clamp(0, 150))
+            .next()
+    };
+
+    // Filesystem metrics via Disks
+    let (disk_used_gb, disk_total_gb, disk_pct) = {
+        let disks = Disks::new_with_refreshed_list();
+        let target_disk = disks
+            .iter()
+            .find(|d| d.mount_point() == std::path::Path::new("/") && d.total_space() > 0)
+            .or_else(|| disks.iter().filter(|d| d.total_space() > 0).max_by_key(|d| d.total_space()));
+
+        if let Some(disk) = target_disk {
+            let total_b = disk.total_space();
+            let avail_b = disk.available_space();
+            let used_b = total_b.saturating_sub(avail_b);
+
+            let total_gb = total_b / (1024 * 1024 * 1024);
+            let used_gb = used_b / (1024 * 1024 * 1024);
+            let pct = if total_b > 0 {
+                ((used_b as f64 / total_b as f64) * 100.0) as u8
+            } else {
+                0
+            }
+            .min(100);
+
+            (used_gb, total_gb, pct)
+        } else {
+            (0, 0, 0)
+        }
+    };
 
     SystemStats {
         cpu_pct,
@@ -259,5 +173,24 @@ pub fn read_system_stats() -> SystemStats {
         disk_used_gb,
         disk_total_gb,
         disk_pct,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_system_stats() {
+        let stats = read_system_stats();
+        println!("CPU: {}%", stats.cpu_pct);
+        println!("Mem: {}/{} MB ({}%)", stats.mem_used_mb, stats.mem_total_mb, stats.mem_pct);
+        println!("Disk: {}/{} GB ({}%)", stats.disk_used_gb, stats.disk_total_gb, stats.disk_pct);
+        println!("Temp: {:?}", stats.cpu_temp_c);
+        let disks = Disks::new_with_refreshed_list();
+        println!("Disks found: {}", disks.len());
+        for d in &disks {
+            println!("  mount: {:?}, total: {}, avail: {}", d.mount_point(), d.total_space(), d.available_space());
+        }
     }
 }
