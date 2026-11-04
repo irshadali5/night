@@ -57,6 +57,7 @@ impl Default for CommandPaletteModal {
                 PaletteAction { key: "8", icon: "󰃠", title: "Night Light Gamma Temperature", shortcut: "Super + Alt + G" },
                 PaletteAction { key: "9", icon: "", title: "Desktop Control Center GUI", shortcut: "Super + Alt + ," },
                 PaletteAction { key: "0", icon: "󰌾", title: "Lock Desktop Session", shortcut: "Super + Alt + L" },
+                PaletteAction { key: "G", icon: "󰕰", title: "Workspace Grid (Exposé)", shortcut: "Super + G" },
                 PaletteAction { key: "S", icon: "󰒲", title: "Sleep / Suspend System", shortcut: "Super + Alt + S" },
                 PaletteAction { key: "X", icon: "󰗽", title: "Logout Desktop Session", shortcut: "Super + Shift + Esc" },
             ],
@@ -213,6 +214,11 @@ pub fn show_command_palette() {
                 Keysym::_0 => {
                     info!("Palette: locking desktop session");
                     night_core::exec::spawn("night-session", &["lock"]);
+                }
+                // [G] Workspace Grid
+                Keysym::g | Keysym::G => {
+                    info!("Palette: opening workspace grid matrix");
+                    crate::grid::show_workspace_grid();
                 }
                 // [S] Suspend
                 Keysym::s | Keysym::S => {
