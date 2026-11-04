@@ -4,6 +4,7 @@
 
 slint::include_modules!();
 
+use anyhow::Result;
 use clap::Parser;
 use night_core::config::UserConfig;
 use night_core::ipc::{send_command, DpmsAction, IpcCommand, IpcResponse};
@@ -25,21 +26,15 @@ struct SettingsCli {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     let _log_guard = night_core::logging::init_logger("settings");
     night_core::exec::ensure_desktop_env();
 
     let cli = SettingsCli::parse();
     info!("Starting Night Control Center (Slint GUI)");
 
-    let ui = match SettingsWindow::new() {
-        Ok(window) => window,
-        Err(e) => {
-            error!(error = %e, "Failed to initialize Slint SettingsWindow");
-            eprintln!("❌ Failed to initialize Slint SettingsWindow: {e}");
-            return Err(e.into());
-        }
-    };
+    let ui = SettingsWindow::new()
+        .map_err(|e| anyhow::anyhow!("Failed to initialize Slint SettingsWindow: {e}"))?;
 
     // Load configurations from disk
     let user_cfg = Arc::new(Mutex::new(UserConfig::load()));
