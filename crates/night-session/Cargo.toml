@@ -17,4 +17,5 @@ tracing.workspace = true
 clap.workspace = true
 dirs.workspace = true
 which.workspace = true
+anyhow.workspace = true
 

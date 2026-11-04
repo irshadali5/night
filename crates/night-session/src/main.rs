@@ -3,6 +3,7 @@
 //! Manages display manager session initialization, systemd user integration,
 //! screen locking, graceful teardown, and signal handling.
 
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use night_core::config::UserConfig;
 use night_core::exec::{ensure_desktop_env, resolve_executable, spawn_shell};
@@ -11,7 +12,7 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{exit, Command, Stdio};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -40,17 +41,18 @@ enum SessionSubcommand {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let _log_guard = init_logger("session");
     ensure_desktop_env();
 
     let cli = Cli::parse();
     match cli.action.unwrap_or(SessionSubcommand::Run) {
-        SessionSubcommand::Run => run_session().await,
+        SessionSubcommand::Run => run_session().await?,
         SessionSubcommand::Lock => lock_session(),
         SessionSubcommand::Logout => logout_session(),
         SessionSubcommand::Status => print_session_status(),
     }
+    Ok(())
 }
 
 /// Immediately triggers the configured screen locker
@@ -120,7 +122,7 @@ fn teardown_session() {
 }
 
 /// Launches and supervises the full Wayland desktop session
-async fn run_session() {
+async fn run_session() -> Result<()> {
     info!("================================================================================");
     info!("🌙 Starting Project Night Desktop Environment (Pure-Rust Session Manager)...");
 
@@ -227,10 +229,7 @@ async fn run_session() {
             let mut sys_child = Command::new("systemctl")
                 .args(["--user", "--wait", "start", unit])
                 .spawn()
-                .unwrap_or_else(|e| {
-                    error!(error = %e, "Failed to spawn systemctl wait");
-                    exit(1);
-                });
+                .with_context(|| format!("Failed to spawn systemctl for unit '{unit}'"))?;
 
             // Signal handler for SIGINT (Ctrl+C)
             tokio::select! {
@@ -243,7 +242,7 @@ async fn run_session() {
             }
 
             teardown_session();
-            return;
+            return Ok(());
         }
     }
 
@@ -258,10 +257,7 @@ async fn run_session() {
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .spawn()
-        .unwrap_or_else(|e| {
-            error!(path = %pinnacle_bin.display(), error = %e, "Fatal: Failed to spawn Pinnacle compositor");
-            exit(1);
-        });
+        .with_context(|| format!("Fatal: Failed to spawn Pinnacle compositor at '{}'", pinnacle_bin.display()))?;
 
     tokio::select! {
         res = tokio::task::spawn_blocking(move || child.wait()) => {
@@ -273,4 +269,5 @@ async fn run_session() {
     }
 
     teardown_session();
+    Ok(())
 }
