@@ -21,14 +21,17 @@ Each technology has been chosen and implemented for its ideal use case:
 
 | Crate | Type | Dependencies / Format | Role | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **`xtask`** | Binary | `night-core`, `tokio`, `dirs` | Native CLI runner for build, install, check, and IPC remote control (`cargo xtask msg`). | 🟢 Active |
-| **`night-core`** | Library | `dirs`, `interprocess`, `which`, `shell-words`, `postcard`, `toml`, `serde` | Theme constants, default apps, TOML config, binary session caching, and Unix socket IPC client/server. | 🟢 Active |
-| **`night-daemons`** | Library | `night-core`, `which`, `pinnacle-api` | Supervises background services (`swww`, `ironbar`, `wired`, `swayosd`, `wayidle`) with `$PATH` discovery. | 🟢 Active |
-| **`night-tags`** | Library | `night-core`, `pinnacle-api` | Multi-monitor dynamic tag management ([1..9]) with runtime display hotplug detection. | 🟢 Active |
-| **`night-layout`**| Library | `night-core`, `pinnacle-api` | Dynamic tiling layout engine (MasterStack, Dwindle, Spiral, Fair) with real-time gaps. | 🟢 Active |
-| **`night-rules`** | Library | `night-core`, `serde`, `ron`, `dirs`, `pinnacle-api` | RON-powered declarative window matching rules (auto-floating dialogs, tag assignments). | 🟢 Active |
-| **`night-binds`** | Library | `night-core`, `night-tags`, `pinnacle-api` | Centralized keybindings for apps, directional focus, swap, fullscreen, OSD, screenshots, and mouse drag/resize. | 🟢 Active |
-| **`night-pinnacle`**| Binary | All internal crates + `pinnacle-api` | Main binary orchestrator running `pinnacle_api::main!(config)` with async IPC server. | 🟢 Active |
+| **`xtask`** | Binary | `night-core`, `tokio`, `dirs`, `anyhow` | Native CLI runner for build, install, check, doctor, logs, and IPC control (`cargo xtask`). | 🟢 Active |
+| **`night-core`** | Library | `dirs`, `interprocess`, `which`, `thiserror`, `sysinfo`, `notify-rust`, `postcard`, `toml`, `serde` | Themes, default apps, typed errors, sysinfo metrics, D-Bus notifications, and IPC socket. | 🟢 Active |
+| **`night-daemons`** | Library | `night-core`, `which`, `pinnacle-api` | Supervises background daemons (`rsclip`, `vivi`, `swww`, `ironbar`, `wired`, `swayosd`, `wayidle`, idle/sleep watchers). | 🟢 Active |
+| **`night-tags`** | Library | `night-core`, `pinnacle-api` | Multi-monitor dynamic tags ([1..9]), display hotplug, workspace swapping, and output projection. | 🟢 Active |
+| **`night-layout`**| Library | `night-core`, `pinnacle-api` | Dynamic tiling layout engine (MasterStack, Dwindle, Spiral, Fair), gaps, and 11-target window snapping. | 🟢 Active |
+| **`night-rules`** | Library | `night-core`, `serde`, `ron`, `dirs`, `pinnacle-api` | RON-powered declarative window rules (floating, tag placement) and terminal window swallowing engine. | 🟢 Active |
+| **`night-binds`** | Library | `night-core`, `night-tags`, `night-layout`, `pinnacle-api` | Centralized keybindings, Snowcap modals (Launcher, Switcher, Grid Exposé, Palette, OSD, Snip, Flyout). | 🟢 Active |
+| **`night-pinnacle`**| Binary | All internal crates + `pinnacle-api`, `anyhow` | Main binary orchestrator running `pinnacle_api::main!(config)` with multi-client async IPC server. | 🟢 Active |
+| **`night-ctl`** | Binary | `night-core`, `night-layout`, `clap`, `tokio`, `anyhow` | Lightning-fast CLI client for sub-millisecond desktop control, live event streaming, and status reporting. | 🟢 Active |
+| **`night-settings`**| Binary | `night-core`, `slint`, `tokio`, `anyhow` | Pure-Rust Tokyo Night Control Center GUI with live gaps sliders, borders, and monitor profiles. | 🟢 Active |
+| **`night-session`** | Binary | `night-core`, `clap`, `tokio`, `anyhow` | Ergonomic desktop session supervisor with lock, suspend, logout, and systemd integration. | 🟢 Active |
 
 ---
 
@@ -37,22 +40,22 @@ Each technology has been chosen and implemented for its ideal use case:
 | Tool | Ecosystem / GitHub | Night Integration Layer |
 | :--- | :--- | :--- |
 | **Pinnacle** | [pinnacle-comp/pinnacle](https://github.com/pinnacle-comp/pinnacle) | Wayland Compositor running `night-pinnacle` via `pinnacle.toml`. |
-| **Ironbar** | [JakeStanger/ironbar](https://github.com/JakeStanger/ironbar) | Status bar started in `night-daemons`. |
-| **Snowcap** | [pinnacle-comp/snowcap](https://github.com/pinnacle-comp/snowcap) | Alternative widget/bar system by Pinnacle team. |
-| **Anyrun** | [anyrun-org/anyrun](https://github.com/anyrun-org/anyrun) | Modular launcher bound to `Super + Space` in `night-binds`. |
-| **Yofi** | [loki-47-500/yofi](https://github.com/loki-47-500/yofi) | Minimalist pure-Rust launcher bound to `Super + d` in `night-binds`. |
-| **Alacritty** | [alacritty/alacritty](https://github.com/alacritty/alacritty) | Primary terminal bound to `Super + Return` in `night-binds`. |
+| **Ironbar** | [JakeStanger/ironbar](https://github.com/JakeStanger/ironbar) | Status bar started in `night-daemons`; live layout/tag stream via `nightctl stream`. |
+| **Snowcap** | [pinnacle-comp/snowcap](https://github.com/pinnacle-comp/snowcap) | Official first-party layer-shell widget system (Launcher, Switcher, Grid, Palette, OSD, Borders). |
+| **Vivi** | [Loafer19/vivi](https://github.com/Loafer19/vivi) | 100% Rust-native modern media player (Slint UI + libmpv) mapped to `Super + m`. |
+| **rsclip** | [jR4dh3y/rsclip](https://github.com/jR4dh3y/rsclip) | 100% Rust-native Wayland clipboard manager (`rsclipd`) bound to `Super + v`. |
+| **Alacritty** | [alacritty/alacritty](https://github.com/alacritty/alacritty) | Primary terminal bound to `Super + Return` and dropdown scratchpad drawer (`Super + ` ` `). |
 | **Rio** | [raphamorim/rio](https://github.com/raphamorim/rio) | Alternative terminal bound to `Super + Shift + Return`. |
 | **Favnyr** | [GlitchAwakened/Favnyr](https://github.com/GlitchAwakened/Favnyr) | Rust + Slint UI file manager bound to `Super + e`. |
 | **Yazi** | [sxyazi/yazi](https://github.com/sxyazi/yazi) | TUI File manager launched in terminal via `Super + y`. |
 | **Zen Browser** | [zen-browser.app](https://zen-browser.app/) | Modern focused web browser bound to `Super + b`. |
 | **Brave** | [brave.com](https://brave.com/) | Privacy-focused alternative browser bound to `Super + Shift + b`. |
-| **Wired** | [Toqozz/wired-notify](https://github.com/Toqozz/wired-notify) | Notification daemon started in `night-daemons`. |
-| **SwayOSD** | [ErikReider/SwayOSD](https://github.com/ErikReider/SwayOSD) | Server started in `night-daemons`; volume/brightness keys mapped in `night-binds`. |
-| **swww** | [LGFae/swww](https://github.com/LGFae/swww) | Wallpaper daemon started in `night-daemons`. |
-| **Wayshot + Satty**| [waycrate/wayshot](https://github.com/waycrate/wayshot) + [gabm/Satty](https://github.com/gabm/Satty) | Screenshot and annotation pipeline bound to `Print` and `Super + Print`. |
-| **wl-screenrec** | [russelltg/wl-screenrec](https://github.com/russelltg/wl-screenrec) | Hardware-accelerated recording bound to `Super + Alt + r`. |
-| **wayidle** | [hirsch-conner/wayidle](https://github.com/hirsch-conner/wayidle) | Idle monitor started in `night-daemons`. |
+| **Wired** | [Toqozz/wired-notify](https://github.com/Toqozz/wired-notify) | Notification daemon started in `night-daemons`; native D-Bus integration via `notify-rust`. |
+| **SwayOSD** | [ErikReider/SwayOSD](https://github.com/ErikReider/SwayOSD) | Server started in `night-daemons`; paired with in-process Snowcap visual HUD. |
+| **swww** | [LGFae/swww](https://github.com/LGFae/swww) | Wallpaper daemon with smooth Tokyo Night wipe transitions. |
+| **Wayshot + Satty**| [waycrate/wayshot](https://github.com/waycrate/wayshot) + [gabm/Satty](https://github.com/gabm/Satty) | Screenshot and annotation pipeline bound to `Print` and `Super + Shift + s`. |
+| **wl-screenrec** | [russelltg/wl-screenrec](https://github.com/russelltg/wl-screenrec) | Hardware-accelerated 60fps Wayland recording bound to `Super + Alt + r`. |
+| **wayidle** | [hirsch-conner/wayidle](https://github.com/hirsch-conner/wayidle) | Inactivity monitor paired with smart pure-Rust media-aware idle supervisor. |
 | **Veila** | [naurissteins/Veila](https://github.com/naurissteins/Veila) | Pure-Rust Wayland screen locker triggered on idle or via `Super + Escape`. |
 
 ---
