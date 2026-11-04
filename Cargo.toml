@@ -27,10 +27,16 @@ pinnacle-api = { git = "https://github.com/pinnacle-comp/pinnacle" }
 
 # Async runtime & utilities
 tokio = { version = "1.40", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 thiserror = "2.0"
+anyhow = "1.0"
+
+# Standard System Monitoring & Notifications
+sysinfo = "0.38"
+notify-rust = "4.18"
 
 # Standard Ecosystem Crates (avoiding custom from-scratch boilerplate)
 dirs = "5.0"                                      # Standard XDG base directory resolution
