@@ -11,6 +11,7 @@ use tracing::info;
 
 pub mod audio_ui;
 pub mod clipboard_ui;
+pub mod decorations;
 pub mod launcher;
 pub mod notifications_ui;
 pub mod osd;
@@ -19,6 +20,9 @@ pub mod snipping;
 pub mod switcher;
 pub use audio_ui::show_audio_sink_modal;
 pub use clipboard_ui::show_clipboard_modal;
+pub use decorations::{
+    decorate_window, set_border_width, setup_decorations, toggle_decorations, toggle_titlebars,
+};
 pub use launcher::{scan_desktop_applications, show_launcher_modal, AppEntry};
 pub use notifications_ui::show_notifications_modal;
 pub use osd::{
@@ -224,6 +228,18 @@ pub fn register_all() {
     // Super + Alt + p -> Toggle Picture-in-Picture (PiP) Floating Mode
     input::keybind(Mod::SUPER | Mod::ALT, 'p').on_press(|| {
         toggle_pip();
+    });
+
+    // Super + Alt + b -> Toggle Window Titlebars
+    input::keybind(Mod::SUPER | Mod::ALT, 'b').on_press(|| {
+        let state = decorations::toggle_titlebars();
+        info!(titlebars = state, "Toggled window titlebars via shortcut");
+    });
+
+    // Super + Alt + d -> Toggle Window Focus Border Decorations
+    input::keybind(Mod::SUPER | Mod::ALT, 'd').on_press(|| {
+        let state = decorations::toggle_decorations();
+        info!(decorations = state, "Toggled window decorations via shortcut");
     });
 
     // Super + c & Super + Shift + c -> Center Focused Floating Window
@@ -535,7 +551,12 @@ pub fn register_all() {
         night_tags::toggle_dpms();
     });
 
-    info!("All keybindings and interactive mouse controls registered successfully.");
+    // -------------------------------------------------------------------------
+    // 9. Window Focus Borders & Titlebars (Snowcap Decorations)
+    // -------------------------------------------------------------------------
+    decorations::setup_decorations();
+
+    info!("All keybindings, interactive mouse controls, and window decorations registered successfully.");
 }
 
 /// Toggles a named scratchpad drawer (term, music, notes, fm)
@@ -589,10 +610,15 @@ pub fn toggle_named_scratchpad(name: &str) {
     if let Some(scratch_win) = target_win {
         if let Some(active_op) = output::get_focused() {
             if let Some(active_tag) = active_op.active_tags().next() {
-                if scratch_win.is_on_active_tag() {
+                // If it is currently visible on the active tag of THIS active monitor, conceal it.
+                if scratch_win.tags().any(|t| t == active_tag) {
                     scratch_win.set_tag(&active_tag, false);
                     info!(app_id, "Concealed scratchpad drawer");
                 } else {
+                    // Dynamic multi-monitor migration: detach from any tags on prior outputs
+                    for t in scratch_win.tags().collect::<Vec<_>>() {
+                        scratch_win.set_tag(&t, false);
+                    }
                     scratch_win.set_floating(true);
                     scratch_win.set_tag(&active_tag, true);
 
@@ -611,7 +637,7 @@ pub fn toggle_named_scratchpad(name: &str) {
 
                     scratch_win.raise();
                     scratch_win.set_focused(true);
-                    info!(app_id, "Revealed scratchpad drawer");
+                    info!(app_id, output = ?active_op.name(), "Migrated and revealed scratchpad drawer on active monitor");
                 }
             }
         }
