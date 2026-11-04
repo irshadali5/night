@@ -26,6 +26,20 @@ pub struct GeneralConfig {
     pub outer_gaps: f32,
     #[serde(default)]
     pub theme: crate::theme::ThemeVariant,
+    #[serde(default = "default_true")]
+    pub enable_decorations: bool,
+    #[serde(default)]
+    pub enable_titlebars: bool,
+    #[serde(default = "default_titlebar_height")]
+    pub titlebar_height: u32,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_titlebar_height() -> u32 {
+    18
 }
 
 impl Default for GeneralConfig {
@@ -38,6 +52,9 @@ impl Default for GeneralConfig {
             inner_gaps: 6.0,
             outer_gaps: 10.0,
             theme: crate::theme::ThemeVariant::Night,
+            enable_decorations: true,
+            enable_titlebars: false,
+            titlebar_height: 18,
         }
     }
 }
@@ -136,14 +153,24 @@ impl UserConfig {
     }
 
     /// Saves user configuration to standard XDG path
-    pub fn save(&self) -> Result<(), std::io::Error> {
+    pub fn save(&self) -> Result<(), crate::error::ConfigError> {
         let config_path = Self::path();
         if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent)?;
+            fs::create_dir_all(parent).map_err(|source| crate::error::ConfigError::WriteFailed {
+                path: parent.to_path_buf(),
+                source,
+            })?;
         }
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-        fs::write(&config_path, content)?;
+        let content = toml::to_string_pretty(self).map_err(|e| {
+            crate::error::ConfigError::WriteFailed {
+                path: config_path.clone(),
+                source: std::io::Error::new(std::io::ErrorKind::InvalidData, e),
+            }
+        })?;
+        fs::write(&config_path, content).map_err(|source| crate::error::ConfigError::WriteFailed {
+            path: config_path.clone(),
+            source,
+        })?;
         info!(path = %config_path.display(), "Saved TOML configuration");
         Ok(())
     }
