@@ -510,17 +510,29 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
 
 ---
 
-### Modernization: Open Active Development Crate Migration
-* [x] **Strict Library & Application Error Architecture (`thiserror` & `anyhow`)**:
-  * [x] Adopted `thiserror = "2.0"` across core libraries (`crates/night-core/src/error.rs`) defining typed domain errors (`NightError`, `IpcError`, `ConfigError`).
-  * [x] Adopted `anyhow = "1.0"` across all application binaries (`nightctl`, `night-session`, `night-settings`, `night-pinnacle`, `xtask`) for rich contextual error tracing (`.with_context(...)`).
-* [x] **Production Resource & System Metrics Engine (`sysinfo = "0.38"`)**:
-  * [x] Replaced custom procfs/sysfs delta tick sampling and shell invocations with `sysinfo::System`, `sysinfo::Disks`, and `sysinfo::Components`.
-  * [x] Real-time CPU, RAM, root filesystem disk, and thermal readings with graceful offline fallback when the compositor IPC is disconnected.
-* [x] **Pure-Rust D-Bus Notification Integration (`notify-rust = "4.18"`)**:
-  * [x] Integrated `notify-rust` for direct D-Bus communication with desktop notification servers (`wired`).
-* [x] **Pure-Rust Async Stream Framing (`tokio-util = "0.7"`)**:
-  * [x] Integrated `tokio-util` length-delimited codec capability for high-throughput zero-copy stream processing.
+### Phase 25: Terminal Window Swallowing Engine, Tokyo Night Workspace Grid (Exposé), Live Decoration Controls in Settings GUI & Presentation Projection Engine
+* [x] **Terminal Window Swallowing & Re-Parenting Engine (`crates/night-rules/src/swallow.rs`)**:
+  * [x] Pure-Rust process tree & window lifecycle monitor temporarily hiding parent terminal windows when child graphical applications are spawned.
+  * [x] Automatic restoration on child destruction: listens to `WindowSignal::Destroyed` to automatically unswallow, raise, and refocus the parent terminal.
+  * [x] Declarative RON rule integration: added `WindowAction::Swallow` support in `config/rules.ron`.
+  * [x] Manual swallowing controls: `nightctl window swallow` and `nightctl window unswallow`.
+* [x] **Tokyo Night 3x3 Workspace Grid Exposé Modal (`crates/night-binds/src/grid.rs`)**:
+  * [x] Interactive Snowcap layer-shell modal rendering a 3x3 grid overview for workspace tags `[1]..[9]`.
+  * [x] Displays tag glyphs, status badges (`ACTIVE`, `OCCUPIED`, `EMPTY`), window count indicators, and window title previews.
+  * [x] Single-key shortcuts: `[1]..=[9]` instant jump, `[Shift + 1..9]` move focused window to tag, `[Esc/Q]` dismiss.
+  * [x] Dedicated keybindings: `Super + g` and `Super + Shift + w`.
+  * [x] Integrated into Command Palette (`Super + P` -> `[G]`), Session Flyout (`Super + BackSpace` -> `[M]`), and CLI (`nightctl grid`).
+* [x] **Slint Control Center Live Decoration & Titlebar Tuning (`crates/night-settings`)**:
+  * [x] Added "Window Focus Borders & Titlebars" card to Tab 0 (Appearance & Layout) in `night-settings`.
+  * [x] Interactive toggle buttons for Focus Borders and Native Titlebars with live preview.
+  * [x] Live sliders for Border Width (1px – 10px) and Titlebar Height (14px – 32px) communicating in real-time via IPC.
+  * [x] Persistent saving directly to `~/.config/night/night.toml`.
+* [x] **Multi-Head Presentation & Display Swap Engine (`crates/night-tags` & `nightctl output`)**:
+  * [x] `night_tags::swap_active_outputs()`: Swaps active workspaces and client windows between primary and secondary monitors instantly.
+  * [x] `night_tags::mirror_active_output_to_next()`: Mirrors active workspace tag and windows onto external display or projector.
+  * [x] Dedicated keybinding: `Super + Alt + o` to swap display workspaces.
+  * [x] CLI commands: `nightctl output swap` and `nightctl output mirror`.
+
 
 
 
