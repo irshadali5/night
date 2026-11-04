@@ -9,6 +9,9 @@ border_width = 2
 inner_gaps = 6.0
 outer_gaps = 10.0
 theme = "Night"
+enable_decorations = true
+enable_titlebars = false
+titlebar_height = 18
 # primary_monitor = "eDP-1"
 
 [apps]
