@@ -403,6 +403,12 @@ pub enum IpcCommand {
     ShowPalette,
     /// Triggers the Snowcap Tokyo Night window overview switcher modal
     ShowOverview,
+    /// Toggles window focus border decorations
+    ToggleDecorations,
+    /// Toggles window titlebars
+    ToggleTitlebars,
+    /// Sets window border thickness in pixels
+    SetBorderWidth(u32),
 }
 
 /// Desktop IPC Response
@@ -455,47 +461,83 @@ pub fn socket_path() -> PathBuf {
 }
 
 /// Sends a single IPC command to the running Night compositor instance and awaits response
-pub async fn send_command(cmd: &IpcCommand) -> Result<IpcResponse, String> {
+pub async fn send_command(cmd: &IpcCommand) -> Result<IpcResponse, crate::error::IpcError> {
     let path = socket_path();
     let mut stream = UnixStream::connect(&path)
         .await
-        .map_err(|e| format!("Failed to connect to Night IPC socket ({}): {e}", path.display()))?;
+        .map_err(|source| crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        })?;
 
     let payload = postcard::to_stdvec(cmd)
-        .map_err(|e| format!("Serialization error: {e}"))?;
+        .map_err(crate::error::IpcError::Encode)?;
 
     let len = payload.len() as u32;
-    stream.write_all(&len.to_be_bytes()).await.map_err(|e| e.to_string())?;
-    stream.write_all(&payload).await.map_err(|e| e.to_string())?;
+    stream.write_all(&len.to_be_bytes()).await.map_err(|source| {
+        crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        }
+    })?;
+    stream.write_all(&payload).await.map_err(|source| {
+        crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        }
+    })?;
 
     let mut len_buf = [0u8; 4];
-    stream.read_exact(&mut len_buf).await.map_err(|e| e.to_string())?;
+    stream.read_exact(&mut len_buf).await.map_err(|source| {
+        crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        }
+    })?;
     let resp_len = u32::from_be_bytes(len_buf) as usize;
 
     let mut resp_buf = vec![0u8; resp_len];
-    stream.read_exact(&mut resp_buf).await.map_err(|e| e.to_string())?;
+    stream.read_exact(&mut resp_buf).await.map_err(|source| {
+        crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        }
+    })?;
 
     postcard::from_bytes(&resp_buf)
-        .map_err(|e| format!("Deserialization error: {e}"))
+        .map_err(crate::error::IpcError::Decode)
 }
 
 /// Connects to Night IPC and subscribes to real-time `DesktopStatus` updates.
 /// Invokes the provided callback on each update until disconnected.
-pub async fn subscribe_status<F>(mut on_status: F) -> Result<(), String>
+pub async fn subscribe_status<F>(mut on_status: F) -> Result<(), crate::error::IpcError>
 where
     F: FnMut(DesktopStatus),
 {
     let path = socket_path();
     let mut stream = UnixStream::connect(&path)
         .await
-        .map_err(|e| format!("Failed to connect to Night IPC socket ({}): {e}", path.display()))?;
+        .map_err(|source| crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        })?;
 
     let payload = postcard::to_stdvec(&IpcCommand::Subscribe)
-        .map_err(|e| format!("Serialization error: {e}"))?;
+        .map_err(crate::error::IpcError::Encode)?;
 
     let len = payload.len() as u32;
-    stream.write_all(&len.to_be_bytes()).await.map_err(|e| e.to_string())?;
-    stream.write_all(&payload).await.map_err(|e| e.to_string())?;
+    stream.write_all(&len.to_be_bytes()).await.map_err(|source| {
+        crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        }
+    })?;
+    stream.write_all(&payload).await.map_err(|source| {
+        crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        }
+    })?;
 
     loop {
         let mut len_buf = [0u8; 4];
