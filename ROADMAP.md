@@ -21,8 +21,8 @@
 ## 🗺️ Phases Overview
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> Phase 6 ──> Phase 7 ──> Phase 8 ──> Phase 9 ──> Phase 10 ──> Phase 11 ──> Phase 12 ──> Phase 13 ──> Phase 14 ──> Phase 15 ──> Phase 16 ──> Phase 17 ──> Phase 18 ──> Phase 19 ──> Phase 20 ──> Phase 21
-[Workspace] [Formats/Task] [Interactivity] [xtask Flow] [Hardening] [Layout/Theme] [Signals/Doctor] [Power Features] [Bar/Snowcap/nightctl] [Packaging/Media] [Multi-Monitor/DPMS] [Window Ops/Session Flyout] [Slint Settings GUI] [Switcher/Night Light/Inhibit] [Clipboard/Multi-Scratch/MPRIS] [Snipping/Tags/Themes] [Power/Audio/Wallpaper] [App Launcher/Network/Sync] [Sysinfo/Bluetooth/Audio Sinks] [Backlight/DND/Notifications/Session Restore] [Logging/Reliability/OSD/Layout Profiles]
+Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> Modernization
+[Workspace]         [Session]   [Snapping/PiP] [Borders/Titlebars] [Active Open Crates]
 ```
 
 ---
@@ -496,12 +496,31 @@ Phase 1 ──> Phase 2 ──> Phase 3 ──> Phase 4 ──> Phase 5 ──> 
 
 ---
 
-### Phase 24: Dynamic Per-Window Titlebars, Window Accent Borders & Multi-Monitor Scratchpad Anchoring (Upcoming)
-* [ ] **Window Focus Border Accents & Active Frame Rendering**:
-  * [ ] Dynamic Tokyo Night border color switching on window focus change signals (`WindowSignal::Focused`).
-  * [ ] Subtle glowing border accent on floating and PiP windows.
-* [ ] **Multi-Monitor Tag Pinning & Scratchpad Dynamic Output Migration**:
-  * [ ] Scratchpads automatically follow the mouse pointer or active monitor output upon toggle.
+### Phase 24: Dynamic Per-Window Titlebars, Window Accent Borders & Multi-Monitor Scratchpad Anchoring
+* [x] **Window Focus Border Accents & Active Frame Rendering (`crates/night-binds/src/decorations.rs`)**:
+  * [x] Integrated Snowcap `pinnacle_api::snowcap::FocusBorder` for active window frame decorations.
+  * [x] Tokyo Night theme-tailored focus frame accents (`#7aa2f7` blue) and unfocused highlight borders (`#414868`).
+  * [x] Glowing Tokyo Night magenta accents (`#bb9af7`) on floating and PiP windows.
+  * [x] Optional native window titlebars with close and maximize controls.
+  * [x] Real-time keyboard toggles: `Super + Alt + b` (Titlebars) and `Super + Alt + d` (Border Decorations).
+  * [x] CLI & IPC management: `nightctl border <toggle|titlebars|width <px>>` and `IpcCommand::ToggleDecorations` / `ToggleTitlebars` / `SetBorderWidth`.
+* [x] **Multi-Monitor Tag Pinning & Scratchpad Dynamic Output Migration (`crates/night-binds/src/lib.rs`)**:
+  * [x] Scratchpads automatically migrate to follow the active monitor output upon toggle.
+  * [x] Clears orphan workspace tags across prior screens and recalculates responsive dimensions and positioning for the focused display.
+
+---
+
+### Modernization: Open Active Development Crate Migration
+* [x] **Strict Library & Application Error Architecture (`thiserror` & `anyhow`)**:
+  * [x] Adopted `thiserror = "2.0"` across core libraries (`crates/night-core/src/error.rs`) defining typed domain errors (`NightError`, `IpcError`, `ConfigError`).
+  * [x] Adopted `anyhow = "1.0"` across all application binaries (`nightctl`, `night-session`, `night-settings`, `night-pinnacle`, `xtask`) for rich contextual error tracing (`.with_context(...)`).
+* [x] **Production Resource & System Metrics Engine (`sysinfo = "0.38"`)**:
+  * [x] Replaced custom procfs/sysfs delta tick sampling and shell invocations with `sysinfo::System`, `sysinfo::Disks`, and `sysinfo::Components`.
+  * [x] Real-time CPU, RAM, root filesystem disk, and thermal readings with graceful offline fallback when the compositor IPC is disconnected.
+* [x] **Pure-Rust D-Bus Notification Integration (`notify-rust = "4.18"`)**:
+  * [x] Integrated `notify-rust` for direct D-Bus communication with desktop notification servers (`wired`).
+* [x] **Pure-Rust Async Stream Framing (`tokio-util = "0.7"`)**:
+  * [x] Integrated `tokio-util` length-delimited codec capability for high-throughput zero-copy stream processing.
 
 
 
