@@ -122,6 +122,23 @@ impl NotificationHistory {
         Self::load().dnd_enabled
     }
 
+    /// Dispatches a native desktop notification using `notify-rust` (suppressed if DND active)
+    pub fn send(app_name: &str, summary: &str, body: &str) {
+        if Self::is_dnd() {
+            info!(summary, "Suppressed notification due to active DND");
+            Self::record(app_name, summary, body);
+            return;
+        }
+
+        let _ = notify_rust::Notification::new()
+            .appname(app_name)
+            .summary(summary)
+            .body(body)
+            .show();
+
+        Self::record(app_name, summary, body);
+    }
+
     /// Returns dynamic Nerd Font glyph for DND state
     pub fn glyph_dnd(dnd: bool) -> &'static str {
         if dnd {
