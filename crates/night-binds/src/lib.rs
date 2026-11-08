@@ -60,7 +60,7 @@ pub fn register_all() {
         spawn(&alt_term, &[]);
     });
 
-    // Super + Space & Alt + Space -> Tokyo Night Snowcap Application Launcher Modal
+    // Super + Space & Alt + Space -> Bihar Night Snowcap Application Launcher Modal
     input::keybind(Mod::SUPER, "space").on_press(|| {
         show_launcher_modal();
     });
@@ -136,7 +136,7 @@ pub fn register_all() {
         toggle_scratchpad();
     });
 
-    // Super + v -> Tokyo Night Wayland Clipboard History Modal
+    // Super + v -> Bihar Night Wayland Clipboard History Modal
     input::keybind(Mod::SUPER, 'v').on_press(|| {
         show_clipboard_modal();
     });
@@ -219,7 +219,7 @@ pub fn register_all() {
         toggle_sticky();
     });
 
-    // Super + p & Super + Shift + p -> Open Tokyo Night Command Palette
+    // Super + p & Super + Shift + p -> Open Bihar Night Command Palette
     input::keybind(Mod::SUPER, 'p').on_press(|| {
         show_command_palette();
     });
@@ -397,7 +397,7 @@ pub fn register_all() {
         show_bind_overlay();
     });
 
-    // Super + BackSpace -> Snowcap Tokyo Night Session Flyout Menu
+    // Super + BackSpace -> Snowcap Bihar Night Session Flyout Menu
     input::keybind(Mod::SUPER, "BackSpace").on_press(|| {
         show_session_menu();
     });
@@ -411,7 +411,7 @@ pub fn register_all() {
     // 5. Screenshots & Screen Recording
     // -------------------------------------------------------------------------
 
-    // Super + Shift + s -> Interactive Tokyo Night Snipping Modal
+    // Super + Shift + s -> Interactive Bihar Night Snipping Modal
     input::keybind(Mod::SUPER | Mod::SHIFT, 's').on_press(|| {
         show_snipping_modal();
     });
@@ -685,25 +685,25 @@ pub fn handle_media_action(action: night_core::ipc::MediaAction) {
     spawn_shell(&bus_cmd);
 }
 
-/// Displays the interactive Tokyo Night keybinding cheatsheet overlay via Snowcap
+/// Displays the interactive Bihar Night keybinding cheatsheet overlay via Snowcap
 pub fn show_bind_overlay() {
     let mut overlay = pinnacle_api::snowcap::BindOverlay::new();
     overlay.border_radius = 12.0;
     overlay.border_thickness = 2.0;
-    overlay.background_color = [0.10, 0.11, 0.15, 0.92].into(); // Tokyo Night Dark #1a1b26
-    overlay.border_color = [0.48, 0.64, 0.97].into(); // Tokyo Night Blue #7aa2f7
+    overlay.background_color = [0.10, 0.11, 0.15, 0.92].into(); // Bihar Night Dark #1a1b26
+    overlay.border_color = [0.48, 0.64, 0.97].into(); // Bihar Night Blue #7aa2f7
     overlay.width = 760;
     overlay.height = 560;
     overlay.show();
 }
 
-/// Displays the interactive Tokyo Night quit confirmation prompt via Snowcap
+/// Displays the interactive Bihar Night quit confirmation prompt via Snowcap
 pub fn show_quit_prompt() {
     let mut prompt = pinnacle_api::snowcap::QuitPrompt::new();
     prompt.border_radius = 12.0;
     prompt.border_thickness = 2.0;
     prompt.background_color = [0.10, 0.11, 0.15, 0.95].into();
-    prompt.border_color = [0.97, 0.46, 0.56].into(); // Tokyo Night Red #f7768e
+    prompt.border_color = [0.97, 0.46, 0.56].into(); // Bihar Night Red #f7768e
     prompt.width = 320;
     prompt.height = 140;
     prompt.show();
@@ -770,7 +770,7 @@ pub fn center_focused_window() {
     snap_focused_window(night_layout::SnapPosition::Center);
 }
 
-/// Interactive Tokyo Night Session Manager Flyout Modal
+/// Interactive Bihar Night Session Manager Flyout Modal
 #[derive(Clone, Debug)]
 pub struct SessionFlyout {
     pub border_radius: f32,
@@ -814,7 +814,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
             Alignment, Background, Length, Padding,
         };
 
-        let title = Text::new("🌙 Tokyo Night Session Manager").style(
+        let title = Text::new("🌙 Bihar Night Session Manager").style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(20.0),
@@ -907,7 +907,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SessionFlyout 
     }
 }
 
-/// Displays the interactive Tokyo Night Session Flyout Modal via Snowcap
+/// Displays the interactive Bihar Night Session Flyout Modal via Snowcap
 pub fn show_session_menu() {
     let flyout = SessionFlyout::default();
     let lock_cmd = UserConfig::load().apps.lock_cmd;
