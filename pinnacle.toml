@@ -3,4 +3,3 @@
 
 # Run the installed Night orchestrator binary with absolute path
 run = ["/home/irshad/.cargo/bin/night-pinnacle"]
-
