@@ -1,4 +1,4 @@
-# 🌙 Tokyo Night status bar configuration for Ironbar (GTK4-layer-shell)
+# 🌙 Bihar Night status bar configuration for Ironbar (GTK4-layer-shell)
 position = "top"
 height = 34
 icon_theme = "Papirus-Dark"
