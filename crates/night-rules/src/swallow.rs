@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Terminal Window Swallowing Engine
+//! 🌙 Bihar Night Terminal Window Swallowing Engine
 //! Dynamically hides parent terminal windows when a GUI application is spawned from them,
 //! and seamlessly unswallows/restores the parent terminal when the child application exits.
 
@@ -115,7 +115,7 @@ pub fn unswallow_all() {
 
 /// Sets up lifecycle hooks for automatic window swallowing and restoration
 pub fn setup_swallow_listeners() {
-    info!("Initializing Tokyo Night window swallowing lifecycle signals...");
+    info!("Initializing Bihar Night window swallowing lifecycle signals...");
 
     // Connect window destroyed signal to restore swallowed terminals
     let _destroy_handle = Box::leak(Box::new(window::connect_signal(
