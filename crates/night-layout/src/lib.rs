@@ -28,6 +28,8 @@ pub enum LayoutKind {
     Spiral,
     /// Equal-area grid layout
     Fair,
+    /// Monocle full-screen focus layout (100% active window, zero gaps)
+    Monocle,
 }
 
 impl LayoutKind {
@@ -37,6 +39,7 @@ impl LayoutKind {
             Self::Dwindle => "Dwindle",
             Self::Spiral => "Spiral",
             Self::Fair => "Fair",
+            Self::Monocle => "Monocle",
         }
     }
 
@@ -45,7 +48,19 @@ impl LayoutKind {
             Self::MasterStack => Self::Dwindle,
             Self::Dwindle => Self::Spiral,
             Self::Spiral => Self::Fair,
-            Self::Fair => Self::MasterStack,
+            Self::Fair => Self::Monocle,
+            Self::Monocle => Self::MasterStack,
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "masterstack" | "master" | "stack" => Some(Self::MasterStack),
+            "dwindle" | "bsp" => Some(Self::Dwindle),
+            "spiral" | "fibonacci" => Some(Self::Spiral),
+            "fair" | "grid" => Some(Self::Fair),
+            "monocle" | "fullscreen" | "focus" | "deck" => Some(Self::Monocle),
+            _ => None,
         }
     }
 }
@@ -126,6 +141,17 @@ pub fn setup_layout() {
                     inner_gaps: inner,
                     outer_gaps: outer,
                     axis: Axis::Vertical,
+                };
+                gen.layout(args.window_count)
+            }
+            LayoutKind::Monocle => {
+                let gen = MasterStack {
+                    inner_gaps: Gaps::from(0.0),
+                    outer_gaps: Gaps::from(0.0),
+                    master_factor: 1.0,
+                    master_side: MasterSide::Left,
+                    master_count: 1,
+                    reversed: false,
                 };
                 gen.layout(args.window_count)
             }

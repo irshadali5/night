@@ -17,6 +17,8 @@ pub enum LayoutProfile {
     Multitasking,
     /// Immersive ultrawide display layout: Fibonacci Spiral, borderless edge (0px outer gaps)
     Ultrawide,
+    /// Single-window deep focus (Monocle, 0px gaps, 100% active surface)
+    Focus,
 }
 
 impl LayoutProfile {
@@ -26,6 +28,7 @@ impl LayoutProfile {
             Self::Reading => "Reading",
             Self::Multitasking => "Multitasking",
             Self::Ultrawide => "Ultrawide",
+            Self::Focus => "Focus",
         }
     }
 
@@ -35,6 +38,7 @@ impl LayoutProfile {
             Self::Reading => "MasterStack (32px generous margins) for documentation & study",
             Self::Multitasking => "Fair grid (4px minimal gaps) for multi-window dashboards",
             Self::Ultrawide => "Spiral (0px outer borderless) for ultrawide & media displays",
+            Self::Focus => "Monocle (0px borderless, 100% focused window) for deep work",
         }
     }
 
@@ -44,6 +48,7 @@ impl LayoutProfile {
             Self::Reading => "󰈙",
             Self::Multitasking => "󱂬",
             Self::Ultrawide => "󰍹",
+            Self::Focus => "󰊓",
         }
     }
 
@@ -53,12 +58,13 @@ impl LayoutProfile {
             "reading" | "read" | "doc" | "docs" => Some(Self::Reading),
             "multitasking" | "multi" | "dashboard" | "grid" => Some(Self::Multitasking),
             "ultrawide" | "wide" | "media" | "cinema" => Some(Self::Ultrawide),
+            "focus" | "monocle" | "single" | "zen" => Some(Self::Focus),
             _ => None,
         }
     }
 
     pub fn all() -> &'static [Self] {
-        &[Self::Coding, Self::Reading, Self::Multitasking, Self::Ultrawide]
+        &[Self::Coding, Self::Reading, Self::Multitasking, Self::Ultrawide, Self::Focus]
     }
 
     /// Applies this layout profile to the active workspace tag
@@ -72,6 +78,7 @@ impl LayoutProfile {
             Self::Reading => (LayoutKind::MasterStack, 12.0, 32.0, 0.50),
             Self::Multitasking => (LayoutKind::Fair, 4.0, 6.0, 0.50),
             Self::Ultrawide => (LayoutKind::Spiral, 6.0, 0.0, 0.55),
+            Self::Focus => (LayoutKind::Monocle, 0.0, 0.0, 1.0),
         };
 
         {
@@ -105,6 +112,8 @@ mod tests {
         assert_eq!(LayoutProfile::parse("reading"), Some(LayoutProfile::Reading));
         assert_eq!(LayoutProfile::parse("grid"), Some(LayoutProfile::Multitasking));
         assert_eq!(LayoutProfile::parse("ultrawide"), Some(LayoutProfile::Ultrawide));
+        assert_eq!(LayoutProfile::parse("focus"), Some(LayoutProfile::Focus));
+        assert_eq!(LayoutProfile::parse("monocle"), Some(LayoutProfile::Focus));
         assert_eq!(LayoutProfile::parse("unknown_xyz"), None);
     }
 }
