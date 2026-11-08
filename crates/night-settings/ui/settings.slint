@@ -131,6 +131,8 @@ export component SettingsWindow inherits Window {
     in-out property <float> brightness-level: 50.0;
     in-out property <string> brightness-label: "50%";
     in-out property <bool> dnd-active: false;
+    in-out property <bool> auto-theme: false;
+    in-out property <bool> power-saver: false;
 
     // Callbacks to Rust backend
     callback apply-gaps-preview(float, float);
@@ -157,6 +159,8 @@ export component SettingsWindow inherits Window {
     callback set-brightness(float);
     callback toggle-dnd();
     callback apply-layout-profile(string);
+    callback toggle-auto-theme();
+    callback toggle-power-saver();
 
     HorizontalLayout {
         padding: 0px;
@@ -398,6 +402,27 @@ export component SettingsWindow inherits Window {
                                             root.set-theme("Day");
                                         }
                                     }
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    alignment: start;
+
+                                    TokyoButton {
+                                        text: root.auto-theme ? "☀️ Diurnal Solar Schedule: ENABLED" : "☀️ Diurnal Solar Schedule: DISABLED";
+                                        btn-color: root.auto-theme ? #9ece6a : #414868;
+                                        text-color: root.auto-theme ? #1a1b26 : #c0caf5;
+                                        clicked => {
+                                            root.auto-theme = !root.auto-theme;
+                                            root.toggle-auto-theme();
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: "Automatically transitions: 06:00-18:00 Nalanda Dawn (6500K) -> 18:00-22:00 Rajgir Mist (4500K) -> 22:00-06:00 Ganga Midnight (3400K)";
+                                    color: #787c99;
+                                    font-size: 11px;
                                 }
                             }
                         }
@@ -1121,6 +1146,45 @@ export component SettingsWindow inherits Window {
                                         btn-color: #7aa2f7;
                                         text-color: #1a1b26;
                                         clicked => { root.lock-screen(); }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Battery & Power Conservation Mode
+                        Rectangle {
+                            background: #24283b;
+                            border-color: #414868;
+                            border-width: 1px;
+                            border-radius: 10px;
+
+                            VerticalLayout {
+                                padding: 18px;
+                                spacing: 14px;
+
+                                Text {
+                                    text: "🔋 Battery Conservation Mode";
+                                    color: #7aa2f7;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                }
+
+                                Text {
+                                    text: "Conserves battery by lowering brightness to 30%, switching to OLED Ganga Midnight, and enabling dark power-saving policies:";
+                                    color: #a9b1d6;
+                                    font-size: 13px;
+                                }
+
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    TokyoButton {
+                                        text: root.power-saver ? "⚡ Power Saver: ACTIVE (Energy Saving)" : "⚡ Power Saver: INACTIVE (Full Performance)";
+                                        btn-color: root.power-saver ? #e0af68 : #414868;
+                                        text-color: root.power-saver ? #1a1b26 : #c0caf5;
+                                        clicked => {
+                                            root.power-saver = !root.power-saver;
+                                            root.toggle-power-saver();
+                                        }
                                     }
                                 }
                             }

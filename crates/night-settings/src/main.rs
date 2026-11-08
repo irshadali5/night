@@ -51,6 +51,8 @@ async fn main() -> Result<()> {
         ui.set_enable_titlebars(cfg.general.enable_titlebars);
         ui.set_titlebar_height(cfg.general.titlebar_height as i32);
         ui.set_autostart_daemons(cfg.general.autostart_daemons);
+        ui.set_auto_theme(cfg.general.auto_theme_schedule);
+        ui.set_power_saver(cfg.general.power_saver_mode);
 
         ui.set_app_terminal(cfg.apps.terminal.clone().into());
         ui.set_app_alt_terminal(cfg.apps.alt_terminal.clone().into());
@@ -151,6 +153,8 @@ async fn main() -> Result<()> {
                         u.set_brightness_label(bl.display_string().into());
                     }
                     u.set_dnd_active(status.dnd);
+                    u.set_auto_theme(status.auto_theme);
+                    u.set_power_saver(status.power_saver);
                 });
             }
             Ok(_) => {
@@ -519,6 +523,56 @@ async fn main() -> Result<()> {
                         "Do Not Disturb (DND) Enabled"
                     } else {
                         "Do Not Disturb (DND) Disabled"
+                    };
+                    u.set_notification_msg(msg.into());
+                });
+            }
+        });
+    });
+
+    let ui_weak = ui.as_weak();
+    let cfg_clone = Arc::clone(&user_cfg);
+    ui.on_toggle_auto_theme(move || {
+        let ui_weak = ui_weak.clone();
+        let cfg_clone = Arc::clone(&cfg_clone);
+        tokio::spawn(async move {
+            if let Ok(IpcResponse::AutoTheme(active)) = send_command(&IpcCommand::ToggleAutoTheme).await {
+                {
+                    let mut cfg = cfg_clone.lock().unwrap();
+                    cfg.general.auto_theme_schedule = active;
+                    let _ = cfg.save();
+                }
+                let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                    u.set_auto_theme(active);
+                    let msg = if active {
+                        "Diurnal Solar Theme Schedule: ENABLED"
+                    } else {
+                        "Diurnal Solar Theme Schedule: DISABLED"
+                    };
+                    u.set_notification_msg(msg.into());
+                });
+            }
+        });
+    });
+
+    let ui_weak = ui.as_weak();
+    let cfg_clone = Arc::clone(&user_cfg);
+    ui.on_toggle_power_saver(move || {
+        let ui_weak = ui_weak.clone();
+        let cfg_clone = Arc::clone(&cfg_clone);
+        tokio::spawn(async move {
+            if let Ok(IpcResponse::PowerSaver(active)) = send_command(&IpcCommand::TogglePowerSaver).await {
+                {
+                    let mut cfg = cfg_clone.lock().unwrap();
+                    cfg.general.power_saver_mode = active;
+                    let _ = cfg.save();
+                }
+                let _ = ui_weak.upgrade_in_event_loop(move |u| {
+                    u.set_power_saver(active);
+                    let msg = if active {
+                        "Battery Power Saver Mode: ENABLED (30% Brightness + Ganga Midnight)"
+                    } else {
+                        "Battery Power Saver Mode: DISABLED (Normal Performance)"
                     };
                     u.set_notification_msg(msg.into());
                 });
