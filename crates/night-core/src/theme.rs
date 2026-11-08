@@ -1,5 +1,5 @@
-//! 🌙 Tokyo Night Theme Engine & Palette Specifications
-//! Supports all 4 official variants: Night (Classic), Storm (Slate), Moon (Indigo), and Day (Light).
+//! 🌙 Bihar Night Theme Engine & Palette Specifications
+//! Supports 4 authentic expressions: Ganga Midnight, Rajgir Mist, Bodh Gaya Serenity, and Nalanda Dawn.
 
 use serde::{Deserialize, Serialize};
 
@@ -29,6 +29,26 @@ impl ThemeVariant {
         }
     }
 
+    /// Returns the authentic Bihar identity name for this theme variant
+    pub fn bihar_name(&self) -> &'static str {
+        match self {
+            Self::Night => "Ganga Midnight",
+            Self::Storm => "Rajgir Mist",
+            Self::Moon => "Bodh Gaya Serenity",
+            Self::Day => "Nalanda Dawn",
+        }
+    }
+
+    /// Cultural and geographical inspiration description
+    pub fn inspiration(&self) -> &'static str {
+        match self {
+            Self::Night => "River Ganga dusk, floating golden diyas, obsidian river currents",
+            Self::Storm => "Ratnagiri slate basalt hills, bamboo mist, moonlit stupa",
+            Self::Moon => "Indigo starlight beneath the Mahabodhi Tree, brass temple bells",
+            Self::Day => "Terracotta brick ruins and sandstone libraries at first light",
+        }
+    }
+
     pub fn is_dark(&self) -> bool {
         !matches!(self, Self::Day)
     }
@@ -44,10 +64,10 @@ impl ThemeVariant {
 
     pub fn parse_variant(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
-            "night" => Some(Self::Night),
-            "storm" => Some(Self::Storm),
-            "moon" => Some(Self::Moon),
-            "day" => Some(Self::Day),
+            "night" | "ganga" | "mithila" | "patna" | "classic" => Some(Self::Night),
+            "storm" | "rajgir" | "mist" | "basalt" => Some(Self::Storm),
+            "moon" | "bodhgaya" | "bodhi" | "gaya" | "serenity" => Some(Self::Moon),
+            "day" | "nalanda" | "dawn" | "sandstone" | "light" => Some(Self::Day),
             _ => None,
         }
     }
@@ -173,4 +193,26 @@ impl Palette {
     pub const SUCCESS_GREEN: &'static str = "#9ece6a";
     pub const WARNING_YELLOW: &'static str = "#e0af68";
     pub const ERROR_RED: &'static str = "#f7768e";
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bihar_night_variants() {
+        assert_eq!(ThemeVariant::Night.bihar_name(), "Ganga Midnight");
+        assert_eq!(ThemeVariant::Storm.bihar_name(), "Rajgir Mist");
+        assert_eq!(ThemeVariant::Moon.bihar_name(), "Bodh Gaya Serenity");
+        assert_eq!(ThemeVariant::Day.bihar_name(), "Nalanda Dawn");
+
+        // Canonical aliases
+        assert_eq!(ThemeVariant::parse_variant("ganga"), Some(ThemeVariant::Night));
+        assert_eq!(ThemeVariant::parse_variant("mithila"), Some(ThemeVariant::Night));
+        assert_eq!(ThemeVariant::parse_variant("rajgir"), Some(ThemeVariant::Storm));
+        assert_eq!(ThemeVariant::parse_variant("bodhgaya"), Some(ThemeVariant::Moon));
+        assert_eq!(ThemeVariant::parse_variant("bodhi"), Some(ThemeVariant::Moon));
+        assert_eq!(ThemeVariant::parse_variant("nalanda"), Some(ThemeVariant::Day));
+        assert_eq!(ThemeVariant::parse_variant("night"), Some(ThemeVariant::Night));
+    }
 }
