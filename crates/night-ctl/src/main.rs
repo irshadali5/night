@@ -51,10 +51,10 @@ enum Commands {
         name: String,
     },
 
-    /// Query or cycle the dynamic tiling layout algorithm
+    /// Query, set, or cycle the dynamic tiling layout algorithm (MasterStack, Monocle, Dwindle, Spiral, Fair)
     Layout {
-        /// Optional action: pass "next" to cycle to next layout (MasterStack -> Dwindle -> Spiral -> Fair)
-        action: Option<String>,
+        #[command(subcommand)]
+        action: Option<LayoutCommand>,
     },
 
     /// Adjust or set tiling layout gaps in real-time
@@ -175,8 +175,11 @@ enum Commands {
         action: Option<VolumeCommand>,
     },
 
-    /// Query battery capacity and charging status
-    Power,
+    /// Query battery capacity and manage Bihar Night battery conservation mode
+    Power {
+        #[command(subcommand)]
+        action: Option<PowerCommand>,
+    },
 
     /// Show the Snowcap Bihar Night application launcher modal
     #[command(alias = "run")]
@@ -389,6 +392,29 @@ enum SnipMode {
 }
 
 #[derive(Subcommand, Debug)]
+enum LayoutCommand {
+    /// Cycle to the next layout
+    Next,
+    /// Explicitly set layout algorithm (e.g. monocle, masterstack, dwindle, spiral, fair)
+    Set {
+        /// Layout algorithm name
+        name: String,
+    },
+    /// Direct switch to Monocle fullscreen-focus layout
+    Monocle,
+    /// Direct switch to Master-Stack layout
+    Masterstack,
+    /// Direct switch to Dwindle layout
+    Dwindle,
+    /// Direct switch to Spiral layout
+    Spiral,
+    /// Direct switch to Fair layout
+    Fair,
+    /// Query active layout algorithm
+    Status,
+}
+
+#[derive(Subcommand, Debug)]
 enum ThemeCommand {
     /// Set specific Bihar Night variant
     Set {
@@ -399,6 +425,44 @@ enum ThemeCommand {
     /// Cycle to the next Bihar Night theme variant
     Toggle,
     /// Query active Bihar Night variant
+    Status,
+    /// Control diurnal auto-scheduling across Nalanda Dawn, Rajgir Mist, and Ganga Midnight
+    Schedule {
+        /// Schedule action: on (enable), off (disable), toggle, or status (default)
+        #[arg(value_enum)]
+        action: Option<ScheduleArg>,
+    },
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+enum ScheduleArg {
+    #[value(alias = "enable")]
+    On,
+    #[value(alias = "disable")]
+    Off,
+    Toggle,
+    Status,
+}
+
+#[derive(Subcommand, Debug)]
+enum PowerCommand {
+    /// Query battery status, charging level, and health
+    Status,
+    /// Manage Bihar Night battery conservation mode (drops brightness to 30%, switches to Ganga Midnight)
+    Saver {
+        /// Saver action: on (enable), off (disable), toggle, or status (default)
+        #[arg(value_enum)]
+        action: Option<PowerSaverArg>,
+    },
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+enum PowerSaverArg {
+    #[value(alias = "enable")]
+    On,
+    #[value(alias = "disable")]
+    Off,
+    Toggle,
     Status,
 }
 
@@ -553,25 +617,54 @@ async fn main() {
             run_cmd(IpcCommand::SwitchTag(name)).await;
         }
 
-        Commands::Layout { action } => {
-            if let Some(act) = action {
-                if act == "next" {
-                    match send_command(&IpcCommand::CycleLayout).await {
-                        Ok(IpcResponse::Layout(l)) => println!("{l}"),
-                        Ok(resp) => println!("{resp:?}"),
-                        Err(e) => fatal(e),
-                    }
-                } else {
-                    fatal(format!("Unknown layout action '{act}'. Use 'nightctl layout next' or omit argument to query."));
-                }
-            } else {
-                match send_command(&IpcCommand::GetLayout).await {
-                    Ok(IpcResponse::Layout(l)) => println!("{l}"),
-                    Ok(resp) => println!("{resp:?}"),
-                    Err(e) => fatal(e),
-                }
-            }
-        }
+        Commands::Layout { action } => match action {
+            None | Some(LayoutCommand::Status) => match send_command(&IpcCommand::GetLayout).await {
+                Ok(IpcResponse::Layout(l)) => println!("{l}"),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(LayoutCommand::Next) => match send_command(&IpcCommand::CycleLayout).await {
+                Ok(IpcResponse::Layout(l)) => println!("{l}"),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(LayoutCommand::Set { name }) => match send_command(&IpcCommand::SetLayout(name)).await {
+                Ok(IpcResponse::Layout(l)) => println!("📐 Switched tiling layout to: {l}"),
+                Ok(IpcResponse::Error(e)) => fatal(e),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(LayoutCommand::Monocle) => match send_command(&IpcCommand::SetLayout("monocle".into())).await {
+                Ok(IpcResponse::Layout(l)) => println!("📐 Switched tiling layout to: {l}"),
+                Ok(IpcResponse::Error(e)) => fatal(e),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(LayoutCommand::Masterstack) => match send_command(&IpcCommand::SetLayout("masterstack".into())).await {
+                Ok(IpcResponse::Layout(l)) => println!("📐 Switched tiling layout to: {l}"),
+                Ok(IpcResponse::Error(e)) => fatal(e),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(LayoutCommand::Dwindle) => match send_command(&IpcCommand::SetLayout("dwindle".into())).await {
+                Ok(IpcResponse::Layout(l)) => println!("📐 Switched tiling layout to: {l}"),
+                Ok(IpcResponse::Error(e)) => fatal(e),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(LayoutCommand::Spiral) => match send_command(&IpcCommand::SetLayout("spiral".into())).await {
+                Ok(IpcResponse::Layout(l)) => println!("📐 Switched tiling layout to: {l}"),
+                Ok(IpcResponse::Error(e)) => fatal(e),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(LayoutCommand::Fair) => match send_command(&IpcCommand::SetLayout("fair".into())).await {
+                Ok(IpcResponse::Layout(l)) => println!("📐 Switched tiling layout to: {l}"),
+                Ok(IpcResponse::Error(e)) => fatal(e),
+                Ok(resp) => println!("{resp:?}"),
+                Err(e) => fatal(e),
+            },
+        },
 
         Commands::Gaps { delta, inner, outer } => {
             if inner.is_some() || outer.is_some() {
@@ -878,6 +971,46 @@ async fn main() {
                 Ok(other) => println!("{other:?}"),
                 Err(e) => fatal(e),
             },
+            Some(ThemeCommand::Schedule { action }) => {
+                let act = action.unwrap_or(ScheduleArg::Status);
+                match act {
+                    ScheduleArg::Status => match send_command(&IpcCommand::GetAutoTheme).await {
+                        Ok(IpcResponse::AutoTheme(active)) => {
+                            if active {
+                                println!("☀️ Diurnal Bihar Night theme schedule: ENABLED (06:00 Nalanda Dawn -> 18:00 Rajgir Mist -> 22:00 Ganga Midnight)");
+                            } else {
+                                println!("☀️ Diurnal Bihar Night theme schedule: DISABLED (Manual theme control active)");
+                            }
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                    ScheduleArg::On => match send_command(&IpcCommand::SetAutoTheme(true)).await {
+                        Ok(IpcResponse::AutoTheme(_)) => {
+                            println!("☀️ Diurnal Bihar Night theme schedule: ENABLED");
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                    ScheduleArg::Off => match send_command(&IpcCommand::SetAutoTheme(false)).await {
+                        Ok(IpcResponse::AutoTheme(_)) => {
+                            println!("☀️ Diurnal Bihar Night theme schedule: DISABLED");
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                    ScheduleArg::Toggle => match send_command(&IpcCommand::ToggleAutoTheme).await {
+                        Ok(IpcResponse::AutoTheme(active)) => {
+                            println!(
+                                "☀️ Diurnal Bihar Night theme schedule toggled to: {}",
+                                if active { "ENABLED" } else { "DISABLED" }
+                            );
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                }
+            }
         },
 
         Commands::Volume { action } => {
@@ -901,15 +1034,57 @@ async fn main() {
             }
         }
 
-        Commands::Power => match send_command(&IpcCommand::GetBattery).await {
-            Ok(IpcResponse::Battery(Some(bat))) => {
-                println!("⚡ Battery Status: {} ({})", bat.display_string(), bat.status);
+        Commands::Power { action } => match action {
+            None | Some(PowerCommand::Status) => match send_command(&IpcCommand::GetBattery).await {
+                Ok(IpcResponse::Battery(Some(bat))) => {
+                    println!("⚡ Battery Status: {} ({})", bat.display_string(), bat.status);
+                }
+                Ok(IpcResponse::Battery(None)) => {
+                    println!("⚡ Running on AC Power (no battery detected).");
+                }
+                Ok(other) => println!("{other:?}"),
+                Err(e) => fatal(e),
+            },
+            Some(PowerCommand::Saver { action }) => {
+                let act = action.unwrap_or(PowerSaverArg::Status);
+                match act {
+                    PowerSaverArg::Status => match send_command(&IpcCommand::GetPowerSaver).await {
+                        Ok(IpcResponse::PowerSaver(active)) => {
+                            if active {
+                                println!("🔋 Battery conservation mode: ACTIVE (Brightness 30%, OLED Ganga Midnight)");
+                            } else {
+                                println!("🔋 Battery conservation mode: INACTIVE (Full performance)");
+                            }
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                    PowerSaverArg::On => match send_command(&IpcCommand::SetPowerSaver(true)).await {
+                        Ok(IpcResponse::PowerSaver(_)) => {
+                            println!("🔋 Battery conservation mode: ENABLED (Brightness 30%, OLED Ganga Midnight)");
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                    PowerSaverArg::Off => match send_command(&IpcCommand::SetPowerSaver(false)).await {
+                        Ok(IpcResponse::PowerSaver(_)) => {
+                            println!("🔋 Battery conservation mode: DISABLED (Full performance)");
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                    PowerSaverArg::Toggle => match send_command(&IpcCommand::TogglePowerSaver).await {
+                        Ok(IpcResponse::PowerSaver(active)) => {
+                            println!(
+                                "🔋 Battery conservation mode toggled to: {}",
+                                if active { "ENABLED" } else { "DISABLED" }
+                            );
+                        }
+                        Ok(resp) => println!("{resp:?}"),
+                        Err(e) => fatal(e),
+                    },
+                }
             }
-            Ok(IpcResponse::Battery(None)) => {
-                println!("⚡ Running on AC Power (no battery detected).");
-            }
-            Ok(other) => println!("{other:?}"),
-            Err(e) => fatal(e),
         },
 
         Commands::Launcher => {
@@ -1336,6 +1511,8 @@ fn print_status_table(status: &DesktopStatus) {
         println!("  Display Backlight    : {}", bl.display_string());
     }
     println!("  Do Not Disturb (DND) : {}", if status.dnd { "󰂛 Enabled (Muted)" } else { "󰂚 Disabled (Normal)" });
+    println!("  Diurnal Auto-Schedule: {}", if status.auto_theme { "☀️ Enabled (Solar cycle)" } else { "🌑 Disabled (Manual)" });
+    println!("  Battery Saver Mode   : {}", if status.power_saver { "🔋 Active (Conservation)" } else { "⚡ Inactive (Full power)" });
     println!("  Night Light (Gamma)  : {}K", status.gamma_temp.unwrap_or(6500));
     println!("  Idle Inhibition Mode : {}", if status.inhibited { "☕ Enabled (Sleep Suspended)" } else { "🌙 Normal Power Saving" });
     if let Some(ref m) = status.media_info {
