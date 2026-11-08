@@ -45,13 +45,17 @@ pub struct DesktopStatus {
     pub backlight: Option<crate::backlight::BacklightInfo>,
     #[serde(default)]
     pub dnd: bool,
+    #[serde(default)]
+    pub auto_theme: bool,
+    #[serde(default)]
+    pub power_saver: bool,
 }
 
 impl DesktopStatus {
     /// Formats this status as a JSON string without external dependencies
     pub fn to_json(&self) -> String {
         format!(
-            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{},"network":{},"system":{},"bluetooth":{},"backlight":{},"dnd":{}}}"#,
+            r#"{{"active_tag":"{}","layout":"{}","inner_gaps":{:.1},"outer_gaps":{:.1},"active_window":{},"output_count":{},"last_reload":{},"inhibited":{},"gamma_temp":{},"media_info":{},"active_tag_glyph":{},"theme":{},"battery":{},"volume":{},"network":{},"system":{},"bluetooth":{},"backlight":{},"dnd":{},"auto_theme":{},"power_saver":{}}}"#,
             self.active_tag,
             self.layout,
             self.inner_gaps,
@@ -118,7 +122,9 @@ impl DesktopStatus {
                 Some(bl) => format!(r#"{{"percentage":{},"device":"{}"}}"#, bl.percentage, bl.device_name),
                 None => "null".to_string(),
             },
-            self.dnd
+            self.dnd,
+            self.auto_theme,
+            self.power_saver
         )
     }
 
@@ -415,6 +421,20 @@ pub enum IpcCommand {
     ToggleTitlebars,
     /// Sets window border thickness in pixels
     SetBorderWidth(u32),
+    /// Sets layout algorithm directly for active workspace tag
+    SetLayout(String),
+    /// Toggles diurnal automatic day/night theme scheduling
+    ToggleAutoTheme,
+    /// Sets diurnal automatic day/night theme scheduling state
+    SetAutoTheme(bool),
+    /// Queries diurnal automatic day/night theme scheduling state
+    GetAutoTheme,
+    /// Toggles battery power saver mode
+    TogglePowerSaver,
+    /// Sets battery power saver mode state
+    SetPowerSaver(bool),
+    /// Queries battery power saver mode state
+    GetPowerSaver,
 }
 
 /// Desktop IPC Response
@@ -440,6 +460,8 @@ pub enum IpcResponse {
     Notifications(Vec<crate::notifications::NotificationRecord>),
     SavedSession(Option<crate::session_restore::SavedSession>),
     Profile(String),
+    AutoTheme(bool),
+    PowerSaver(bool),
     Error(String),
 }
 
