@@ -16,7 +16,7 @@ use std::process::{exit, Command, Stdio};
     author = "Night Desktop Team",
     version,
     about = "🌙 Night Workspace Task Runner (cargo xtask)",
-    long_about = "Pure-Rust task runner managing builds, installations, Tokyo Night theming, environment diagnostics, and IPC messages."
+    long_about = "Pure-Rust task runner managing builds, installations, Bihar Night theming, environment diagnostics, and IPC messages."
 )]
 struct XtaskCli {
     #[command(subcommand)]
@@ -35,7 +35,7 @@ enum XtaskCommand {
     Run,
     /// Removes installed binaries and config symlinks
     Uninstall,
-    /// Generates Tokyo Night configurations for external suite (Alacritty, Ironbar, Anyrun, Veila)
+    /// Generates Bihar Night configurations for external suite (Alacritty, Ironbar, Anyrun, Veila)
     Theme {
         /// Optional theme variant (night, storm, moon, day)
         #[arg(value_enum)]
@@ -48,7 +48,7 @@ enum XtaskCommand {
     /// Configures 100% Rust-native TUI Display Manager (greetd + tuigreet)
     #[command(alias = "setup-dm")]
     Dm,
-    /// Sets desktop wallpaper or selects random Tokyo Night image
+    /// Sets desktop wallpaper or selects random Bihar Night image
     Wallpaper {
         /// Optional path to wallpaper image
         path: Option<PathBuf>,
@@ -115,7 +115,7 @@ enum MsgCommand {
     /// Triggers the Snowcap quit confirmation prompt
     #[command(alias = "prompt-quit")]
     QuitPrompt,
-    /// Triggers the Snowcap Tokyo Night interactive visual window switcher
+    /// Triggers the Snowcap Bihar Night interactive visual window switcher
     #[command(alias = "switch-window")]
     Switcher,
     /// Toggles or sets night light color temperature
@@ -125,14 +125,14 @@ enum MsgCommand {
     },
     /// Toggles idle inhibition (presentation mode)
     Inhibit,
-    /// Triggers the Snowcap Tokyo Night clipboard history modal
+    /// Triggers the Snowcap Bihar Night clipboard history modal
     #[command(alias = "clipboard")]
     Clip,
     /// Controls MPRIS media player playback
     Media,
-    /// Triggers the Snowcap Tokyo Night interactive snipping modal
+    /// Triggers the Snowcap Bihar Night interactive snipping modal
     Snip,
-    /// Sets or queries Tokyo Night theme variant
+    /// Sets or queries Bihar Night theme variant
     Theme {
         /// Optional variant to set (night, storm, moon, day)
         variant: Option<String>,
@@ -144,7 +144,7 @@ enum MsgCommand {
     },
     /// Queries battery and power supply status
     Power,
-    /// Triggers the Snowcap Tokyo Night application launcher modal
+    /// Triggers the Snowcap Bihar Night application launcher modal
     #[command(alias = "run")]
     Launcher,
     /// Queries network connectivity status
@@ -321,7 +321,26 @@ fn task_install(root: &Path) {
         }
     }
 
-    // 5. Deploy Tokyo Night styling configs for desktop tools
+    // 4b. Deploy Bihar Night default wallpapers (~/.config/night/wallpapers/)
+    let wallpapers_user_dir = night_user_dir.join("wallpapers");
+    let _ = fs::create_dir_all(&wallpapers_user_dir);
+    let wallpapers_src_dir = root.join("assets/wallpapers");
+    if wallpapers_src_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&wallpapers_src_dir) {
+            for entry in entries.flatten() {
+                let src = entry.path();
+                if src.is_file() {
+                    let dst = wallpapers_user_dir.join(entry.file_name());
+                    if !dst.exists() {
+                        println!("==> Deploying Bihar Night wallpaper: {}", dst.display());
+                        let _ = fs::copy(&src, &dst);
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. Deploy Bihar Night styling configs for desktop tools
     task_theme(root, night_core::config::UserConfig::load().general.theme);
 
     if let Some(cfg) = dirs::config_dir() {
@@ -339,7 +358,7 @@ fn task_install(root: &Path) {
                 if let Some(parent) = target_path.parent() {
                     let _ = fs::create_dir_all(parent);
                 }
-                println!("==> Deploying Tokyo Night theme: {}", target_path.display());
+                println!("==> Deploying Bihar Night theme: {}", target_path.display());
                 let _ = fs::copy(&src, &target_path);
             }
         }
@@ -352,7 +371,11 @@ fn task_install(root: &Path) {
 }
 
 fn task_theme(root: &Path, variant: ThemeVariant) {
-    println!("🎨 Generating Tokyo Night {} styling configurations for desktop tools...", variant.name());
+    println!(
+        "🎨 Generating Bihar Night {} ({}) styling configurations for desktop tools...",
+        variant.name(),
+        variant.bihar_name()
+    );
     let config_dir = root.join("config");
     fs::create_dir_all(&config_dir).expect("Failed to create config directory");
 
@@ -360,7 +383,7 @@ fn task_theme(root: &Path, variant: ThemeVariant) {
 
     // 1. Alacritty
     let alacritty_cfg = format!(
-        r##"# 🌙 Tokyo Night {} theme for Alacritty generated by Night Desktop
+        r##"# 🌙 Bihar Night {} ({}) theme for Alacritty generated by Night Desktop
 [colors.primary]
 background = "{}"
 foreground = "{}"
@@ -393,6 +416,7 @@ opacity = 0.95
 padding = {{ x = 8, y = 8 }}
 "##,
         variant.name(),
+        variant.bihar_name(),
         p.bg_primary,
         p.fg_primary,
         p.bg_darkest,
@@ -416,7 +440,7 @@ padding = {{ x = 8, y = 8 }}
 
     // 2. Ironbar CSS Stylesheet
     let ironbar_css = format!(
-        r##"/* 🌙 Tokyo Night {} GTK4 stylesheet for Ironbar generated by Night Desktop */
+        r##"/* 🌙 Bihar Night {} ({}) GTK4 stylesheet for Ironbar generated by Night Desktop */
 * {{
     font-family: "JetBrainsMono Nerd Font", monospace;
     font-size: 13px;
@@ -449,6 +473,7 @@ window#ironbar {{
 }}
 "##,
         variant.name(),
+        variant.bihar_name(),
         p.bg_primary,
         p.fg_primary,
         p.bg_secondary,
@@ -461,7 +486,7 @@ window#ironbar {{
     fs::write(config_dir.join("ironbar.css"), ironbar_css).expect("Failed to write ironbar.css");
 
     // 2b. Ironbar TOML Configuration
-    let ironbar_toml = r##"# 🌙 Tokyo Night status bar configuration for Ironbar (GTK4-layer-shell)
+    let ironbar_toml = r##"# 🌙 Bihar Night status bar configuration for Ironbar (GTK4-layer-shell)
 position = "top"
 height = 34
 icon_theme = "Papirus-Dark"
@@ -482,7 +507,7 @@ tray = { type = "tray", icon_size = 16 }
     fs::write(config_dir.join("ironbar.toml"), ironbar_toml).expect("Failed to write ironbar.toml");
 
     // 3. Anyrun
-    let anyrun_css = r##"/* 🌙 Tokyo Night GTK4 stylesheet for Anyrun generated by Night Desktop */
+    let anyrun_css = r##"/* 🌙 Bihar Night GTK4 stylesheet for Anyrun generated by Night Desktop */
 #window {
     background-color: transparent;
 }
@@ -510,7 +535,7 @@ tray = { type = "tray", icon_size = 16 }
     fs::write(config_dir.join("anyrun.css"), anyrun_css).expect("Failed to write anyrun.css");
 
     // 4. Veila (Pure-Rust Wayland Lockscreen)
-    let veila_toml = r##"# 🌙 Tokyo Night theme for Veila Screen Locker
+    let veila_toml = r##"# 🌙 Bihar Night theme for Veila Screen Locker
 [general]
 indicator = true
 indicator_radius = 45.0
@@ -529,7 +554,7 @@ wrong = "f7768e"
 "##;
     fs::write(config_dir.join("veila.toml"), veila_toml).expect("Failed to write veila.toml");
 
-    println!("✅ Tokyo Night suite configs exported to ./config/");
+    println!("✅ Bihar Night suite configs exported to ./config/");
 }
 
 fn task_run(root: &Path) {
@@ -737,7 +762,7 @@ async fn task_msg(command: MsgCommand) {
             println!("🌐 Network: Disconnected / No active interface");
         }
         Ok(night_core::ipc::IpcResponse::SystemStats(s)) => {
-            println!("🌙 Tokyo Night System Resource Monitor:");
+            println!("🌙 Bihar Night System Resource Monitor:");
             println!("   CPU Usage    : {}%", s.cpu_pct);
             println!("  󰍛 Memory (RAM) : {:.1} / {:.1} GiB ({}%)", s.mem_used_mb as f32 / 1024.0, s.mem_total_mb as f32 / 1024.0, s.mem_pct);
             println!("  󰋊 Root Disk    : {} / {} GiB ({}%)", s.disk_used_gb, s.disk_total_gb, s.disk_pct);
@@ -998,8 +1023,8 @@ fn task_dm(root: &Path) {
     if !is_root { cmd.arg("chown"); }
     let _ = cmd.args(["-R", "greeter:greeter", "/var/cache/tuigreet"]).output();
 
-    // 4. Deploy Tokyo Night /etc/greetd/config.toml
-    println!("==> Deploying Tokyo Night /etc/greetd/config.toml...");
+    // 4. Deploy Bihar Night /etc/greetd/config.toml
+    println!("==> Deploying Bihar Night /etc/greetd/config.toml...");
     let src_config = root.join("assets/greetd-tuigreet.toml");
     let mut cmd = if is_root { Command::new("cp") } else { Command::new("sudo") };
     if !is_root { cmd.arg("cp"); }
@@ -1034,7 +1059,7 @@ fn task_dm(root: &Path) {
 }
 
 fn task_wallpaper(target: Option<PathBuf>) {
-    println!("🖼️ Managing Tokyo Night wallpaper in pure Rust...");
+    println!("🖼️ Managing Bihar Night wallpaper in pure Rust...");
 
     // 1. Ensure swww-daemon is running if swww is present
     if which::which("swww").is_ok() {
@@ -1059,43 +1084,72 @@ fn task_wallpaper(target: Option<PathBuf>) {
             None
         }
     } else {
-        // Search standard directories
+        // Search standard directories with priority for authentic Bihar Night wallpapers
         let home = dirs::home_dir().unwrap_or_default();
-        let search_dirs = [
-            dirs::config_dir().unwrap_or_else(|| home.join(".config")).join("night/wallpapers"),
-            home.join("Pictures/Wallpapers"),
-            home.join(".config/quickshell/ii/assets/images"),
+        let config_wp = dirs::config_dir().unwrap_or_else(|| home.join(".config")).join("night/wallpapers");
+        let repo_wp = PathBuf::from("assets/wallpapers");
+
+        let priority_names = [
+            "bihar-night.jpg",
+            "bihar-night-ganga.jpg",
+            "bihar-night-bodhgaya.jpg",
+            "bihar-night.png",
         ];
 
-        let mut candidates = Vec::new();
-        for dir in &search_dirs {
-            if let Ok(entries) = fs::read_dir(dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
-                        let ext = ext.to_lowercase();
-                        if matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp") {
-                            candidates.push(path);
+        let mut found_priority = None;
+        for name in &priority_names {
+            for dir in [&config_wp, &repo_wp] {
+                let candidate = dir.join(name);
+                if candidate.exists() {
+                    found_priority = Some(candidate);
+                    break;
+                }
+            }
+            if found_priority.is_some() {
+                break;
+            }
+        }
+
+        if let Some(p) = found_priority {
+            Some(p)
+        } else {
+            let search_dirs = [
+                config_wp,
+                repo_wp,
+                home.join("Pictures/Wallpapers"),
+                home.join(".config/quickshell/ii/assets/images"),
+            ];
+
+            let mut candidates = Vec::new();
+            for dir in &search_dirs {
+                if let Ok(entries) = fs::read_dir(dir) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+                            let ext = ext.to_lowercase();
+                            if matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp") {
+                                candidates.push(path);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if !candidates.is_empty() {
-            let idx = (std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as usize)
-                % candidates.len();
-            Some(candidates[idx].clone())
-        } else {
-            None
+            if !candidates.is_empty() {
+                let idx = (std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis() as usize)
+                    % candidates.len();
+                Some(candidates[idx].clone())
+            } else {
+                None
+            }
         }
     };
 
     if let Some(img) = wallpaper_path {
-        println!("==> Setting Tokyo Night wallpaper: {}", img.display());
+        println!("==> Setting Bihar Night wallpaper: {}", img.display());
         if which::which("swww").is_ok() {
             let _ = Command::new("swww")
                 .args([
@@ -1120,7 +1174,7 @@ fn task_wallpaper(target: Option<PathBuf>) {
                 .spawn();
         }
     } else {
-        println!("==> No wallpaper found; clearing to solid Tokyo Night (#1a1b26)");
+        println!("==> No wallpaper found; clearing to solid Bihar Night (#1a1b26)");
         if which::which("swww").is_ok() {
             let _ = Command::new("swww").args(["clear", "1a1b26"]).status();
         } else if which::which("swaybg").is_ok() {
