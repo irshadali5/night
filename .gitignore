@@ -5,3 +5,5 @@ target/
 # Keep Cargo.lock for deterministic builds
 !Cargo.lock
 
+# archive file
+*.tar.gz
