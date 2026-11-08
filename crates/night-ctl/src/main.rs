@@ -72,7 +72,7 @@ enum Commands {
     /// Launch the Slint-based GUI Control Center & Settings app
     Settings,
 
-    /// Show the Snowcap Tokyo Night interactive visual window switcher
+    /// Show the Snowcap Bihar Night interactive visual window switcher
     #[command(alias = "switch-window")]
     Switcher,
 
@@ -132,7 +132,7 @@ enum Commands {
     #[command(alias = "prompt-quit")]
     QuitPrompt,
 
-    /// Show the Snowcap Tokyo Night session menu modal
+    /// Show the Snowcap Bihar Night session menu modal
     #[command(alias = "power-menu")]
     SessionMenu,
 
@@ -156,14 +156,14 @@ enum Commands {
     /// Reload the compositor configuration
     Reload,
 
-    /// Interactive Tokyo Night snipping tool and screen recorder
+    /// Interactive Bihar Night snipping tool and screen recorder
     Snip {
         /// Optional direct capture mode (region, window, full, copy, record, gif)
         #[arg(value_enum)]
         mode: Option<SnipMode>,
     },
 
-    /// Manage Tokyo Night theme variants (Night, Storm, Moon, Day)
+    /// Manage Bihar Night theme variants (Ganga Midnight, Rajgir Mist, Bodh Gaya Serenity, Nalanda Dawn)
     Theme {
         #[command(subcommand)]
         action: Option<ThemeCommand>,
@@ -178,14 +178,14 @@ enum Commands {
     /// Query battery capacity and charging status
     Power,
 
-    /// Show the Snowcap Tokyo Night application launcher modal
+    /// Show the Snowcap Bihar Night application launcher modal
     #[command(alias = "run")]
     Launcher,
 
     /// Query network connectivity status and active interfaces
     Net,
 
-    /// Display Tokyo Night real-time system performance monitor (CPU, RAM, Temp, Disk)
+    /// Display Bihar Night real-time system performance monitor (CPU, RAM, Temp, Disk)
     #[command(alias = "sys")]
     Top,
 
@@ -224,7 +224,7 @@ enum Commands {
         action: SessionCommand,
     },
 
-    /// Query or set Tokyo Night desktop wallpaper
+    /// Query or set Bihar Night desktop wallpaper
     Wallpaper {
         /// Optional path to wallpaper image file
         path: Option<String>,
@@ -259,13 +259,13 @@ enum Commands {
         name: Option<String>,
     },
 
-    /// Trigger the interactive Tokyo Night Command Palette modal
+    /// Trigger the interactive Bihar Night Command Palette modal
     Palette,
 
-    /// Trigger the interactive Tokyo Night Window Switcher & Overview modal
+    /// Trigger the interactive Bihar Night Window Switcher & Overview modal
     Overview,
 
-    /// Trigger the interactive Tokyo Night 3x3 Workspace Grid (Exposé) modal
+    /// Trigger the interactive Bihar Night 3x3 Workspace Grid (Exposé) modal
     Grid,
 
     /// Snap the focused window to a geometric target (center, left, right, top, bottom, top-left, top-right, bottom-left, bottom-right, pip, max)
@@ -390,23 +390,27 @@ enum SnipMode {
 
 #[derive(Subcommand, Debug)]
 enum ThemeCommand {
-    /// Set specific Tokyo Night variant
+    /// Set specific Bihar Night variant
     Set {
-        /// Variant name: "night", "storm", "moon", "day"
+        /// Variant name or Bihar alias: "night" ("ganga"), "storm" ("rajgir"), "moon" ("bodhgaya"), "day" ("nalanda")
         #[arg(value_enum)]
         variant: ThemeVariantArg,
     },
-    /// Cycle to the next Tokyo Night theme variant
+    /// Cycle to the next Bihar Night theme variant
     Toggle,
-    /// Query active Tokyo Night variant
+    /// Query active Bihar Night variant
     Status,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
 enum ThemeVariantArg {
+    #[value(alias = "ganga", alias = "mithila", alias = "patna")]
     Night,
+    #[value(alias = "rajgir", alias = "mist")]
     Storm,
+    #[value(alias = "bodhgaya", alias = "bodhi")]
     Moon,
+    #[value(alias = "nalanda", alias = "dawn")]
     Day,
 }
 
@@ -458,7 +462,7 @@ enum GammaCommand {
 enum ClipCommand {
     /// List stored clipboard history entries
     List,
-    /// Open the Snowcap Tokyo Night clipboard history modal
+    /// Open the Snowcap Bihar Night clipboard history modal
     Show,
     /// Clear all stored clipboard history
     Clear,
@@ -835,7 +839,10 @@ async fn main() {
 
         Commands::Theme { action } => match action {
             None | Some(ThemeCommand::Status) => match send_command(&IpcCommand::GetTheme).await {
-                Ok(IpcResponse::Theme(v)) => println!("Active Tokyo Night Theme: {}", v.name()),
+                Ok(IpcResponse::Theme(v)) => {
+                    println!("🌙 Active Bihar Night Theme: {} ({})", v.name(), v.bihar_name());
+                    println!("   Inspiration: {}", v.inspiration());
+                }
                 Ok(other) => println!("{other:?}"),
                 Err(e) => fatal(e),
             },
@@ -843,7 +850,11 @@ async fn main() {
                 let v: ThemeVariant = variant.into();
                 match send_command(&IpcCommand::SetTheme(v)).await {
                     Ok(IpcResponse::Theme(updated)) => {
-                        println!("🌙 Tokyo Night theme switched to: {}", updated.name());
+                        println!(
+                            "🌙 Bihar Night theme switched to: {} ({})",
+                            updated.name(),
+                            updated.bihar_name()
+                        );
                     }
                     Ok(other) => println!("{other:?}"),
                     Err(e) => fatal(e),
@@ -854,7 +865,11 @@ async fn main() {
                     let next = current.next();
                     match send_command(&IpcCommand::SetTheme(next)).await {
                         Ok(IpcResponse::Theme(updated)) => {
-                            println!("🌙 Tokyo Night theme toggled to: {}", updated.name());
+                            println!(
+                                "🌙 Bihar Night theme toggled to: {} ({})",
+                                updated.name(),
+                                updated.bihar_name()
+                            );
                         }
                         Ok(other) => println!("{other:?}"),
                         Err(e) => fatal(e),
@@ -1194,7 +1209,7 @@ async fn main() {
                     Err(e) => fatal(e),
                 }
             } else {
-                println!("📐 Available Tokyo Night Workspace Layout Profiles:");
+                println!("📐 Available Bihar Night Workspace Layout Profiles:");
                 for p in night_layout::LayoutProfile::all() {
                     println!("  {} {:<14} : {}", p.icon(), p.name(), p.description());
                 }
@@ -1269,7 +1284,7 @@ fn ascii_bar(pct: u8, width: usize) -> String {
 }
 
 fn print_system_stats(s: &night_core::sysinfo::SystemStats) {
-    println!("🌙 Tokyo Night System Resource Monitor");
+    println!("🌙 Bihar Night System Resource Monitor");
     println!("   CPU Usage    : {:<22} {:>3}%", ascii_bar(s.cpu_pct, 20), s.cpu_pct);
     println!(
         "  󰍛 Memory (RAM) : {:<22} {:>3}% ({:.1} / {:.1} GiB)",
@@ -1293,9 +1308,11 @@ fn print_system_stats(s: &night_core::sysinfo::SystemStats) {
 fn print_status_table(status: &DesktopStatus) {
     let glyph = status.active_tag_glyph.as_deref().unwrap_or("󰣆");
     let theme = status.theme.as_deref().unwrap_or("Night");
+    let bihar_variant = night_core::theme::ThemeVariant::parse_variant(theme);
+    let bihar_label = bihar_variant.map(|v| format!("{} ({})", v.name(), v.bihar_name())).unwrap_or_else(|| theme.to_string());
     println!("🌙 Night Desktop Environment");
     println!("  Active Workspace Tag : {} ({glyph})", status.active_tag);
-    println!("  Tokyo Night Theme    : {theme}");
+    println!("  Bihar Night Theme    : {bihar_label}");
     println!("  Tiling Layout        : {}", status.layout);
     println!("  Gaps (Inner / Outer) : {:.0}px / {:.0}px", status.inner_gaps, status.outer_gaps);
     println!("  Connected Monitors   : {}", status.output_count);
