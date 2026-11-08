@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Desktop Command Palette
+//! 🌙 Bihar Night Desktop Command Palette
 //! Fast keyboard-driven command palette overlay providing quick access to all desktop operations:
 //! Launcher, Window Switcher, Profiles, Themes, Snipping, Audio, DND, Gamma, Settings, and Session Power.
 
@@ -41,8 +41,8 @@ impl Default for CommandPaletteModal {
         Self {
             border_radius: 14.0,
             border_thickness: 2.0,
-            background_color: [0.10, 0.11, 0.15, 0.96], // Tokyo Night Dark #1a1b26
-            border_color: [0.48, 0.64, 0.97, 1.0],     // Tokyo Night Blue #7aa2f7
+            background_color: [0.10, 0.11, 0.15, 0.96], // Bihar Night Dark #1a1b26
+            border_color: [0.48, 0.64, 0.97, 1.0],     // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 700,
             height: 480,
@@ -50,7 +50,7 @@ impl Default for CommandPaletteModal {
                 PaletteAction { key: "1", icon: "󰀻", title: "Application Launcher", shortcut: "Super + Space" },
                 PaletteAction { key: "2", icon: "󱂬", title: "Window Switcher & Overview", shortcut: "Super + W" },
                 PaletteAction { key: "3", icon: "󰖲", title: "Tiling Layout Profile Presets", shortcut: "Super + Alt + 1..4" },
-                PaletteAction { key: "4", icon: "󰏘", title: "Tokyo Night Theme Variant", shortcut: "Super + T" },
+                PaletteAction { key: "4", icon: "󰏘", title: "Bihar Night Theme Variant", shortcut: "Super + T" },
                 PaletteAction { key: "5", icon: "󰄄", title: "Snipping & Screenshot Studio", shortcut: "Super + Shift + S" },
                 PaletteAction { key: "6", icon: "󰕾", title: "Audio Output Sink Selector", shortcut: "Super + Shift + A" },
                 PaletteAction { key: "7", icon: "󰂛", title: "Do Not Disturb (DND) Mode", shortcut: "Super + Shift + N" },
@@ -71,7 +71,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for CommandPalette
     fn update(&mut self, _msg: Self::Message) {}
 
     fn view(&self) -> Option<WidgetDef<Self::Message>> {
-        let title = Text::new("⚡ Tokyo Night Command Palette").style(
+        let title = Text::new("⚡ Bihar Night Command Palette").style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(18.0),
@@ -131,7 +131,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for CommandPalette
     }
 }
 
-/// Displays the interactive Tokyo Night Command Palette via Snowcap
+/// Displays the interactive Bihar Night Command Palette via Snowcap
 pub fn show_command_palette() {
     let modal = CommandPaletteModal::default();
 
@@ -175,13 +175,13 @@ pub fn show_command_palette() {
                 }
                 // [4] Theme Variant
                 Keysym::_4 => {
-                    info!("Palette: cycling Tokyo Night theme variant");
+                    info!("Palette: cycling Bihar Night theme variant");
                     let mut cfg = night_core::UserConfig::load();
                     let next_theme = cfg.general.theme.next();
                     cfg.general.theme = next_theme;
                     let _ = cfg.save();
                     night_core::exec::spawn("nightctl", &["theme", &next_theme.name().to_lowercase()]);
-                    crate::osd::show_layout_osd(&format!("Theme: {}", next_theme.name()));
+                    crate::osd::show_layout_osd(&format!("Theme: {} ({})", next_theme.name(), next_theme.bihar_name()));
                 }
                 // [5] Snipping
                 Keysym::_5 => {

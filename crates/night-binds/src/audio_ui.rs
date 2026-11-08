@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Audio Output & Sink Switcher Modal
+//! 🌙 Bihar Night Audio Output & Sink Switcher Modal
 //! Layer-shell overlay program displaying available audio output devices (Headphones, Speakers, HDMI, USB DAC)
 //! with instant single-key selection (`[1-5]`), quick cycle (`[C]`), and notification feedback.
 
@@ -33,8 +33,8 @@ impl Default for AudioSinkModal {
         Self {
             border_radius: 14.0,
             border_thickness: 2.0,
-            background_color: [0.10, 0.11, 0.15, 0.96], // Tokyo Night Dark #1a1b26
-            border_color: [0.48, 0.64, 0.97, 1.0],     // Tokyo Night Blue #7aa2f7
+            background_color: [0.10, 0.11, 0.15, 0.96], // Bihar Night Dark #1a1b26
+            border_color: [0.48, 0.64, 0.97, 1.0],     // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 660,
             height: 330,
@@ -49,7 +49,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for AudioSinkModal
     fn update(&mut self, _msg: Self::Message) {}
 
     fn view(&self) -> Option<WidgetDef<Self::Message>> {
-        let title = Text::new("🔊 Tokyo Night Audio Output Selector").style(
+        let title = Text::new("🔊 Bihar Night Audio Output Selector").style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(18.0),
@@ -126,7 +126,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for AudioSinkModal
     }
 }
 
-/// Displays the interactive Tokyo Night Audio Output Selector Modal via Snowcap
+/// Displays the interactive Bihar Night Audio Output Selector Modal via Snowcap
 pub fn show_audio_sink_modal() {
     let sinks = list_sinks();
     let sinks_clone = sinks.clone();

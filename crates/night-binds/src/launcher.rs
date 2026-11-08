@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Application Launcher & Command Runner Modal
+//! 🌙 Bihar Night Application Launcher & Command Runner Modal
 //! Fast, pure-Rust XDG desktop application scanner and layer-shell runner modal.
 //! Supports instant single-key launch (`[1-8]`), mnemonic shortcuts (`[T]`, `[M]`, `[F]`, `[B]`, `[S]`),
 //! and fallback to extended search (`[9]` Yofi).
@@ -90,7 +90,7 @@ pub fn scan_desktop_applications() -> Vec<AppEntry> {
         }
     }
 
-    // Ensure our signature Tokyo Night desktop suite applications are prioritized if installed
+    // Ensure our signature Bihar Night desktop suite applications are prioritized if installed
     let mut prioritized = Vec::new();
     let priority_names = [
         ("Alacritty", "alacritty", "GPU-accelerated terminal emulator", false),
@@ -214,8 +214,8 @@ impl Default for LauncherModal {
         Self {
             border_radius: 14.0,
             border_thickness: 2.0,
-            background_color: [0.10, 0.11, 0.15, 0.96], // Tokyo Night Dark #1a1b26
-            border_color: [0.48, 0.64, 0.97, 1.0],     // Tokyo Night Blue #7aa2f7
+            background_color: [0.10, 0.11, 0.15, 0.96], // Bihar Night Dark #1a1b26
+            border_color: [0.48, 0.64, 0.97, 1.0],     // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 720,
             height: 440,
@@ -230,7 +230,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for LauncherModal 
     fn update(&mut self, _msg: Self::Message) {}
 
     fn view(&self) -> Option<WidgetDef<Self::Message>> {
-        let title = Text::new("󰀻 Tokyo Night Application Launcher & Runner").style(
+        let title = Text::new("󰀻 Bihar Night Application Launcher & Runner").style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(18.0),
@@ -332,7 +332,7 @@ fn launch_app(app: &AppEntry) {
     spawn_shell(&cmd);
 }
 
-/// Displays the interactive Tokyo Night Application Launcher Modal via Snowcap
+/// Displays the interactive Bihar Night Application Launcher Modal via Snowcap
 pub fn show_launcher_modal() {
     let apps = scan_desktop_applications();
     let apps_clone = apps.clone();

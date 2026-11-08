@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Notification Center & DND Modal
+//! 🌙 Bihar Night Notification Center & DND Modal
 //! Layer-shell overlay program displaying recent desktop notification history
 //! with single-key Do Not Disturb toggling (`[D]`), history clearing (`[C]`), and dismissal.
 
@@ -35,8 +35,8 @@ impl Default for NotificationCenterModal {
         Self {
             border_radius: 14.0,
             border_thickness: 2.0,
-            background_color: [0.10, 0.11, 0.15, 0.96], // Tokyo Night Dark #1a1b26
-            border_color: [0.48, 0.64, 0.97, 1.0],     // Tokyo Night Blue #7aa2f7
+            background_color: [0.10, 0.11, 0.15, 0.96], // Bihar Night Dark #1a1b26
+            border_color: [0.48, 0.64, 0.97, 1.0],     // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 700,
             height: 420,
@@ -58,7 +58,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for NotificationCe
             "󰂚 [DND OFF]"
         };
 
-        let title = Text::new(format!("󰂚 Tokyo Night Notification Center    {}", dnd_badge)).style(
+        let title = Text::new(format!("󰂚 Bihar Night Notification Center    {}", dnd_badge)).style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(17.0),
@@ -154,7 +154,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for NotificationCe
     }
 }
 
-/// Displays the interactive Tokyo Night Notification Center Modal via Snowcap
+/// Displays the interactive Bihar Night Notification Center Modal via Snowcap
 pub fn show_notifications_modal() {
     let history = NotificationHistory::load();
 

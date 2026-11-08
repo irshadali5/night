@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Visual Window Switcher
+//! 🌙 Bihar Night Visual Window Switcher
 //! Layer-shell overlay program displaying all active windows across tags and outputs.
 //! Provides keyboard-driven navigation (`[1..9]` direct jump, `[Enter]` focus, `[D]` close).
 
@@ -63,7 +63,7 @@ impl Default for WindowSwitcherModal {
             border_radius: 14.0,
             border_thickness: 2.0,
             background_color: [0.10, 0.11, 0.15, 0.96],
-            border_color: [0.48, 0.64, 0.97, 1.0], // Tokyo Night Blue #7aa2f7
+            border_color: [0.48, 0.64, 0.97, 1.0], // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 740,
             height: 380,
@@ -78,7 +78,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for WindowSwitcher
     fn update(&mut self, _msg: Self::Message) {}
 
     fn view(&self) -> Option<WidgetDef<Self::Message>> {
-        let title = Text::new("🌙 Tokyo Night Window Switcher").style(
+        let title = Text::new("🌙 Bihar Night Window Switcher").style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(18.0),
@@ -156,7 +156,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for WindowSwitcher
     }
 }
 
-/// Displays the interactive Tokyo Night Window Switcher Modal via Snowcap
+/// Displays the interactive Bihar Night Window Switcher Modal via Snowcap
 pub fn show_window_switcher() {
     let mut items = Vec::new();
     let focused = pinnacle_api::window::get_focused();

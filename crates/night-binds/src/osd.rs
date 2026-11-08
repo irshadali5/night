@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Pure-Rust Visual On-Screen Display (OSD) Engine
+//! 🌙 Bihar Night Pure-Rust Visual On-Screen Display (OSD) Engine
 //! Ultra-responsive layer-shell HUD overlay displaying instant visual feedback for:
 //! Audio Volume, Backlight Brightness, Do Not Disturb (DND), Night Light (Gamma), and Tiling Layout Profiles.
 //! Automatically closes smoothly after a non-blocking timeout.
@@ -46,8 +46,8 @@ impl Default for OsdModal {
         Self {
             border_radius: 12.0,
             border_thickness: 2.0,
-            background_color: [0.10, 0.11, 0.15, 0.94], // Tokyo Night Dark #1a1b26
-            border_color: [0.48, 0.64, 0.97, 1.0],     // Tokyo Night Blue #7aa2f7
+            background_color: [0.10, 0.11, 0.15, 0.94], // Bihar Night Dark #1a1b26
+            border_color: [0.48, 0.64, 0.97, 1.0],     // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 380,
             height: 90,
@@ -199,7 +199,7 @@ fn make_ascii_bar(pct: u8, total_cells: usize) -> String {
 
 /// Spawns the transient OSD overlay and auto-closes after 1200ms
 pub fn show_osd(kind: OsdKind) {
-    info!(kind = ?kind, "Triggering Tokyo Night Visual OSD");
+    info!(kind = ?kind, "Triggering Bihar Night Visual OSD");
     let modal = OsdModal {
         kind,
         ..Default::default()

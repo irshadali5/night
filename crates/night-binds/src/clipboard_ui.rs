@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Clipboard History Modal
+//! 🌙 Bihar Night Clipboard History Modal
 //! Layer-shell overlay program displaying recently copied snippets with single-key selection.
 
 use night_core::clipboard::{copy_to_system_clipboard, ClipboardHistory, ClipboardItem};
@@ -34,7 +34,7 @@ impl Default for ClipboardModal {
             border_radius: 14.0,
             border_thickness: 2.0,
             background_color: [0.10, 0.11, 0.15, 0.96],
-            border_color: [0.48, 0.64, 0.97, 1.0], // Tokyo Night Blue #7aa2f7
+            border_color: [0.48, 0.64, 0.97, 1.0], // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 740,
             height: 380,
@@ -49,7 +49,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for ClipboardModal
     fn update(&mut self, _msg: Self::Message) {}
 
     fn view(&self) -> Option<WidgetDef<Self::Message>> {
-        let title = Text::new("📋 Tokyo Night Clipboard History").style(
+        let title = Text::new("📋 Bihar Night Clipboard History").style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(18.0),
@@ -140,7 +140,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for ClipboardModal
     }
 }
 
-/// Displays the interactive Tokyo Night Clipboard History Modal via Snowcap
+/// Displays the interactive Bihar Night Clipboard History Modal via Snowcap
 pub fn show_clipboard_modal() {
     let history = ClipboardHistory::load();
     let items_clone = history.items.clone();

@@ -1,4 +1,4 @@
-//! 📸 Tokyo Night Snipping & Screen Capture Modal
+//! 📸 Bihar Night Snipping & Screen Capture Modal
 //! Snowcap layer-shell modal providing single-key shortcuts for region snips, window cropping,
 //! full-screen captures, clipboard copying, and hardware-accelerated video/GIF recording.
 
@@ -33,7 +33,7 @@ impl Default for SnippingModal {
             border_radius: 14.0,
             border_thickness: 2.0,
             background_color: [0.10, 0.11, 0.15, 0.96],
-            border_color: [0.48, 0.64, 0.97, 1.0], // Tokyo Night Blue #7aa2f7
+            border_color: [0.48, 0.64, 0.97, 1.0], // Bihar Night Blue #7aa2f7
             font: Font::new_with_family(Family::Name("Ubuntu".into())),
             width: 660,
             height: 330,
@@ -47,7 +47,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SnippingModal 
     fn update(&mut self, _msg: Self::Message) {}
 
     fn view(&self) -> Option<WidgetDef<Self::Message>> {
-        let title = Text::new("📸 Tokyo Night Snipping & Screen Capture").style(
+        let title = Text::new("📸 Bihar Night Snipping & Screen Capture").style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
                 .pixels(18.0),
@@ -111,7 +111,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for SnippingModal 
     }
 }
 
-/// Displays the interactive Tokyo Night Snipping Modal via Snowcap
+/// Displays the interactive Bihar Night Snipping Modal via Snowcap
 pub fn show_snipping_modal() {
     let modal = SnippingModal::default();
 

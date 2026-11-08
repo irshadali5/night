@@ -1,6 +1,6 @@
 //! 🌙 Project Night: Window Focus Borders & Titlebar Decorations
 //! Powered by Snowcap (`pinnacle_api::snowcap::FocusBorder`).
-//! Provides Tokyo Night theme-tailored focus frame accents, glowing floating window borders,
+//! Provides Bihar Night theme-tailored focus frame accents, glowing floating window borders,
 //! and optional native titlebars with close/maximize controls.
 
 use night_core::theme::Palette;
@@ -32,7 +32,7 @@ pub fn setup_decorations() {
     info!(
         border_width = config.general.border_width,
         titlebars = config.general.enable_titlebars,
-        "Initializing Tokyo Night Snowcap window decorations..."
+        "Initializing Bihar Night Snowcap window decorations..."
     );
 
     // Decorate any existing windows
@@ -51,7 +51,7 @@ pub fn setup_decorations() {
     });
 }
 
-/// Decorates an individual window with a Tokyo Night focus border and optional titlebar
+/// Decorates an individual window with a Bihar Night focus border and optional titlebar
 pub fn decorate_window(window: &WindowHandle, config: &UserConfig) {
     if !DECORATIONS_ENABLED.load(Ordering::Relaxed) {
         return;
@@ -77,8 +77,8 @@ pub fn decorate_window(window: &WindowHandle, config: &UserConfig) {
 
     border.thickness = width;
 
-    // Tokyo Night focus border color selection
-    // Floating windows receive an alluring Tokyo Night Magenta glow
+    // Bihar Night focus border color selection
+    // Floating windows receive an alluring lotus magenta glow
     let (f_r, f_g, f_b) = if window.floating() {
         Palette::hex_to_rgb(palette.accent_magenta)
     } else {
