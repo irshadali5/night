@@ -327,17 +327,17 @@ pub enum IpcCommand {
     ShowBinds,
     /// Triggers the Snowcap quit confirmation prompt
     ShowQuit,
-    /// Triggers the Snowcap Tokyo Night session flyout menu
+    /// Triggers the Snowcap Bihar Night session flyout menu
     ShowSessionMenu,
-    /// Triggers the Snowcap Tokyo Night visual window switcher modal
+    /// Triggers the Snowcap Bihar Night visual window switcher modal
     ShowSwitcher,
-    /// Triggers the Snowcap Tokyo Night clipboard history modal
+    /// Triggers the Snowcap Bihar Night clipboard history modal
     ShowClipboard,
-    /// Triggers the Snowcap Tokyo Night interactive snipping modal
+    /// Triggers the Snowcap Bihar Night interactive snipping modal
     ShowSnipping,
-    /// Sets active Tokyo Night theme variant (Night, Storm, Moon, Day)
+    /// Sets active Bihar Night theme variant (Night, Storm, Moon, Day)
     SetTheme(crate::theme::ThemeVariant),
-    /// Queries active Tokyo Night theme variant
+    /// Queries active Bihar Night theme variant
     GetTheme,
     /// Performs Wayland clipboard history operation
     Clipboard(ClipboardAction),
@@ -367,7 +367,7 @@ pub enum IpcCommand {
     GetBattery,
     /// Queries current volume status
     GetVolume,
-    /// Triggers the Snowcap Tokyo Night fuzzy app launcher modal
+    /// Triggers the Snowcap Bihar Night fuzzy app launcher modal
     ShowLauncher,
     /// Queries network connectivity status
     GetNetwork,
@@ -381,7 +381,7 @@ pub enum IpcCommand {
     SetAudioSink(u32),
     /// Cycles to the next available audio output sink
     CycleAudioSink,
-    /// Triggers the Snowcap Tokyo Night interactive audio sink switcher modal
+    /// Triggers the Snowcap Bihar Night interactive audio sink switcher modal
     ShowAudioSinkMenu,
     /// Performs display backlight brightness adjustment
     Backlight(crate::backlight::BacklightAction),
@@ -391,7 +391,7 @@ pub enum IpcCommand {
     ToggleDnd,
     /// Queries Do Not Disturb (DND) state
     GetDnd,
-    /// Triggers the Snowcap Tokyo Night notification center modal
+    /// Triggers the Snowcap Bihar Night notification center modal
     ShowNotifications,
     /// Saves current running desktop session layout
     SaveSession,
@@ -403,11 +403,11 @@ pub enum IpcCommand {
     ShowOsd(String),
     /// Snaps focused window according to geometric position
     SnapWindow(SnapPosition),
-    /// Triggers the Snowcap Tokyo Night command palette modal
+    /// Triggers the Snowcap Bihar Night command palette modal
     ShowPalette,
-    /// Triggers the Snowcap Tokyo Night window overview switcher modal
+    /// Triggers the Snowcap Bihar Night window overview switcher modal
     ShowOverview,
-    /// Triggers the Snowcap Tokyo Night 3x3 workspace grid (Exposé) matrix modal
+    /// Triggers the Snowcap Bihar Night 3x3 workspace grid (Exposé) matrix modal
     ShowGrid,
     /// Toggles window focus border decorations
     ToggleDecorations,
