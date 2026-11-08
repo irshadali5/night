@@ -1,28 +1,40 @@
-//! 🌙 Tokyo Night Wallpaper Synchronization Engine
-//! Coordinates seamless wallpaper transitions with `swww` matching the active Tokyo Night theme variant.
+//! 🌙 Bihar Night Wallpaper Synchronization Engine
+//! Coordinates seamless wallpaper transitions with `swww` matching the active Bihar Night theme variant.
 
 use night_core::theme::ThemeVariant;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tracing::info;
 
-/// Locates or suggests wallpaper for a specific Tokyo Night theme variant
+/// Locates or suggests wallpaper for a specific Bihar Night theme variant
 pub fn resolve_variant_wallpaper(variant: ThemeVariant) -> Option<PathBuf> {
     let variant_name = variant.name().to_lowercase();
     let home = dirs::home_dir()?;
     let config_dir = dirs::config_dir().unwrap_or_else(|| home.join(".config"));
 
     let candidates = [
+        config_dir.join(format!("night/wallpapers/bihar-night-{variant_name}.jpg")),
+        config_dir.join(format!("night/wallpapers/bihar-night-{variant_name}.png")),
+        config_dir.join("night/wallpapers/bihar-night.jpg"),
+        config_dir.join("night/wallpapers/bihar-night-ganga.jpg"),
+        config_dir.join("night/wallpapers/bihar-night-bodhgaya.jpg"),
+        home.join(format!("Pictures/Wallpapers/bihar-night-{variant_name}.jpg")),
+        home.join("Pictures/Wallpapers/bihar-night.jpg"),
+        home.join(format!("Pictures/bihar-night-{variant_name}.jpg")),
+        home.join("Pictures/bihar-night.jpg"),
+        PathBuf::from(format!("assets/wallpapers/bihar-night-{variant_name}.jpg")),
+        PathBuf::from("assets/wallpapers/bihar-night.jpg"),
+        PathBuf::from("assets/wallpapers/bihar-night-ganga.jpg"),
+        PathBuf::from("assets/wallpapers/bihar-night-bodhgaya.jpg"),
         config_dir.join(format!("night/wallpapers/tokyo-night-{variant_name}.png")),
         config_dir.join(format!("night/wallpapers/tokyo-night-{variant_name}.jpg")),
         config_dir.join("quickshell/ii/assets/images/default_wallpaper.png"),
-        home.join(format!("Pictures/Wallpapers/tokyo-night-{variant_name}.png")),
         home.join("Pictures/Wallpapers/wallpaper.png"),
         home.join("Pictures/Wallpapers/wallpaper.jpg"),
         home.join("Pictures/wallpaper.png"),
         home.join("Pictures/wallpaper.jpg"),
-        config_dir.join(format!("swww/tokyo-night-{variant_name}.png")),
-        PathBuf::from(format!("/usr/share/backgrounds/night/tokyo-night-{variant_name}.png")),
+        config_dir.join(format!("swww/bihar-night-{variant_name}.png")),
+        PathBuf::from(format!("/usr/share/backgrounds/night/bihar-night-{variant_name}.jpg")),
     ];
 
     for candidate in candidates {
@@ -34,7 +46,7 @@ pub fn resolve_variant_wallpaper(variant: ThemeVariant) -> Option<PathBuf> {
     None
 }
 
-/// Synchronizes desktop wallpaper with active Tokyo Night theme variant using `swww` or `swaybg`
+/// Synchronizes desktop wallpaper with active Bihar Night theme variant using `swww` or `swaybg`
 pub fn sync_wallpaper_theme(variant: ThemeVariant) {
     let p = variant.palette();
     let hex = p.bg_darkest.trim_start_matches('#');
@@ -44,7 +56,7 @@ pub fn sync_wallpaper_theme(variant: ThemeVariant) {
         if let Some(wallpaper_path) = resolve_variant_wallpaper(variant) {
             set_wallpaper(wallpaper_path.to_string_lossy().as_ref());
         } else {
-            info!(variant = %variant.name(), hex = %hex, "Clearing wallpaper to Tokyo Night palette base via swww");
+            info!(variant = %variant.name(), hex = %hex, "Clearing wallpaper to Bihar Night palette base via swww");
             let _ = Command::new("swww")
                 .args(["clear", hex])
                 .status();
@@ -63,7 +75,7 @@ pub fn sync_wallpaper_theme(variant: ThemeVariant) {
             ));
         } else {
             let color = format!("#{hex}");
-            info!(variant = %variant.name(), color = %color, "Setting solid Tokyo Night background via swaybg");
+            info!(variant = %variant.name(), color = %color, "Setting solid Bihar Night background via swaybg");
             night_core::exec::spawn_shell(&format!("swaybg -c \"{color}\" >/dev/null 2>&1 &"));
         }
     }
