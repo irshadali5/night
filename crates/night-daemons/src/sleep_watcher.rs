@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Sleep & Session Lock Daemon
+//! 🌙 Bihar Night Sleep & Session Lock Daemon
 //! Monitors systemd-logind D-Bus signals for system sleep/suspend events (`PrepareForSleep`).
 //! Automatically locks the Wayland session with Veila and blanks displays before suspending,
 //! and wakes outputs and refreshes hardware telemetry upon system resume.

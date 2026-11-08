@@ -92,7 +92,7 @@ pub async fn start_all() {
         spawn_shell("wl-paste --type text --watch nightctl clip-record >/dev/null 2>&1 &");
     }
 
-    // Synchronize wallpaper with current Tokyo Night theme variant
+    // Synchronize wallpaper with current Bihar Night theme variant
     wallpaper::sync_wallpaper_theme(user_cfg.general.theme);
 
     // Spawn background battery power monitoring & low-energy notification alerts

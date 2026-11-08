@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Smart Idle & Inactivity Supervision Daemon
+//! 🌙 Bihar Night Smart Idle & Inactivity Supervision Daemon
 //! Monitors user activity, audio playback inhibition, and battery state.
 //! Automatically stages power management:
 //! 1. Dim display backlight after idle threshold (e.g. 5 minutes).
