@@ -75,6 +75,8 @@ fn current_desktop_status() -> DesktopStatus {
         bluetooth: night_core::bluetooth::read_bluetooth(),
         backlight: night_core::backlight::get_backlight(),
         dnd: night_core::notifications::NotificationHistory::is_dnd(),
+        auto_theme: user_cfg.general.auto_theme_schedule,
+        power_saver: user_cfg.general.power_saver_mode,
     }
 }
 
@@ -547,6 +549,60 @@ async fn config() {
                         }
                     }
                     IpcResponse::Ok
+                }
+                IpcCommand::SetLayout(name) => {
+                    if let Some(kind) = night_layout::LayoutKind::parse(&name) {
+                        let active_tag = night_core::SessionState::load()
+                            .map(|s| s.active_tag)
+                            .unwrap_or_else(|| "1".to_string());
+                        night_layout::set_layout_for_tag(&active_tag, kind);
+                        night_layout::request_relayout();
+                        night_binds::show_layout_osd(kind.name());
+                        night_core::ipc::broadcast_status(current_desktop_status());
+                        IpcResponse::Layout(kind.name().to_string())
+                    } else {
+                        IpcResponse::Error(format!("Unknown layout: {name}"))
+                    }
+                }
+                IpcCommand::ToggleAutoTheme => {
+                    let mut cfg = UserConfig::load();
+                    cfg.general.auto_theme_schedule = !cfg.general.auto_theme_schedule;
+                    let _ = cfg.save();
+                    night_daemons::diurnal_watcher::set_diurnal_active(cfg.general.auto_theme_schedule);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::AutoTheme(cfg.general.auto_theme_schedule)
+                }
+                IpcCommand::SetAutoTheme(val) => {
+                    let mut cfg = UserConfig::load();
+                    cfg.general.auto_theme_schedule = val;
+                    let _ = cfg.save();
+                    night_daemons::diurnal_watcher::set_diurnal_active(val);
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::AutoTheme(val)
+                }
+                IpcCommand::GetAutoTheme => {
+                    let cfg = UserConfig::load();
+                    IpcResponse::AutoTheme(cfg.general.auto_theme_schedule)
+                }
+                IpcCommand::TogglePowerSaver => {
+                    let current = night_daemons::power_watcher::is_power_saver();
+                    let next = !current;
+                    tokio::spawn(async move {
+                        night_daemons::power_watcher::set_power_saver(next).await;
+                    });
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::PowerSaver(next)
+                }
+                IpcCommand::SetPowerSaver(val) => {
+                    tokio::spawn(async move {
+                        night_daemons::power_watcher::set_power_saver(val).await;
+                    });
+                    night_core::ipc::broadcast_status(current_desktop_status());
+                    IpcResponse::PowerSaver(val)
+                }
+                IpcCommand::GetPowerSaver => {
+                    let current = night_daemons::power_watcher::is_power_saver();
+                    IpcResponse::PowerSaver(current)
                 }
                 IpcCommand::Subscribe => {
                     IpcResponse::Status(current_desktop_status())
