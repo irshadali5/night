@@ -281,7 +281,7 @@ async fn config() {
                     IpcResponse::Ok
                 }
                 IpcCommand::SetTheme(variant) => {
-                    info!(theme = %variant.name(), "IPC: Setting Tokyo Night theme variant");
+                    info!(theme = %variant.name(), bihar = %variant.bihar_name(), "IPC: Setting Bihar Night theme variant");
                     let mut cfg = UserConfig::load();
                     cfg.general.theme = variant;
                     let _ = cfg.save();
