@@ -510,13 +510,13 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
 
 ---
 
-### Phase 25: Terminal Window Swallowing Engine, Tokyo Night Workspace Grid (Exposé), Live Decoration Controls in Settings GUI & Presentation Projection Engine
+### Phase 25: Terminal Window Swallowing Engine, Bihar Night Workspace Grid (Exposé), Live Decoration Controls in Settings GUI & Presentation Projection Engine
 * [x] **Terminal Window Swallowing & Re-Parenting Engine (`crates/night-rules/src/swallow.rs`)**:
   * [x] Pure-Rust process tree & window lifecycle monitor temporarily hiding parent terminal windows when child graphical applications are spawned.
   * [x] Automatic restoration on child destruction: listens to `WindowSignal::Destroyed` to automatically unswallow, raise, and refocus the parent terminal.
   * [x] Declarative RON rule integration: added `WindowAction::Swallow` support in `config/rules.ron`.
   * [x] Manual swallowing controls: `nightctl window swallow` and `nightctl window unswallow`.
-* [x] **Tokyo Night 3x3 Workspace Grid Exposé Modal (`crates/night-binds/src/grid.rs`)**:
+* [x] **Bihar Night 3x3 Workspace Grid Exposé Modal (`crates/night-binds/src/grid.rs`)**:
   * [x] Interactive Snowcap layer-shell modal rendering a 3x3 grid overview for workspace tags `[1]..[9]`.
   * [x] Displays tag glyphs, status badges (`ACTIVE`, `OCCUPIED`, `EMPTY`), window count indicators, and window title previews.
   * [x] Single-key shortcuts: `[1]..=[9]` instant jump, `[Shift + 1..9]` move focused window to tag, `[Esc/Q]` dismiss.
@@ -532,6 +532,34 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
   * [x] `night_tags::mirror_active_output_to_next()`: Mirrors active workspace tag and windows onto external display or projector.
   * [x] Dedicated keybinding: `Super + Alt + o` to swap display workspaces.
   * [x] CLI commands: `nightctl output swap` and `nightctl output mirror`.
+
+---
+
+### Phase 26: The Bihar Night Identity, 4-Variant Cultural Engine & High-Resolution Default Wallpapers
+* [x] **Bihar Night Cultural Identity & Philosophy Documentation (`BIHAR_NIGHT.md`)**:
+  * [x] Formulated foundational aesthetic principles rooted in Bodh Gaya enlightenment starlight, River Ganga dusk Aarti & Mahatma Gandhi Setu night horizons, Aryabhata's celestial mathematics at Taregana / Nalanda, Rajgir misty basalt hills, and Mithila (Madhubani) natural indigo/terracotta pigments.
+  * [x] Comprehensive architectural document `BIHAR_NIGHT.md` detailing design philosophies, WCAG AAA contrast ratios, cultural anchors, and color tables.
+* [x] **Bihar Night 4-Variant Theme Engine (`crates/night-core/src/theme.rs`)**:
+  * [x] Rebranded and enriched the 4 theme expressions:
+    * `Night`: **Ganga Midnight** (River Ganga dusk, golden diyas `#e0af68`, obsidian river water `#16161e` / `#1a1b26`).
+    * `Storm`: **Rajgir Mist** (Ratnagiri slate basalt hills `#1f2335` / `#24283b`, bamboo grove green `#9ece6a`, moonlit stupa).
+    * `Moon`: **Bodh Gaya Serenity** (Mahabodhi tree starlight indigo `#1e2030` / `#222436`, brass temple bell gold `#ffc777`, lotus magenta `#fca7ea`).
+    * `Day`: **Nalanda Dawn** (Ancient terracotta sandstone ruins `#e1e2e7`, manuscript carbon ink `#3760bf`, kiln brick red `#f52a65`).
+  * [x] Added `variant.bihar_name()` and `variant.inspiration()`.
+  * [x] Extended `ThemeVariant::parse_variant()` with cultural aliases: `ganga`, `mithila`, `patna`, `rajgir`, `mist`, `bodhgaya`, `bodhi`, `nalanda`, `dawn`.
+* [x] **Curated Authentic High-Resolution Default Wallpapers (`assets/wallpapers/`)**:
+  * [x] Packaged `bihar-night-ganga.jpg` (5184x3456 5K UHD): River Ganga & Mahatma Gandhi Setu under the Super Moon Night at Patna.
+  * [x] Packaged `bihar-night-bodhgaya.jpg` (4219x3164 4K UHD): Mahabodhi Temple and Garden illuminated at night at Bodh Gaya.
+  * [x] Established `assets/wallpapers/bihar-night.jpg` as the primary default desktop wallpaper across all daemons and scripts.
+* [x] **Wallpaper Pipeline Synchronization (`assets/wallpaper.sh`, `night-daemons`, `xtask`)**:
+  * [x] Updated `assets/wallpaper.sh` to search signature Bihar Night wallpapers first with smooth grow transitions and `#1a1b26` solid fallback.
+  * [x] Updated `crates/night-daemons/src/wallpaper.rs` to prioritize `bihar-night*.jpg` in user and asset directories.
+  * [x] Updated `cargo xtask wallpaper` and `cargo xtask install` to automatically provision `~/.config/night/wallpapers/` on setup.
+* [x] **Desktop Suite & UI String Alignment Across All Crates**:
+  * [x] Updated Slint Control Center GUI (`crates/night-settings`): "Bihar Night Theme Engine", "Ganga Midnight", "Rajgir Mist", "Bodh Gaya", "Nalanda Dawn".
+  * [x] Updated CLI (`nightctl theme set [ganga|rajgir|bodhgaya|nalanda]`, `nightctl theme status`).
+  * [x] Updated all Snowcap layer-shell modals in `night-binds`: Command Palette, Switcher, 3x3 Grid, Snipping, Audio Selector, Notification Center, Session Flyout.
+  * [x] Updated `cargo xtask theme` exporter generating Bihar Night headers for Alacritty, Ironbar, Anyrun, and Veila.
 
 
 

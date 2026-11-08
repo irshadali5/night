@@ -30,7 +30,7 @@ Each technology has been chosen and implemented for its ideal use case:
 | **`night-binds`** | Library | `night-core`, `night-tags`, `night-layout`, `pinnacle-api` | Centralized keybindings, Snowcap modals (Launcher, Switcher, Grid Exposé, Palette, OSD, Snip, Flyout). | 🟢 Active |
 | **`night-pinnacle`**| Binary | All internal crates + `pinnacle-api`, `anyhow` | Main binary orchestrator running `pinnacle_api::main!(config)` with multi-client async IPC server. | 🟢 Active |
 | **`night-ctl`** | Binary | `night-core`, `night-layout`, `clap`, `tokio`, `anyhow` | Lightning-fast CLI client for sub-millisecond desktop control, live event streaming, and status reporting. | 🟢 Active |
-| **`night-settings`**| Binary | `night-core`, `slint`, `tokio`, `anyhow` | Pure-Rust Tokyo Night Control Center GUI with live gaps sliders, borders, and monitor profiles. | 🟢 Active |
+| **`night-settings`**| Binary | `night-core`, `slint`, `tokio`, `anyhow` | Pure-Rust Bihar Night Control Center GUI with live gaps sliders, borders, and monitor profiles. | 🟢 Active |
 | **`night-session`** | Binary | `night-core`, `clap`, `tokio`, `anyhow` | Ergonomic desktop session supervisor with lock, suspend, logout, and systemd integration. | 🟢 Active |
 
 ---
@@ -52,7 +52,7 @@ Each technology has been chosen and implemented for its ideal use case:
 | **Brave** | [brave.com](https://brave.com/) | Privacy-focused alternative browser bound to `Super + Shift + b`. |
 | **Wired** | [Toqozz/wired-notify](https://github.com/Toqozz/wired-notify) | Notification daemon started in `night-daemons`; native D-Bus integration via `notify-rust`. |
 | **SwayOSD** | [ErikReider/SwayOSD](https://github.com/ErikReider/SwayOSD) | Server started in `night-daemons`; paired with in-process Snowcap visual HUD. |
-| **swww** | [LGFae/swww](https://github.com/LGFae/swww) | Wallpaper daemon with smooth Tokyo Night wipe transitions. |
+| **swww** | [LGFae/swww](https://github.com/LGFae/swww) | Wallpaper daemon with smooth Bihar Night wipe transitions. |
 | **Wayshot + Satty**| [waycrate/wayshot](https://github.com/waycrate/wayshot) + [gabm/Satty](https://github.com/gabm/Satty) | Screenshot and annotation pipeline bound to `Print` and `Super + Shift + s`. |
 | **wl-screenrec** | [russelltg/wl-screenrec](https://github.com/russelltg/wl-screenrec) | Hardware-accelerated 60fps Wayland recording bound to `Super + Alt + r`. |
 | **wayidle** | [hirsch-conner/wayidle](https://github.com/hirsch-conner/wayidle) | Inactivity monitor paired with smart pure-Rust media-aware idle supervisor. |
@@ -68,7 +68,7 @@ cargo xtask build     # Builds night-pinnacle in release mode
 cargo xtask install   # Compiles, installs binary, links pinnacle.toml, deploys session & theme
 cargo xtask doctor    # Runs comprehensive diagnostics on all 18 tools and environment
 cargo xtask session   # Installs night.desktop for login managers (GDM, SDDM, Ly, greetd)
-cargo xtask theme     # Generates Tokyo Night styling for Alacritty, Ironbar, Anyrun, Veila
+cargo xtask theme     # Generates Bihar Night styling for Alacritty, Ironbar, Anyrun, Veila
 cargo xtask run       # Builds and runs Pinnacle compositor
 cargo xtask msg <CMD> # IPC control (status, reload, switch-tag, layout, gaps, spawn, close)
 cargo xtask uninstall # Removes binary and symlink

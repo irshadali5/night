@@ -46,7 +46,7 @@ night/
     ├── night-rules/              # RON-powered declarative window placement & auto-floating
     ├── night-binds/              # Keyboard shortcuts, media keys, and screenshot binds
     ├── night-ctl/                # High-performance CLI client & real-time status streaming tool
-    ├── night-settings/           # Tokyo Night Control Center & Settings GUI written in Slint
+    ├── night-settings/           # Bihar Night Control Center & Settings GUI written in Slint
     └── night-pinnacle/           # Main binary entrypoint orchestrating all crates
 ```
 
@@ -80,7 +80,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Screen Locker** | [Veila](https://github.com/naurissteins/Veila) | Pure Rust (`ext-session-lock-v1`) | Fast, modern PAM screen locker triggered on idle or via `Super + Escape`. |
 | **Night Light (Gamma)** | [wlsunset](https://github.com/kennylevinsen/wlsunset) | Pure Wayland Gamma | Smooth color temperature transitions for late-night ergonomics. |
 | **Clipboard Manager** | [rsclip](https://github.com/jR4dh3y/rsclip) | Pure Rust + GTK4 / Wayland | Pure-Rust clipboard daemon (`rsclipd`) & resident UI (`rsclip`) bound to `Super + Shift + v`. |
-| **Settings & Control Center** | [`night-settings`](./crates/night-settings) | Pure Rust + Slint UI | Tokyo Night GUI settings & live preview bound to `Super + i`. |
+| **Settings & Control Center** | [`night-settings`](./crates/night-settings) | Pure Rust + Slint UI | Bihar Night GUI settings & live preview bound to `Super + i`. |
 
 ---
 
@@ -95,7 +95,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + y` $\rightarrow$ Launch **Yazi** (Async Terminal File Manager)
 * `Super + b` $\rightarrow$ Launch **Zen Browser** (Primary Web Browser)
 * `Super + Shift + b` $\rightarrow$ Launch **Brave Browser** (Alternative Browser)
-* `Super + i` $\rightarrow$ Launch **Night Settings** (Tokyo Night Slint Control Center)
+* `Super + i` $\rightarrow$ Launch **Night Settings** (Bihar Night Slint Control Center)
 * `Super + v` $\rightarrow$ Open **Clipboard History** Modal (Wayland Ring Buffer)
 * `Super + Shift + v` $\rightarrow$ Launch **rsclip** (Pure-Rust Wayland Clipboard Overlay)
 * `Super + m` $\rightarrow$ Toggle **Music** Scratchpad Drawer
@@ -106,7 +106,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 
 ### Window Navigation & Layout
 * `Super + Tab` $\rightarrow$ Cycle Tiling Layout (**MasterStack** $\rightarrow$ **Dwindle** $\rightarrow$ **Spiral** $\rightarrow$ **Fair**)
-* `Super + w` or `Alt + Tab` $\rightarrow$ Open **Tokyo Night Visual Window Switcher** (Interactive Cross-Tag Window Picker)
+* `Super + w` or `Alt + Tab` $\rightarrow$ Open **Bihar Night Visual Window Switcher** (Interactive Cross-Tag Window Picker)
 * `Super + Shift + g` $\rightarrow$ Toggle **Night Light** / Blue Light Filter (6500K $\leftrightarrow$ 3800K)
 * `Super + Shift + p` $\rightarrow$ Toggle **Idle Inhibition / Presentation Mode** (Prevents Screen Lock & Sleep)
 * `Super + =` / `Super + -` $\rightarrow$ Increase / Decrease Layout Gaps in Real-Time
@@ -133,9 +133,9 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 * `Super + Shift + Escape` $\rightarrow$ Toggle DPMS Screen Power (Screen Sleep / Wake)
 
 ### Multimedia, Screenshots & Session
-* `Super + Shift + s` $\rightarrow$ Open **Tokyo Night Snipping Modal** (Region, Window, Full, Clipboard, MP4, GIF)
-* `Super + /` $\rightarrow$ Open **Snowcap** Keybinds Cheatsheet Overlay (Tokyo Night themed)
-* `Super + BackSpace` $\rightarrow$ Open **Snowcap** Tokyo Night Session Flyout Menu (Lock, Sleep, Reboot, Power Off)
+* `Super + Shift + s` $\rightarrow$ Open **Bihar Night Snipping Modal** (Region, Window, Full, Clipboard, MP4, GIF)
+* `Super + /` $\rightarrow$ Open **Snowcap** Keybinds Cheatsheet Overlay (Bihar Night themed)
+* `Super + BackSpace` $\rightarrow$ Open **Snowcap** Bihar Night Session Flyout Menu (Lock, Sleep, Reboot, Power Off)
 * `Super + Shift + e` $\rightarrow$ Open **Snowcap** Quit Confirmation Prompt
 * `Super + Shift + r` $\rightarrow$ Reload Pinnacle Configuration
 * `Super + Shift + x` $\rightarrow$ Instant Exit Pinnacle Session
@@ -204,7 +204,7 @@ nightctl overlay
 nightctl quit-prompt
 nightctl session-menu
 
-# Interactive Tokyo Night snipping tool & screen recorder
+# Interactive Bihar Night snipping tool & screen recorder
 nightctl snip           # Open interactive modal
 nightctl snip region    # Snip region & annotate via Satty
 nightctl snip window    # Snip focused window coordinates
@@ -213,9 +213,10 @@ nightctl snip copy      # Fullscreen to system clipboard
 nightctl snip record    # Hardware-accelerated 60fps MP4 recording
 nightctl snip gif       # Animated screencast recording (GIF)
 
-# Official Tokyo Night theme engine (Night, Storm, Moon, Day)
+# Official Bihar Night theme engine (Ganga Midnight, Rajgir Mist, Bodh Gaya Serenity, Nalanda Dawn)
 nightctl theme status
-nightctl theme set storm
+nightctl theme set storm    # or 'nightctl theme set rajgir'
+nightctl theme set moon     # or 'nightctl theme set bodhgaya'
 nightctl theme toggle
 
 # Audio volume control (PipeWire / PulseAudio & SwayOSD)
