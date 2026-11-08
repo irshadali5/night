@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Tokyo Night Control Center & System Settings written in Slint"
+description = "Bihar Night Control Center & System Settings written in Slint"
 
 [dependencies]
 night-core.workspace = true

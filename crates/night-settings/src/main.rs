@@ -17,7 +17,7 @@ use tracing::{error, info};
     name = "night-settings",
     author = "Night Desktop Team",
     version,
-    about = "🌙 Tokyo Night Control Center & System Settings (Slint GUI)"
+    about = "🌙 Bihar Night Control Center & System Settings (Slint GUI)"
 )]
 struct SettingsCli {
     /// Initial settings tab to display: appearance, apps, monitors, power, about
@@ -241,7 +241,7 @@ async fn main() -> Result<()> {
     });
 
     // -----------------------------------------------------------------
-    // Callbacks: Tokyo Night Theme Engine
+    // Callbacks: Bihar Night Theme Engine
     // -----------------------------------------------------------------
     let ui_weak = ui.as_weak();
     let cfg_clone = Arc::clone(&user_cfg);
@@ -257,7 +257,9 @@ async fn main() -> Result<()> {
         tokio::spawn(async move {
             let _ = send_command(&IpcCommand::SetTheme(variant)).await;
             let _ = ui_weak.upgrade_in_event_loop(move |u| {
-                u.set_notification_msg(format!("Theme updated to Tokyo Night {}", variant.name()).into());
+                u.set_notification_msg(
+                    format!("Theme updated to Bihar Night {} ({})", variant.name(), variant.bihar_name()).into(),
+                );
             });
         });
     });
