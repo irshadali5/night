@@ -32,6 +32,10 @@ pub struct GeneralConfig {
     pub enable_titlebars: bool,
     #[serde(default = "default_titlebar_height")]
     pub titlebar_height: u32,
+    #[serde(default)]
+    pub auto_theme_schedule: bool,
+    #[serde(default)]
+    pub power_saver_mode: bool,
 }
 
 fn default_true() -> bool {
@@ -55,6 +59,8 @@ impl Default for GeneralConfig {
             enable_decorations: true,
             enable_titlebars: false,
             titlebar_height: 18,
+            auto_theme_schedule: false,
+            power_saver_mode: false,
         }
     }
 }
