@@ -83,3 +83,5 @@ cargo xtask uninstall # Removes binary and symlink
 | **2026-11-03** | Format & Tools | xtask, RON, TOML, postcard | Implemented `cargo xtask` runner, TOML user config, RON window rules, and postcard binary session caching. |
 | **2026-11-03** | Installation | Removed Stow & Shell Scripts | Replaced legacy Stow/Makefiles with `cargo xtask install`. |
 | **2026-11-03** | Architecture | Workspace Reorganization | Refactored into a 7-crate root workspace. |
+| **2026-11-08** | Visual Identity | Phase 26: Bihar Night Theme Engine | Rebranded Tokyo Night to Bihar Night (Ganga Midnight, Rajgir Mist, Bodh Gaya Serenity, Nalanda Dawn) with 5K UHD wallpapers (`bihar-night.jpg`) and `BIHAR_NIGHT.md`. |
+| **2026-11-08** | Diurnal, Power, Layout | Phase 27: Scheduler, Power Saver, Monocle | Added Diurnal Solar Theme Scheduler (`diurnal_watcher.rs`), Battery Conservation Mode (`power_watcher.rs`), Monocle Layout Engine (`LayoutKind::Monocle`, `LayoutProfile::Focus`), and full CLI/Slint GUI integration. |

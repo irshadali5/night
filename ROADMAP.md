@@ -561,6 +561,36 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
   * [x] Updated all Snowcap layer-shell modals in `night-binds`: Command Palette, Switcher, 3x3 Grid, Snipping, Audio Selector, Notification Center, Session Flyout.
   * [x] Updated `cargo xtask theme` exporter generating Bihar Night headers for Alacritty, Ironbar, Anyrun, and Veila.
 
+---
+
+### Phase 27: Diurnal Theme Scheduler, Bihar Night Battery Conservation Mode, and Monocle Fullscreen-Focus Layout Engine
+* [x] **Monocle Fullscreen-Focus Layout Engine (`crates/night-layout` & `crates/night-binds`)**:
+  * [x] Added `LayoutKind::Monocle`: Distraction-free single-window active workspace layout with 0px inner/outer gaps and 100% (1.0) master factor.
+  * [x] Added `LayoutKind::parse()` supporting "monocle", "fullscreen", "max", "focus", "masterstack", "dwindle", "spiral", "fair".
+  * [x] Extended `LayoutProfile::Focus` with unit tests passing.
+  * [x] Bound `Super + Alt + 5` to `LayoutProfile::Focus` in `night-binds`.
+  * [x] Added `nightctl layout set <name>` and direct subcommands (`nightctl layout monocle`, `masterstack`, `dwindle`, `spiral`, `fair`).
+* [x] **Diurnal Solar Theme Scheduler (`crates/night-daemons`, `night-core`, `nightctl`, `night-settings`)**:
+  * [x] Created `diurnal_watcher.rs` supervising time-of-day solar phases:
+    * 06:00 – 18:00: **Nalanda Dawn** (Neutral daylight, 6500K color temperature).
+    * 18:00 – 22:00: **Rajgir Mist** (Warm evening twilight, 4500K color temperature).
+    * 22:00 – 06:00: **Ganga Midnight** (OLED deep obsidian night, 3400K color temperature).
+  * [x] Added `auto_theme_schedule` flag to `GeneralConfig` in `night-core`.
+  * [x] Added IPC protocol commands `ToggleAutoTheme`, `SetAutoTheme(bool)`, `GetAutoTheme` and responses.
+  * [x] Extended `nightctl theme schedule [on|off|toggle|status]` with clear terminal feedback.
+  * [x] Integrated interactive Diurnal Solar Schedule toggle button and schedule description in Slint Control Center (Appearance tab).
+* [x] **Bihar Night Battery Conservation Mode (`crates/night-daemons`, `night-core`, `nightctl`, `night-settings`)**:
+  * [x] Upgraded `power_watcher.rs` with `is_power_saver()` and `set_power_saver(bool)`.
+  * [x] Automatic energy conservation triggers: dims display backlight to 30%, switches active theme to OLED Ganga Midnight, and emits notification banners. Auto-restores normal 65% brightness upon AC adapter reconnection.
+  * [x] Added `power_saver_mode` flag to `GeneralConfig` in `night-core`.
+  * [x] Added IPC protocol commands `TogglePowerSaver`, `SetPowerSaver(bool)`, `GetPowerSaver` and responses.
+  * [x] Extended `nightctl power saver [on|off|toggle|status]` with battery status feedback.
+  * [x] Integrated interactive Battery Conservation Mode toggle button and description in Slint Control Center (System & Power tab).
+* [x] **Compositor & Multi-Client IPC Broadcast Synchronization**:
+  * [x] Updated `crates/night-pinnacle/src/main.rs` handling `SetLayout`, `ToggleAutoTheme`, `SetAutoTheme`, `GetAutoTheme`, `TogglePowerSaver`, `SetPowerSaver`, `GetPowerSaver`.
+  * [x] Populated `DesktopStatus::to_json()` and `DesktopStatus::format_template()` with `auto_theme` and `power_saver`.
+  * [x] Enforced real-time IPC broadcast notifications across running status bars and control centers.
+
 
 
 
