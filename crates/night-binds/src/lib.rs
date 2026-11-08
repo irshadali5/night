@@ -172,7 +172,7 @@ pub fn register_all() {
         show_layout_osd(next.name());
     });
 
-    // Super + Alt + [1..4] -> Direct Workspace Layout Profiles
+    // Super + Alt + [1..5] -> Direct Workspace Layout Profiles
     input::keybind(Mod::SUPER | Mod::ALT, '1').on_press(|| {
         night_layout::LayoutProfile::Coding.apply();
         show_profile_osd("Coding");
@@ -188,6 +188,10 @@ pub fn register_all() {
     input::keybind(Mod::SUPER | Mod::ALT, '4').on_press(|| {
         night_layout::LayoutProfile::Ultrawide.apply();
         show_profile_osd("Ultrawide");
+    });
+    input::keybind(Mod::SUPER | Mod::ALT, '5').on_press(|| {
+        night_layout::LayoutProfile::Focus.apply();
+        show_profile_osd("Focus (Monocle)");
     });
 
     // Super + equal -> Increase Gaps

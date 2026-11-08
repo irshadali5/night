@@ -169,6 +169,7 @@ pub fn show_command_palette() {
                         night_layout::LayoutKind::Dwindle => night_layout::LayoutProfile::Multitasking,
                         night_layout::LayoutKind::Spiral => night_layout::LayoutProfile::Coding,
                         night_layout::LayoutKind::Fair => night_layout::LayoutProfile::Ultrawide,
+                        night_layout::LayoutKind::Monocle => night_layout::LayoutProfile::Focus,
                     };
                     next_profile.apply();
                     crate::osd::show_profile_osd(next_profile.name());
