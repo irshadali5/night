@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Floating Window Snapping & Geometry Engine
+//! 🌙 Bihar Night Floating Window Snapping & Geometry Engine
 //! Precise geometric calculations for screen-edge snapping, quadrant positioning,
 //! half-splits, and picture-in-picture (PiP) mode.
 

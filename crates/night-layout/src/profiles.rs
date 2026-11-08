@@ -1,4 +1,4 @@
-//! 🌙 Tokyo Night Layout Profiles & Window Snapping Engine
+//! 🌙 Bihar Night Layout Profiles & Window Snapping Engine
 //! Provides ergonomic workspace layout presets (Coding, Reading, Multitasking, Ultrawide)
 //! and geometric snapping/centering for floating windows.
 
