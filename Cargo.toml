@@ -37,6 +37,7 @@ anyhow = "1.0"
 # Standard System Monitoring & Notifications
 sysinfo = "0.38"
 notify-rust = "4.18"
+chrono = "0.4"
 
 # Standard Ecosystem Crates (avoiding custom from-scratch boilerplate)
 dirs = "5.0"                                      # Standard XDG base directory resolution

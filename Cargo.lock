@@ -3289,6 +3289,7 @@ name = "night-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "dirs",
  "interprocess",
  "notify-rust",
@@ -3312,6 +3313,7 @@ dependencies = [
 name = "night-daemons"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "dirs",
  "night-core",
  "night-rules",
