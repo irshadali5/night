@@ -5,6 +5,7 @@ use night_core::exec::{spawn, spawn_shell};
 use tracing::{info, warn};
 
 pub mod config_watcher;
+pub mod diurnal_watcher;
 pub mod idle_watcher;
 pub mod power_watcher;
 pub mod sleep_watcher;
@@ -113,6 +114,11 @@ pub async fn start_all() {
     // Spawn background smart idle & staged power reduction supervisor
     tokio::spawn(async {
         idle_watcher::supervise_idle().await;
+    });
+
+    // Spawn background diurnal day/night theme cycle supervisor
+    tokio::spawn(async {
+        diurnal_watcher::supervise_diurnal_schedule().await;
     });
 
     info!("Night daemon supervisor initialization finished.");
