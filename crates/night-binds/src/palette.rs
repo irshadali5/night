@@ -6,11 +6,9 @@ use pinnacle_api::experimental::snowcap_api::layer::{
     new_widget, ExclusiveZone, KeyboardInteractivity, ZLayer,
 };
 use pinnacle_api::experimental::snowcap_api::widget::{
-    column::Column,
-    container::Container,
     font::{Family, Font, Weight},
     text::{self, Text},
-    Alignment, Background, Length, Padding, WidgetDef,
+    WidgetDef,
 };
 use pinnacle_api::Keysym;
 use tracing::info;
@@ -105,30 +103,17 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for CommandPalette
             children.push(Text::new("").style(text::Style::new().pixels(4.0)).into());
         }
 
-        let widget = Container::new(Column::new_with_children(children))
-            .width(Length::Fixed(self.width as f32))
-            .height(Length::Fixed(self.height as f32))
-            .padding(Padding {
-                top: 20.0,
-                right: 24.0,
-                bottom: 20.0,
-                left: 24.0,
-            })
-            .vertical_alignment(Alignment::Start)
-            .horizontal_alignment(Alignment::Start)
-            .style(
-                pinnacle_api::experimental::snowcap_api::widget::container::Style {
-                    text_color: None,
-                    background: Some(Background::Color(self.background_color.into())),
-                    border: Some(pinnacle_api::experimental::snowcap_api::widget::Border {
-                        color: Some(self.border_color.into()),
-                        width: Some(self.border_thickness),
-                        radius: Some(self.border_radius.into()),
-                    }),
-                },
-            );
-
-        Some(widget.into())
+        Some(crate::modal::modal_container(
+            children,
+            crate::modal::ModalStyle {
+                width: self.width,
+                height: self.height,
+                background_color: self.background_color,
+                border_color: self.border_color,
+                border_thickness: self.border_thickness,
+                border_radius: self.border_radius,
+            },
+        ))
     }
 }
 
