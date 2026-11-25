@@ -50,7 +50,7 @@ impl SavedSession {
         };
 
         if let Ok(bytes) = postcard::to_allocvec(&session) {
-            let _ = fs::write(path, bytes);
+            let _ = crate::write_atomic(&path, &bytes);
             info!(
                 active_tag,
                 theme,

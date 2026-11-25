@@ -35,7 +35,7 @@ impl SessionState {
         let path = Self::runtime_path();
         match postcard::to_allocvec(self) {
             Ok(bytes) => {
-                if let Err(e) = fs::write(&path, &bytes) {
+                if let Err(e) = crate::write_atomic(&path, &bytes) {
                     error!(path = %path.display(), error = ?e, "Failed to write binary session state");
                 } else {
                     info!(bytes = bytes.len(), path = %path.display(), "Saved binary session state via postcard");

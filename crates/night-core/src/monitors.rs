@@ -101,7 +101,7 @@ impl MonitorProfile {
         }
         let content = ron::ser::to_string_pretty(profiles, ron::ser::PrettyConfig::default())
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-        fs::write(&path, content)?;
+        crate::write_atomic(&path, content.as_bytes())?;
         info!(path = %path.display(), count = profiles.len(), "Saved monitor profiles to RON");
         Ok(())
     }
