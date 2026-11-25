@@ -591,6 +591,20 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
   * [x] Populated `DesktopStatus::to_json()` and `DesktopStatus::format_template()` with `auto_theme` and `power_saver`.
   * [x] Enforced real-time IPC broadcast notifications across running status bars and control centers.
 
+---
+
+### Phase 28: Walker + Elephant Launcher Integration, Daemon Health Supervisor & `nightctl doctor`
+* [x] **Walker + Elephant Integration (`night-core`, `night-daemons`, `night-binds`, `xtask`)**:
+  * [x] Replaced legacy `anyrun`/`yofi`/`fuzzel` defaults with `walker` + `elephant` in `night.toml`, `Defaults`, `AppsConfig`, `settings.slint`, and `packaging/PKGBUILD`.
+  * [x] Added dynamic `ThemeVariant::sync_walker_theme()` generating `~/.config/walker/themes/night/style.css` on startup, theme switch, and `night.toml` hot-reload.
+  * [x] Bound `Super + Space` / `Alt + Space` to `walker` (with Snowcap fallback), `Super + .` to Walker symbols/emoji picker, and `Super + =` to Walker calculator.
+* [x] **Daemon Health & Auto-Restart Supervisor (`crates/night-daemons` & `night-core`)**:
+  * [x] Added `/proc` duplicate-spawn guard and `supervise_core_daemons()` auto-restarting crashed core daemons (up to 5 restarts).
+  * [x] Added `IpcCommand::GetDaemons`, `IpcResponse::Daemons(Vec<DaemonHealth>)`, and `nightctl daemons`.
+* [x] **Standalone Diagnostics & Launcher CLI (`crates/night-ctl`)**:
+  * [x] Extended `nightctl launcher [apps|calc|files|clipboard|symbols|websearch|runner|dmenu|snowcap]`.
+  * [x] Added `nightctl doctor` checking `WAYLAND_DISPLAY`, Night IPC connectivity, and core desktop binaries.
+
 
 
 
