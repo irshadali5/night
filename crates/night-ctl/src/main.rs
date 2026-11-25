@@ -1314,6 +1314,31 @@ async fn main() {
                 let _ = std::process::Command::new("night-session")
                     .arg("status")
                     .status();
+                if let Some(saved) = night_core::session_restore::SavedSession::load() {
+                    println!(
+                        "\n💾 Saved Session Snapshot ({}):",
+                        night_core::session_restore::SavedSession::cache_path().display()
+                    );
+                    println!(
+                        "   Tag: {} | Theme: {} | Layout: {} | Windows: {}",
+                        saved.active_tag,
+                        saved.theme,
+                        if saved.layout.is_empty() { "default" } else { &saved.layout },
+                        saved.windows.len()
+                    );
+                    for (idx, w) in saved.windows.iter().enumerate() {
+                        println!(
+                            "   [{:>2}] {} (tag {}, {}) - {}",
+                            idx + 1,
+                            w.app_id,
+                            w.tag,
+                            if w.is_floating { "float" } else { "tile" },
+                            w.title
+                        );
+                    }
+                } else {
+                    println!("\n💾 No saved session snapshot on disk.");
+                }
             }
         },
 
