@@ -96,4 +96,34 @@ mod tests {
         let guard = lock_unpoison(&m);
         assert_eq!(*guard, 99);
     }
+
+    #[test]
+    fn test_fuzz_smoke_adversarial_inputs() {
+        // Deterministic pseudo-random adversarial inputs exercising decoders & parsers
+        let mut seed: u64 = 0x9e37_79b9_7f4a_7c15;
+        let mut buf = Vec::with_capacity(128);
+        for len in 0..128 {
+            buf.clear();
+            for _ in 0..len {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+                buf.push((seed >> 56) as u8);
+            }
+            let _ = postcard::from_bytes::<ipc::IpcCommand>(&buf);
+            let _ = postcard::from_bytes::<ipc::IpcResponse>(&buf);
+            let _ = postcard::from_bytes::<session_restore::SavedSession>(&buf);
+            let _ = postcard::from_bytes::<state::SessionState>(&buf);
+            let _ = postcard::from_bytes::<clipboard::ClipboardHistory>(&buf);
+            let _ = postcard::from_bytes::<notifications::NotificationHistory>(&buf);
+            let text = String::from_utf8_lossy(&buf);
+            let _ = toml::from_str::<UserConfig>(&text);
+            let _ = ron::from_str::<Vec<MonitorProfile>>(&text);
+            let _ = audio::parse_wpctl_volume(&text);
+            let _ = audio::parse_wpctl_sinks(&text);
+            let _ = power::parse_battery_values(&text, Some(&text));
+            let _ = session_restore::resolve_launch_command(&text);
+            let _ = theme::ThemeVariant::parse_variant(&text);
+            let _ = theme::Palette::hex_to_rgb(&text);
+            let _ = ipc::DesktopStatus::default().format_template(&text);
+        }
+    }
 }
