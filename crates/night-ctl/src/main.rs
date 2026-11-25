@@ -181,9 +181,12 @@ enum Commands {
         action: Option<PowerCommand>,
     },
 
-    /// Show the Snowcap Bihar Night application launcher modal
+    /// Launch Walker (or Snowcap fallback) in app, calc, files, clipboard, symbols, websearch, or dmenu mode
     #[command(alias = "run")]
-    Launcher,
+    Launcher {
+        /// Optional provider/mode: apps, calc, files, clipboard, symbols, websearch, dmenu, snowcap
+        mode: Option<String>,
+    },
 
     /// Query network connectivity status and active interfaces
     Net,
@@ -289,6 +292,12 @@ enum Commands {
         #[command(subcommand)]
         action: BorderCommand,
     },
+
+    /// Inspect live health and restart counts of managed background daemons
+    Daemons,
+
+    /// Run standalone diagnostics on Night environment, Wayland socket, IPC, and core tools
+    Doctor,
 }
 
 #[derive(Subcommand, Debug)]
@@ -1087,8 +1096,23 @@ async fn main() {
             }
         },
 
-        Commands::Launcher => {
-            run_cmd(IpcCommand::ShowLauncher).await;
+        Commands::Launcher { mode } => {
+            let mode_str = mode.as_deref().unwrap_or("apps");
+            if mode_str.eq_ignore_ascii_case("snowcap") || which::which("walker").is_err() {
+                run_cmd(IpcCommand::ShowLauncher).await;
+            } else {
+                match mode_str {
+                    "apps" | "default" => night_core::exec::spawn("walker", &[]),
+                    "dmenu" => night_core::exec::spawn("walker", &["--dmenu"]),
+                    "calc" | "files" | "clipboard" | "symbols" | "websearch" | "runner" => {
+                        night_core::exec::spawn("walker", &["-m", mode_str]);
+                    }
+                    other => {
+                        eprintln!("❌ Unknown launcher mode '{other}'. Valid: apps, calc, files, clipboard, symbols, websearch, runner, dmenu, snowcap");
+                        exit(1);
+                    }
+                }
+            }
         }
 
         Commands::Net => match send_command(&IpcCommand::GetNetwork).await {
@@ -1428,6 +1452,62 @@ async fn main() {
                 println!("📏 Window border thickness set to {width}px.");
             }
         },
+        Commands::Daemons => match send_command(&IpcCommand::GetDaemons).await {
+            Ok(IpcResponse::Daemons(daemons)) => {
+                println!("🌙 Night Core Daemon Health:");
+                for d in daemons {
+                    let status = if !d.installed {
+                        "⚠️  NOT INSTALLED"
+                    } else if d.running {
+                        "🟢 RUNNING"
+                    } else {
+                        "🔴 STOPPED"
+                    };
+                    println!(
+                        "  {:<28} {:<16} {:<18} (restarts: {})",
+                        d.name, d.command, status, d.restarts
+                    );
+                }
+            }
+            Ok(other) => println!("{other:?}"),
+            Err(e) => fatal(e),
+        },
+        Commands::Doctor => {
+            println!("🩺 Night Desktop Environment Doctor\n");
+            let wayland = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "unset".to_string());
+            println!("  WAYLAND_DISPLAY : {wayland}");
+            let ipc_ok = send_command(&IpcCommand::GetStatus).await.is_ok();
+            println!(
+                "  Night IPC       : {}",
+                if ipc_ok { "🟢 Connected" } else { "🔴 Offline" }
+            );
+            println!("\n  Core Binaries:");
+            let bins = [
+                ("Pinnacle Compositor", "pinnacle"),
+                ("Walker Launcher", "walker"),
+                ("Elephant Service", "elephant"),
+                ("Alacritty Terminal", "alacritty"),
+                ("Ironbar Status Bar", "ironbar"),
+                ("Wired Notifications", "wired"),
+                ("SwayOSD Server", "swayosd-server"),
+                ("swww Wallpaper", "swww-daemon"),
+                ("Veila Locker", "veila"),
+            ];
+            let mut missing = 0usize;
+            for (label, bin) in bins {
+                if let Some(path) = night_core::resolve_executable(bin) {
+                    println!("    ✅ {:<22} -> {}", label, path.display());
+                } else {
+                    println!("    ❌ {:<22} -> missing ({})", label, bin);
+                    missing += 1;
+                }
+            }
+            if missing > 0 {
+                println!("\n⚠️  {missing} core binary/binaries missing from PATH.");
+            } else {
+                println!("\n🎉 All core Night binaries are present.");
+            }
+        }
     }
 }
 
