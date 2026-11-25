@@ -52,11 +52,37 @@ pub const CORE_DAEMONS: &[DaemonSpec] = &[
     },
 ];
 
+/// Checks whether a process with the given executable name is already running via `/proc`.
+fn is_process_running(name: &str) -> bool {
+    let Ok(entries) = std::fs::read_dir("/proc") else {
+        return false;
+    };
+    for entry in entries.flatten() {
+        let file_name = entry.file_name();
+        let pid_str = file_name.to_string_lossy();
+        if !pid_str.bytes().all(|b| b.is_ascii_digit()) {
+            continue;
+        }
+        let comm_path = entry.path().join("comm");
+        if let Ok(comm) = std::fs::read_to_string(comm_path) {
+            if comm.trim() == name {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// Starts all core desktop daemons and scripts, verifying binary availability via `which`
+/// and skipping daemons that are already running.
 pub async fn start_all() {
     info!("Starting Night background daemons...");
 
     for daemon in CORE_DAEMONS {
+        if is_process_running(daemon.command) {
+            info!(daemon = %daemon.name, binary = %daemon.command, "Daemon already running; skipping duplicate spawn");
+            continue;
+        }
         if which::which(daemon.command).is_ok() {
             info!(daemon = %daemon.name, "Initializing daemon");
             spawn(daemon.command, daemon.args);
