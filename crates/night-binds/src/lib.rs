@@ -14,6 +14,7 @@ pub mod clipboard_ui;
 pub mod decorations;
 pub mod grid;
 pub mod launcher;
+pub mod modal;
 pub mod notifications_ui;
 pub mod osd;
 pub mod palette;
