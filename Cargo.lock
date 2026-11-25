@@ -3291,6 +3291,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "dirs",
+ "futures",
  "interprocess",
  "notify-rust",
  "pinnacle-api",
