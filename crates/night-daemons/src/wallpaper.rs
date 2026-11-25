@@ -40,54 +40,30 @@ pub fn resolve_variant_wallpaper(variant: ThemeVariant) -> Option<PathBuf> {
     candidates.into_iter().find(|candidate| candidate.exists())
 }
 
-/// Synchronizes desktop wallpaper with active Bihar Night theme variant using `swww` or `swaybg`
-pub fn sync_wallpaper_theme(variant: ThemeVariant) {
-    let p = variant.palette();
-    let hex = p.bg_darkest.trim_start_matches('#');
-
-    // 1. If swww is available, use smooth wipe shaders
-    if which::which("swww").is_ok() {
-        if let Some(wallpaper_path) = resolve_variant_wallpaper(variant) {
-            set_wallpaper(wallpaper_path.to_string_lossy().as_ref());
-        } else {
-            info!(variant = %variant.name(), hex = %hex, "Clearing wallpaper to Bihar Night palette base via swww");
-            let _ = Command::new("swww")
-                .args(["clear", hex])
-                .status();
-        }
-        return;
-    }
-
-    // 2. If swaybg is available (standard Wayland background tool), set wallpaper image or solid color
-    if which::which("swaybg").is_ok() {
-        let _ = Command::new("pkill").args(["-x", "swaybg"]).status();
-        if let Some(wallpaper_path) = resolve_variant_wallpaper(variant) {
-            info!(variant = %variant.name(), path = ?wallpaper_path, "Setting wallpaper via swaybg");
-            night_core::exec::spawn_shell(&format!(
-                "swaybg -i \"{}\" -m fill >/dev/null 2>&1 &",
-                wallpaper_path.display()
-            ));
-        } else {
-            let color = format!("#{hex}");
-            info!(variant = %variant.name(), color = %color, "Setting solid Bihar Night background via swaybg");
-            night_core::exec::spawn_shell(&format!("swaybg -c \"{color}\" >/dev/null 2>&1 &"));
-        }
+/// Pluggable Wayland wallpaper backend (`swww`, `swaybg`, etc.).
+pub trait WallpaperBackend: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn set_image(&self, path: &str);
+    fn set_color(&self, hex: &str);
+    fn current_image(&self) -> Option<String> {
+        None
     }
 }
 
-/// Applies a specific image wallpaper with a smooth transition (swww or swaybg)
-pub fn set_wallpaper(path_str: &str) {
-    let path = Path::new(path_str);
-    if !path.exists() {
-        return;
+/// Smooth-transition wallpaper backend powered by `swww`.
+pub struct SwwwBackend;
+
+impl WallpaperBackend for SwwwBackend {
+    fn name(&self) -> &'static str {
+        "swww"
     }
 
-    if which::which("swww").is_ok() {
-        info!(path = %path_str, "Applying wallpaper with swww transition");
+    fn set_image(&self, path: &str) {
+        info!(path = %path, "Applying wallpaper with swww transition");
         let _ = Command::new("swww")
             .args([
                 "img",
-                path_str,
+                path,
                 "--transition-type",
                 "wipe",
                 "--transition-angle",
@@ -96,29 +72,88 @@ pub fn set_wallpaper(path_str: &str) {
                 "1.5",
             ])
             .status();
-    } else if which::which("swaybg").is_ok() {
-        let _ = Command::new("pkill").args(["-x", "swaybg"]).status();
-        info!(path = %path_str, "Applying wallpaper with swaybg");
-        night_core::exec::spawn_shell(&format!("swaybg -i \"{path_str}\" -m fill >/dev/null 2>&1 &"));
+    }
+
+    fn set_color(&self, hex: &str) {
+        info!(hex = %hex, "Clearing wallpaper to Bihar Night palette base via swww");
+        let _ = Command::new("swww").args(["clear", hex]).status();
+    }
+
+    fn current_image(&self) -> Option<String> {
+        let out = Command::new("swww").arg("query").output().ok()?;
+        if !out.status.success() {
+            return None;
+        }
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        // swww query outputs lines like: "DP-1: /path/to/wallpaper.png"
+        stdout
+            .lines()
+            .next()
+            .and_then(|line| line.split(": ").nth(1))
+            .map(|p| p.trim().to_string())
     }
 }
 
-/// Queries currently applied wallpaper path via `swww query`
-pub fn current_wallpaper() -> Option<String> {
-    if which::which("swww").is_ok() {
-        if let Ok(out) = Command::new("swww").arg("query").output() {
-            if out.status.success() {
-                let stdout = String::from_utf8_lossy(&out.stdout);
-                // swww query outputs lines like: "DP-1: /path/to/wallpaper.png"
-                if let Some(line) = stdout.lines().next() {
-                    if let Some(path) = line.split(": ").nth(1) {
-                        return Some(path.trim().to_string());
-                    }
-                }
-            }
-        }
+/// Fallback static Wayland wallpaper backend powered by `swaybg`.
+pub struct SwaybgBackend;
+
+impl WallpaperBackend for SwaybgBackend {
+    fn name(&self) -> &'static str {
+        "swaybg"
     }
 
-    None
+    fn set_image(&self, path: &str) {
+        let _ = Command::new("pkill").args(["-x", "swaybg"]).status();
+        info!(path = %path, "Applying wallpaper with swaybg");
+        night_core::exec::spawn("swaybg", &["-i", path, "-m", "fill"]);
+    }
+
+    fn set_color(&self, hex: &str) {
+        let _ = Command::new("pkill").args(["-x", "swaybg"]).status();
+        let color = format!("#{hex}");
+        info!(color = %color, "Setting solid Bihar Night background via swaybg");
+        night_core::exec::spawn("swaybg", &["-c", &color]);
+    }
+}
+
+/// Resolves the highest-priority available wallpaper backend on `PATH`.
+pub fn resolve_wallpaper_backend() -> Option<Box<dyn WallpaperBackend>> {
+    if which::which("swww").is_ok() {
+        Some(Box::new(SwwwBackend))
+    } else if which::which("swaybg").is_ok() {
+        Some(Box::new(SwaybgBackend))
+    } else {
+        None
+    }
+}
+
+/// Synchronizes desktop wallpaper with active Bihar Night theme variant
+pub fn sync_wallpaper_theme(variant: ThemeVariant) {
+    let Some(backend) = resolve_wallpaper_backend() else {
+        return;
+    };
+    let p = variant.palette();
+    let hex = p.bg_darkest.trim_start_matches('#');
+
+    if let Some(wallpaper_path) = resolve_variant_wallpaper(variant) {
+        backend.set_image(wallpaper_path.to_string_lossy().as_ref());
+    } else {
+        backend.set_color(hex);
+    }
+}
+
+/// Applies a specific image wallpaper using the active backend
+pub fn set_wallpaper(path_str: &str) {
+    if !Path::new(path_str).exists() {
+        return;
+    }
+    if let Some(backend) = resolve_wallpaper_backend() {
+        backend.set_image(path_str);
+    }
+}
+
+/// Queries currently applied wallpaper path from the active backend
+pub fn current_wallpaper() -> Option<String> {
+    resolve_wallpaper_backend().and_then(|backend| backend.current_image())
 }
 
