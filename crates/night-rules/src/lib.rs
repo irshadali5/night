@@ -135,3 +135,32 @@ pub fn setup_rules() {
 
     info!("Window rules and swallowing engine active.");
 }
+
+/// Evaluates whether a [`Rule`] matches the given window `app_id` (case-insensitive).
+pub fn rule_matches(rule: &Rule, app_id: &str) -> bool {
+    rule.app_id.eq_ignore_ascii_case(app_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_rules_and_matching() {
+        let rules = default_rules();
+        assert!(!rules.is_empty());
+        let satty = rules.iter().find(|r| rule_matches(r, "Satty")).unwrap();
+        assert_eq!(satty.action, WindowAction::Float);
+
+        let zen = rules.iter().find(|r| rule_matches(r, "zen")).unwrap();
+        assert_eq!(zen.action, WindowAction::MoveToTag("2".to_string()));
+    }
+
+    #[test]
+    fn test_rules_ron_roundtrip() {
+        let rules = default_rules();
+        let ron_str = ron::to_string(&rules).expect("serialize rules");
+        let parsed: Vec<Rule> = ron::from_str(&ron_str).expect("deserialize rules");
+        assert_eq!(parsed, rules);
+    }
+}
