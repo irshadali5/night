@@ -37,13 +37,7 @@ pub fn resolve_variant_wallpaper(variant: ThemeVariant) -> Option<PathBuf> {
         PathBuf::from(format!("/usr/share/backgrounds/night/bihar-night-{variant_name}.jpg")),
     ];
 
-    for candidate in candidates {
-        if candidate.exists() {
-            return Some(candidate);
-        }
-    }
-
-    None
+    candidates.into_iter().find(|candidate| candidate.exists())
 }
 
 /// Synchronizes desktop wallpaper with active Bihar Night theme variant using `swww` or `swaybg`

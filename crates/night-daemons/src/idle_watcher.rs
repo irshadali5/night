@@ -1,9 +1,10 @@
 //! 🌙 Bihar Night Smart Idle & Inactivity Supervision Daemon
 //! Monitors user activity, audio playback inhibition, and battery state.
 //! Automatically stages power management:
-//! 1. Dim display backlight after idle threshold (e.g. 5 minutes).
-//! 2. Lock desktop session via `night-session lock` (e.g. 10 minutes).
-//! 3. Blank displays via DPMS sleep (e.g. 15 minutes).
+//!   1. Dim display backlight after idle threshold (e.g. 5 minutes).
+//!   2. Lock desktop session via `night-session lock` (e.g. 10 minutes).
+//!   3. Blank displays via DPMS sleep (e.g. 15 minutes).
+//!
 //! Automatically restores brightness and display state upon resumed activity.
 
 use night_core::backlight::{handle_backlight_action, BacklightAction};
@@ -74,7 +75,10 @@ pub async fn supervise_idle() {
         sleep(Duration::from_secs(10)).await;
 
         // 1. If inhibited (e.g. presentation mode or full-screen video), reset idle state
-        if night_core::gamma::is_inhibited() || is_media_playing() {
+        let media_playing = tokio::task::spawn_blocking(is_media_playing)
+            .await
+            .unwrap_or(false);
+        if night_core::gamma::is_inhibited() || media_playing {
             debug!("Activity/playback active: suppressing idle timers");
             reset_idle();
             current_stage = IdleStage::Active;
