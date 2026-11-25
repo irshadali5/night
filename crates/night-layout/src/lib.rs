@@ -174,7 +174,7 @@ pub fn cycle_layout() -> LayoutKind {
         .unwrap_or_else(|| "1".to_string());
 
     let next = {
-        let mut guard = state().lock().unwrap();
+        let mut guard = night_core::lock_unpoison(state());
         let current = *guard.tag_layouts.get(&active_tag).unwrap_or(&guard.default_kind);
         let next = current.next();
         guard.tag_layouts.insert(active_tag.clone(), next);
@@ -189,7 +189,7 @@ pub fn cycle_layout() -> LayoutKind {
 /// Sets layout for a specific tag
 pub fn set_layout_for_tag(tag: &str, layout: LayoutKind) {
     {
-        let mut guard = state().lock().unwrap();
+        let mut guard = night_core::lock_unpoison(state());
         guard.tag_layouts.insert(tag.to_string(), layout);
     }
     request_relayout();
@@ -197,14 +197,14 @@ pub fn set_layout_for_tag(tag: &str, layout: LayoutKind) {
 
 /// Gets layout for a specific tag
 pub fn get_layout_for_tag(tag: &str) -> LayoutKind {
-    let guard = state().lock().unwrap();
+    let guard = night_core::lock_unpoison(state());
     *guard.tag_layouts.get(tag).unwrap_or(&guard.default_kind)
 }
 
 /// Adjusts gaps in real-time
 pub fn adjust_gaps(delta: f32) {
     {
-        let mut guard = state().lock().unwrap();
+        let mut guard = night_core::lock_unpoison(state());
         guard.inner_gaps = (guard.inner_gaps + delta).max(0.0);
         guard.outer_gaps = (guard.outer_gaps + delta).max(0.0);
         info!(inner = guard.inner_gaps, outer = guard.outer_gaps, "Updated layout gaps");
@@ -215,7 +215,7 @@ pub fn adjust_gaps(delta: f32) {
 /// Sets gaps to explicit values in real-time
 pub fn set_gaps(inner: Option<f32>, outer: Option<f32>) {
     {
-        let mut guard = state().lock().unwrap();
+        let mut guard = night_core::lock_unpoison(state());
         if let Some(i) = inner {
             guard.inner_gaps = i.max(0.0);
         }
@@ -232,13 +232,13 @@ pub fn current_layout() -> LayoutKind {
     let active_tag = night_core::SessionState::load()
         .map(|s| s.active_tag)
         .unwrap_or_else(|| "1".to_string());
-    let guard = state().lock().unwrap();
+    let guard = night_core::lock_unpoison(state());
     *guard.tag_layouts.get(&active_tag).unwrap_or(&guard.default_kind)
 }
 
 /// Returns current (inner_gaps, outer_gaps)
 pub fn get_gaps() -> (f32, f32) {
-    let guard = state().lock().unwrap();
+    let guard = night_core::lock_unpoison(state());
     (guard.inner_gaps, guard.outer_gaps)
 }
 

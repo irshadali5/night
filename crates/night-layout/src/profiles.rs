@@ -82,7 +82,7 @@ impl LayoutProfile {
         };
 
         {
-            let mut guard = state().lock().unwrap();
+            let mut guard = night_core::lock_unpoison(state());
             guard.inner_gaps = inner;
             guard.outer_gaps = outer;
             guard.master_factor = master_factor;
