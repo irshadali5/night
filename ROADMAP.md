@@ -617,6 +617,16 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
   * [x] Updated `SaveSession` / `RestoreSession` to capture per-window tags and active layout, and restore theme, layout, active tag, and windows.
   * [x] Enhanced `nightctl session status` to inspect saved session snapshots on disk.
 
+---
+
+### Phase 30: Modal & Wallpaper Abstractions, Pure System Parsers & Unit Test Expansion
+* [x] **Shared Snowcap Modal Scaffolding (`crates/night-binds/src/modal.rs`)**:
+  * [x] Extracted `ModalStyle`, `modal_header()`, and `modal_container()` and refactored all 8 Snowcap modals to eliminate duplicated layout/border/padding boilerplate.
+* [x] **Pluggable Wallpaper Backend Trait (`crates/night-daemons/src/wallpaper.rs`)**:
+  * [x] Added `WallpaperBackend` trait (`SwwwBackend`, `SwaybgBackend`) with `resolve_wallpaper_backend()` unifying `sync_wallpaper_theme`, `set_wallpaper`, and `current_wallpaper`.
+* [x] **Pure System Parsers & Expanded Test Suite (`night-core`, `night-rules`)**:
+  * [x] Extracted `parse_battery_values()`, `parse_wpctl_volume()`, `parse_wpctl_sinks()`, and `rule_matches()` with deterministic unit tests.
+
 
 
 
