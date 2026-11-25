@@ -778,7 +778,7 @@ async fn main() {
                             } else {
                                 println!("📋 Night Wayland Clipboard History ({} items):", items.len());
                                 for (idx, item) in items.iter().take(15).enumerate() {
-                                    let clean = item.replace('\n', " ").replace('\t', " ");
+                                    let clean = item.replace(['\n', '\t'], " ");
                                     let preview = if clean.chars().count() > 60 {
                                         let s: String = clean.chars().take(57).collect();
                                         format!("{s}...")
@@ -1206,18 +1206,10 @@ async fn main() {
                 Some("toggle") | None => true,
                 Some("status") => false,
                 Some("on") | Some("enable") => {
-                    if !night_core::notifications::NotificationHistory::is_dnd() {
-                        true
-                    } else {
-                        false
-                    }
+                    !night_core::notifications::NotificationHistory::is_dnd()
                 }
                 Some("off") | Some("disable") => {
-                    if night_core::notifications::NotificationHistory::is_dnd() {
-                        true
-                    } else {
-                        false
-                    }
+                    night_core::notifications::NotificationHistory::is_dnd()
                 }
                 _ => true,
             };
