@@ -63,6 +63,7 @@ pub async fn supervise_config_watcher() {
                 info!("Detected modifications to night.toml; reloading user preferences...");
                 let cfg = night_core::UserConfig::load();
                 crate::wallpaper::sync_wallpaper_theme(cfg.general.theme);
+                cfg.general.theme.sync_walker_theme();
                 if cfg.gamma.enabled {
                     night_core::gamma::set_temperature(cfg.gamma.night_temp);
                 }
