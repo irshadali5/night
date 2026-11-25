@@ -397,3 +397,15 @@ pub fn show_launcher_modal() {
         });
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fuzz_smoke_clean_exec() {
+        for sample in ["", "alacritty %u", "zen-browser %F %U", "env FOO=1 bar %i", "\0✨"] {
+            let _ = AppEntry::clean_exec(sample);
+        }
+    }
+}
