@@ -48,6 +48,19 @@ impl VolumeInfo {
     }
 }
 
+/// Parses `wpctl get-volume @DEFAULT_AUDIO_SINK@` output into a [`VolumeInfo`].
+pub fn parse_wpctl_volume(stdout: &str) -> Option<VolumeInfo> {
+    // Expected format: "Volume: 0.65" or "Volume: 0.65 [MUTED]"
+    let is_muted = stdout.contains("[MUTED]");
+    let vol_part = stdout.split_whitespace().nth(1)?;
+    let vol_float = vol_part.parse::<f32>().ok()?;
+    let percentage = (vol_float * 100.0).round().min(150.0) as u8;
+    Some(VolumeInfo {
+        percentage,
+        is_muted,
+    })
+}
+
 /// Queries current default audio output volume using `wpctl` or `pactl`
 pub fn get_volume() -> Option<VolumeInfo> {
     if which::which("wpctl").is_ok() {
@@ -57,16 +70,8 @@ pub fn get_volume() -> Option<VolumeInfo> {
         {
             if out.status.success() {
                 let stdout = String::from_utf8_lossy(&out.stdout);
-                // Expected format: "Volume: 0.65" or "Volume: 0.65 [MUTED]"
-                let is_muted = stdout.contains("[MUTED]");
-                if let Some(vol_part) = stdout.split_whitespace().nth(1) {
-                    if let Ok(vol_float) = vol_part.parse::<f32>() {
-                        let pct = (vol_float * 100.0).round().min(150.0) as u8;
-                        return Some(VolumeInfo {
-                            percentage: pct,
-                            is_muted,
-                        });
-                    }
+                if let Some(info) = parse_wpctl_volume(&stdout) {
+                    return Some(info);
                 }
             }
         }
@@ -279,5 +284,94 @@ pub fn cycle_sink() -> Option<AudioSink> {
 
     set_default_sink(target.id);
     Some(target.clone())
+}
+
+/// Parses `wpctl status` output into a list of [`AudioSink`]s.
+pub fn parse_wpctl_sinks(text: &str) -> Vec<AudioSink> {
+    let mut in_sinks = false;
+    let mut sinks = Vec::new();
+
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.contains("Sinks:") {
+            in_sinks = true;
+            continue;
+        }
+        if in_sinks
+            && (trimmed.contains("Sources:")
+                || trimmed.contains("Filters:")
+                || trimmed.contains("Streams:"))
+        {
+            break;
+        }
+
+        if in_sinks && (trimmed.contains('.') || trimmed.contains('*')) {
+            let is_default = trimmed.contains('*');
+            let clean = trimmed.replace(['│', '*'], "");
+            let parts: Vec<&str> = clean.split_whitespace().collect();
+            if let Some(first) = parts.first() {
+                let id_str = first.trim_end_matches('.');
+                if let Ok(id) = id_str.parse::<u32>() {
+                    let name_end = clean.find('[').unwrap_or(clean.len());
+                    let name_start = clean.find(id_str).map(|p| p + id_str.len()).unwrap_or(0);
+                    let name = clean[name_start..name_end]
+                        .trim()
+                        .trim_start_matches('.')
+                        .trim()
+                        .to_string();
+
+                    if !name.is_empty() {
+                        sinks.push(AudioSink {
+                            id,
+                            name,
+                            is_default,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    sinks
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_wpctl_volume() {
+        let normal = parse_wpctl_volume("Volume: 0.65").unwrap();
+        assert_eq!(normal.percentage, 65);
+        assert!(!normal.is_muted);
+        assert_eq!(normal.display_string(), "󰖀 65%");
+
+        let muted = parse_wpctl_volume("Volume: 0.40 [MUTED]").unwrap();
+        assert_eq!(muted.percentage, 40);
+        assert!(muted.is_muted);
+        assert_eq!(muted.display_string(), "󰖁 Muted");
+
+        assert!(parse_wpctl_volume("invalid").is_none());
+    }
+
+    #[test]
+    fn test_parse_wpctl_sinks() {
+        let sample = "\
+Audio
+ ├─ Sinks:
+ │  *   49. Built-in Audio Analog Stereo        [vol: 0.65]
+ │      52. USB-C Headphones                    [vol: 0.80]
+ ├─ Sources:
+ │      55. Built-in Mic                        [vol: 1.00]
+";
+        let sinks = parse_wpctl_sinks(sample);
+        assert_eq!(sinks.len(), 2);
+        assert_eq!(sinks[0].id, 49);
+        assert!(sinks[0].is_default);
+        assert_eq!(sinks[0].name, "Built-in Audio Analog Stereo");
+        assert_eq!(sinks[1].id, 52);
+        assert!(!sinks[1].is_default);
+        assert_eq!(sinks[1].icon(), "󰋋");
+    }
 }
 
