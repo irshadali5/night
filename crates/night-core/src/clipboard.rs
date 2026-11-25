@@ -31,9 +31,7 @@ impl ClipboardHistory {
             .join("night-clipboard.bin")
     }
 
-    /// Loads history from postcard binary cache
-    pub fn load() -> Self {
-        let _guard = CLIPBOARD_LOCK.lock().unwrap();
+    fn load_unlocked() -> Self {
         let path = Self::cache_path();
         if path.exists() {
             if let Ok(bytes) = fs::read(&path) {
@@ -45,15 +43,23 @@ impl ClipboardHistory {
         Self::default()
     }
 
+    fn save_unlocked(&self) {
+        let path = Self::cache_path();
+        if let Ok(bytes) = postcard::to_stdvec(self) {
+            let _ = crate::write_atomic(&path, &bytes);
+        }
+    }
+
+    /// Loads history from postcard binary cache
+    pub fn load() -> Self {
+        let _guard = crate::lock_unpoison(&CLIPBOARD_LOCK);
+        Self::load_unlocked()
+    }
+
     /// Persists history to postcard binary cache
     pub fn save(&self) {
-        let path = Self::cache_path();
-        if let Some(parent) = path.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
-        if let Ok(bytes) = postcard::to_stdvec(self) {
-            let _ = fs::write(&path, bytes);
-        }
+        let _guard = crate::lock_unpoison(&CLIPBOARD_LOCK);
+        self.save_unlocked();
     }
 
     /// Adds new text to clipboard ring buffer (avoids duplicate adjacent entries)
@@ -63,8 +69,8 @@ impl ClipboardHistory {
             return;
         }
 
-        let mut history = Self::load();
-        let _guard = CLIPBOARD_LOCK.lock().unwrap();
+        let _guard = crate::lock_unpoison(&CLIPBOARD_LOCK);
+        let mut history = Self::load_unlocked();
 
         // Avoid adding duplicate if it's already the most recent item
         if let Some(first) = history.items.first() {
@@ -93,15 +99,15 @@ impl ClipboardHistory {
             history.items.truncate(MAX_CLIPBOARD_ENTRIES);
         }
 
-        history.save();
+        history.save_unlocked();
         info!(length = trimmed.len(), "Recorded new clipboard history entry");
     }
 
     /// Clears all clipboard history
     pub fn clear_all() {
-        let _guard = CLIPBOARD_LOCK.lock().unwrap();
+        let _guard = crate::lock_unpoison(&CLIPBOARD_LOCK);
         let empty = Self::default();
-        empty.save();
+        empty.save_unlocked();
         info!("Cleared clipboard history");
     }
 
