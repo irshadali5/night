@@ -435,6 +435,18 @@ pub enum IpcCommand {
     SetPowerSaver(bool),
     /// Queries battery power saver mode state
     GetPowerSaver,
+    /// Queries live health status of core background daemons
+    GetDaemons,
+}
+
+/// Live health status of a managed Night background daemon
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DaemonHealth {
+    pub name: String,
+    pub command: String,
+    pub running: bool,
+    pub installed: bool,
+    pub restarts: u32,
 }
 
 /// Desktop IPC Response
@@ -463,6 +475,7 @@ pub enum IpcResponse {
     Profile(String),
     AutoTheme(bool),
     PowerSaver(bool),
+    Daemons(Vec<DaemonHealth>),
     Error(String),
 }
 
