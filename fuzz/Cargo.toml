@@ -1,0 +1,78 @@
+[package]
+name = "night-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+night-core = { path = "../crates/night-core" }
+night-layout = { path = "../crates/night-layout" }
+night-rules = { path = "../crates/night-rules" }
+night-daemons = { path = "../crates/night-daemons" }
+night-binds = { path = "../crates/night-binds" }
+postcard = { version = "1.1", features = ["alloc", "use-std"] }
+ron = "0.8"
+toml = "0.8"
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "ipc_postcard"
+path = "fuzz_targets/ipc_postcard.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "config_toml"
+path = "fuzz_targets/config_toml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "audio_power_parsers"
+path = "fuzz_targets/audio_power_parsers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "session_restore_postcard"
+path = "fuzz_targets/session_restore_postcard.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "layout_parsers"
+path = "fuzz_targets/layout_parsers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rules_ron"
+path = "fuzz_targets/rules_ron.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "theme_and_templates"
+path = "fuzz_targets/theme_and_templates.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "launcher_and_daemons"
+path = "fuzz_targets/launcher_and_daemons.rs"
+test = false
+doc = false
+bench = false
