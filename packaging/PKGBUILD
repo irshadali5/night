@@ -30,8 +30,8 @@ depends=(
 
 optdepends=(
     'rio: GPU-accelerated secondary terminal'
-    'anyrun-git: Wayland runner and application launcher'
-    'yofi: Ultra-minimalistic application launcher'
+    'walker-bin: Wayland application launcher and dmenu replacement'
+    'elephant-all: Backend data provider service for Walker'
     'zen-browser-bin: Performance privacy browser'
     'brave-bin: Web3 chromium browser'
 )
