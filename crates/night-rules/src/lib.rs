@@ -163,4 +163,12 @@ mod tests {
         let parsed: Vec<Rule> = ron::from_str(&ron_str).expect("deserialize rules");
         assert_eq!(parsed, rules);
     }
+
+    #[test]
+    fn test_fuzz_smoke_rules_and_swallow() {
+        for sample in ["", "[]", "[(app_id: \"x\", action: Float)]", "bad ron", "\0\x7f"] {
+            let _ = ron::from_str::<Vec<Rule>>(sample);
+            let _ = swallow::is_terminal_app(sample);
+        }
+    }
 }
