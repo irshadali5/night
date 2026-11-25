@@ -60,11 +60,12 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for ClipboardModal
         )
         .style(text::Style::new().font(self.font.clone()).pixels(12.0));
 
-        let mut children: Vec<WidgetDef<Self::Message>> = Vec::new();
-        children.push(title.into());
-        children.push(Text::new("").style(text::Style::new().pixels(4.0)).into());
-        children.push(subtitle.into());
-        children.push(Text::new("").style(text::Style::new().pixels(12.0)).into());
+        let mut children: Vec<WidgetDef<Self::Message>> = vec![
+            title.into(),
+            Text::new("").style(text::Style::new().pixels(4.0)).into(),
+            subtitle.into(),
+            Text::new("").style(text::Style::new().pixels(12.0)).into(),
+        ];
 
         if self.items.is_empty() {
             let empty_text = Text::new("Clipboard history is empty")
@@ -87,7 +88,7 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for ClipboardModal
                     format!("{}h ago", age_secs / 3600)
                 };
 
-                let clean = item.content.replace('\n', " ").replace('\t', " ");
+                let clean = item.content.replace(['\n', '\t'], " ");
                 let preview = if clean.chars().count() > 45 {
                     let s: String = clean.chars().take(42).collect();
                     format!("{s}...")

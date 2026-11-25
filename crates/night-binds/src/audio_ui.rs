@@ -60,11 +60,12 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for AudioSinkModal
         )
         .style(text::Style::new().font(self.font.clone()).pixels(12.0));
 
-        let mut children: Vec<WidgetDef<Self::Message>> = Vec::new();
-        children.push(title.into());
-        children.push(Text::new("").style(text::Style::new().pixels(4.0)).into());
-        children.push(subtitle.into());
-        children.push(Text::new("").style(text::Style::new().pixels(12.0)).into());
+        let mut children: Vec<WidgetDef<Self::Message>> = vec![
+            title.into(),
+            Text::new("").style(text::Style::new().pixels(4.0)).into(),
+            subtitle.into(),
+            Text::new("").style(text::Style::new().pixels(12.0)).into(),
+        ];
 
         if self.sinks.is_empty() {
             let empty = Text::new("No active audio output sinks detected via PipeWire / PulseAudio")
