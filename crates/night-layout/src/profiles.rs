@@ -116,4 +116,12 @@ mod tests {
         assert_eq!(LayoutProfile::parse("monocle"), Some(LayoutProfile::Focus));
         assert_eq!(LayoutProfile::parse("unknown_xyz"), None);
     }
+
+    #[test]
+    fn test_fuzz_smoke_layout_parsers() {
+        for sample in ["", "\0", "coding", "MONOCLE", "✨", "a".repeat(256).as_str()] {
+            let _ = LayoutProfile::parse(sample);
+            let _ = crate::LayoutKind::parse(sample);
+        }
+    }
 }
