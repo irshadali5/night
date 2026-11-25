@@ -288,6 +288,7 @@ async fn config() {
                     cfg.general.theme = variant;
                     let _ = cfg.save();
                     night_daemons::wallpaper::sync_wallpaper_theme(variant);
+                    variant.sync_walker_theme();
                     night_core::ipc::broadcast_status(current_desktop_status());
                     IpcResponse::Theme(variant)
                 }
@@ -603,6 +604,9 @@ async fn config() {
                 IpcCommand::GetPowerSaver => {
                     let current = night_daemons::power_watcher::is_power_saver();
                     IpcResponse::PowerSaver(current)
+                }
+                IpcCommand::GetDaemons => {
+                    IpcResponse::Daemons(night_daemons::get_daemon_health())
                 }
                 IpcCommand::Subscribe => {
                     IpcResponse::Status(current_desktop_status())
