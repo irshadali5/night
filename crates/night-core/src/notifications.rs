@@ -18,19 +18,10 @@ pub struct NotificationRecord {
 }
 
 /// Notification history ring-buffer and DND status container
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct NotificationHistory {
     pub items: Vec<NotificationRecord>,
     pub dnd_enabled: bool,
-}
-
-impl Default for NotificationHistory {
-    fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            dnd_enabled: false,
-        }
-    }
 }
 
 impl NotificationHistory {
@@ -60,7 +51,7 @@ impl NotificationHistory {
     pub fn save(&self) {
         let path = Self::cache_path();
         if let Ok(bytes) = postcard::to_allocvec(self) {
-            let _ = fs::write(path, bytes);
+            let _ = crate::write_atomic(&path, &bytes);
         }
     }
 
