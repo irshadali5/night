@@ -9,11 +9,11 @@ impl Defaults {
     /// Alternative WebGPU terminal emulator
     pub const ALT_TERMINAL: &'static str = "rio";
 
-    /// Primary modular application runner
-    pub const LAUNCHER: &'static str = "anyrun";
+    /// Primary modular application runner (Walker)
+    pub const LAUNCHER: &'static str = "walker";
 
-    /// Minimalist pure-Rust application launcher
-    pub const MINIMAL_LAUNCHER: &'static str = "yofi";
+    /// Minimalist / dmenu-compatible application launcher (Walker)
+    pub const MINIMAL_LAUNCHER: &'static str = "walker";
 
     /// Modern lightweight Rust+Slint GUI file manager
     pub const FILE_MANAGER: &'static str = "favnyr";

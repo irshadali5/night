@@ -89,8 +89,8 @@ impl Default for AppsConfig {
         Self {
             terminal: "alacritty".to_string(),
             alt_terminal: "rio".to_string(),
-            launcher: "anyrun".to_string(),
-            minimal_launcher: "yofi".to_string(),
+            launcher: "walker".to_string(),
+            minimal_launcher: "walker".to_string(),
             file_manager: "favnyr".to_string(),
             term_file_manager: "yazi".to_string(),
             browser: "zen-browser".to_string(),
