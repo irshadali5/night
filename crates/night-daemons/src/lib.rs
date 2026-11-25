@@ -40,6 +40,16 @@ pub const CORE_DAEMONS: &[DaemonSpec] = &[
         command: "swayosd-server",
         args: &[],
     },
+    DaemonSpec {
+        name: "Elephant Provider Service",
+        command: "elephant",
+        args: &[],
+    },
+    DaemonSpec {
+        name: "Walker Launcher Service",
+        command: "walker",
+        args: &["--gapplication-service"],
+    },
 ];
 
 /// Starts all core desktop daemons and scripts, verifying binary availability via `which`
