@@ -165,7 +165,7 @@ impl Palette {
     /// Converts a hexadecimal color string (e.g. "#7aa2f7") to normalized RGB floats [0.0..1.0]
     pub fn hex_to_rgb(hex: &str) -> (f32, f32, f32) {
         let hex = hex.trim_start_matches('#');
-        if hex.len() >= 6 {
+        if hex.len() >= 6 && hex.is_ascii() {
             let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0) as f32 / 255.0;
             let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0) as f32 / 255.0;
             let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0) as f32 / 255.0;
