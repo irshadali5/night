@@ -35,6 +35,23 @@ pub use palette::show_command_palette;
 pub use snipping::show_snipping_modal;
 pub use switcher::show_window_switcher;
 
+/// Launches the configured external launcher (e.g. `walker`) when available on `PATH`,
+/// falling back to the built-in Snowcap launcher modal if not found or set to `"snowcap"`.
+fn launch_or_snowcap(cmd: &str) {
+    let trimmed = cmd.trim();
+    if trimmed.is_empty() || trimmed.eq_ignore_ascii_case("snowcap") {
+        show_launcher_modal();
+        return;
+    }
+
+    let bin = trimmed.split_whitespace().next().unwrap_or("");
+    if !bin.is_empty() && which::which(bin).is_ok() {
+        spawn_shell(trimmed);
+    } else {
+        show_launcher_modal();
+    }
+}
+
 /// Registers all user keybindings and interactive mouse bindings with the Pinnacle compositor
 pub fn register_all() {
     info!("Registering desktop keybindings and interactive mouse controls...");
@@ -60,12 +77,14 @@ pub fn register_all() {
         spawn(&alt_term, &[]);
     });
 
-    // Super + Space & Alt + Space -> Bihar Night Snowcap Application Launcher Modal
-    input::keybind(Mod::SUPER, "space").on_press(|| {
-        show_launcher_modal();
+    // Super + Space & Alt + Space -> Configured Launcher (Walker) with Snowcap fallback
+    let launcher_cmd = user_cfg.apps.launcher.clone();
+    let launcher_cmd_alt = launcher_cmd.clone();
+    input::keybind(Mod::SUPER, "space").on_press(move || {
+        launch_or_snowcap(&launcher_cmd);
     });
-    input::keybind(Mod::ALT, "space").on_press(|| {
-        show_launcher_modal();
+    input::keybind(Mod::ALT, "space").on_press(move || {
+        launch_or_snowcap(&launcher_cmd_alt);
     });
 
     // Super + d & Alt + d -> Minimal Launcher
