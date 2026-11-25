@@ -75,7 +75,7 @@ pub fn swallow(child: &WindowHandle, parent: &WindowHandle) -> bool {
 /// Restores a swallowed parent window when its child window exits
 pub fn handle_window_destroyed(destroyed_id: u32) {
     let mapping = {
-        let mut reg = registry().lock().unwrap();
+        let mut reg = night_core::lock_unpoison(registry());
         reg.remove(&destroyed_id)
     };
 
@@ -99,7 +99,7 @@ pub fn handle_window_destroyed(destroyed_id: u32) {
 /// Restores all currently swallowed terminals
 pub fn unswallow_all() {
     let entries: Vec<(u32, (u32, String))> = {
-        let mut reg = registry().lock().unwrap();
+        let mut reg = night_core::lock_unpoison(registry());
         reg.drain().collect()
     };
 
