@@ -97,6 +97,22 @@ pub fn register_all() {
         spawn_shell(&min_launcher_alt);
     });
 
+    // Super + . -> Walker Symbols/Emoji Picker, Super + = -> Walker Calculator
+    input::keybind(Mod::SUPER, "period").on_press(|| {
+        if which::which("walker").is_ok() {
+            spawn("walker", &["-m", "symbols"]);
+        } else {
+            show_launcher_modal();
+        }
+    });
+    input::keybind(Mod::SUPER, "equal").on_press(|| {
+        if which::which("walker").is_ok() {
+            spawn("walker", &["-m", "calc"]);
+        } else {
+            show_launcher_modal();
+        }
+    });
+
     // Super + e -> Favnyr (Modern Rust+Slint GUI File Manager)
     let fm = user_cfg.apps.file_manager.clone();
     input::keybind(Mod::SUPER, 'e').on_press(move || {
