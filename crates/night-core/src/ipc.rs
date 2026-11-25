@@ -1,18 +1,23 @@
 //! 🌙 Night Interprocess Communication (IPC)
-//! Powered by standard Unix domain sockets and `postcard` for binary message serialization.
+//! Powered by `interprocess::local_socket` (Tokio), `tokio_util::codec::LengthDelimitedCodec`,
+//! and `postcard` for bounded, framed binary message serialization.
 //! Provides single-command request/response as well as real-time event streaming for status bars and widgets.
 
 use crate::state::SessionState;
+use futures::{SinkExt, StreamExt};
+use interprocess::local_socket::{
+    tokio::{prelude::*, Stream as LocalStream},
+    GenericFilePath, ListenerOptions, ToFsName,
+};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::OnceLock;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::broadcast;
+use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::{error, info, warn};
 
 /// Comprehensive real-time desktop status
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct DesktopStatus {
     pub active_tag: String,
     pub layout: String,
@@ -502,52 +507,61 @@ pub fn socket_path() -> PathBuf {
         .join("night.sock")
 }
 
-/// Sends a single IPC command to the running Night compositor instance and awaits response
-pub async fn send_command(cmd: &IpcCommand) -> Result<IpcResponse, crate::error::IpcError> {
-    let path = socket_path();
-    let mut stream = UnixStream::connect(&path)
+const MAX_IPC_FRAME_BYTES: usize = 4 * 1024 * 1024;
+
+fn framed_socket(stream: LocalStream) -> Framed<LocalStream, LengthDelimitedCodec> {
+    LengthDelimitedCodec::builder()
+        .max_frame_length(MAX_IPC_FRAME_BYTES)
+        .new_framed(stream)
+}
+
+async fn send_command_to(
+    path: &std::path::Path,
+    cmd: &IpcCommand,
+) -> Result<IpcResponse, crate::error::IpcError> {
+    let path_buf = path.to_path_buf();
+    let name = path_buf
+        .clone()
+        .to_fs_name::<GenericFilePath>()
+        .map_err(|source| crate::error::IpcError::ConnectionFailed {
+            path: path_buf.clone(),
+            source,
+        })?;
+    let stream = LocalStream::connect(name)
         .await
         .map_err(|source| crate::error::IpcError::ConnectionFailed {
-            path: path.clone(),
+            path: path_buf.clone(),
+            source,
+        })?;
+    let mut framed = framed_socket(stream);
+
+    let payload = postcard::to_stdvec(cmd).map_err(crate::error::IpcError::Encode)?;
+    framed
+        .send(payload.as_slice())
+        .await
+        .map_err(|source| crate::error::IpcError::ConnectionFailed {
+            path: path_buf.clone(),
             source,
         })?;
 
-    let payload = postcard::to_stdvec(cmd)
-        .map_err(crate::error::IpcError::Encode)?;
-
-    let len = payload.len() as u32;
-    stream.write_all(&len.to_be_bytes()).await.map_err(|source| {
-        crate::error::IpcError::ConnectionFailed {
-            path: path.clone(),
+    let frame = framed
+        .next()
+        .await
+        .ok_or_else(|| crate::error::IpcError::ConnectionFailed {
+            path: path_buf.clone(),
+            source: std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "IPC stream closed"),
+        })?
+        .map_err(|source| crate::error::IpcError::ConnectionFailed {
+            path: path_buf,
             source,
-        }
-    })?;
-    stream.write_all(&payload).await.map_err(|source| {
-        crate::error::IpcError::ConnectionFailed {
-            path: path.clone(),
-            source,
-        }
-    })?;
+        })?;
 
-    let mut len_buf = [0u8; 4];
-    stream.read_exact(&mut len_buf).await.map_err(|source| {
-        crate::error::IpcError::ConnectionFailed {
-            path: path.clone(),
-            source,
-        }
-    })?;
-    let resp_len = u32::from_be_bytes(len_buf) as usize;
+    postcard::from_bytes(&frame).map_err(crate::error::IpcError::Decode)
+}
 
-    let mut resp_buf = vec![0u8; resp_len];
-    stream.read_exact(&mut resp_buf).await.map_err(|source| {
-        crate::error::IpcError::ConnectionFailed {
-            path: path.clone(),
-            source,
-        }
-    })?;
-
-    postcard::from_bytes(&resp_buf)
-        .map_err(crate::error::IpcError::Decode)
+/// Sends a single IPC command to the running Night compositor instance and awaits response
+pub async fn send_command(cmd: &IpcCommand) -> Result<IpcResponse, crate::error::IpcError> {
+    send_command_to(&socket_path(), cmd).await
 }
 
 /// Connects to Night IPC and subscribes to real-time `DesktopStatus` updates.
@@ -557,43 +571,33 @@ where
     F: FnMut(DesktopStatus),
 {
     let path = socket_path();
-    let mut stream = UnixStream::connect(&path)
+    let name = path
+        .clone()
+        .to_fs_name::<GenericFilePath>()
+        .map_err(|source| crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        })?;
+    let stream = LocalStream::connect(name)
+        .await
+        .map_err(|source| crate::error::IpcError::ConnectionFailed {
+            path: path.clone(),
+            source,
+        })?;
+    let mut framed = framed_socket(stream);
+
+    let payload =
+        postcard::to_stdvec(&IpcCommand::Subscribe).map_err(crate::error::IpcError::Encode)?;
+    framed
+        .send(payload.as_slice())
         .await
         .map_err(|source| crate::error::IpcError::ConnectionFailed {
             path: path.clone(),
             source,
         })?;
 
-    let payload = postcard::to_stdvec(&IpcCommand::Subscribe)
-        .map_err(crate::error::IpcError::Encode)?;
-
-    let len = payload.len() as u32;
-    stream.write_all(&len.to_be_bytes()).await.map_err(|source| {
-        crate::error::IpcError::ConnectionFailed {
-            path: path.clone(),
-            source,
-        }
-    })?;
-    stream.write_all(&payload).await.map_err(|source| {
-        crate::error::IpcError::ConnectionFailed {
-            path: path.clone(),
-            source,
-        }
-    })?;
-
-    loop {
-        let mut len_buf = [0u8; 4];
-        if stream.read_exact(&mut len_buf).await.is_err() {
-            break;
-        }
-        let resp_len = u32::from_be_bytes(len_buf) as usize;
-
-        let mut resp_buf = vec![0u8; resp_len];
-        if stream.read_exact(&mut resp_buf).await.is_err() {
-            break;
-        }
-
-        if let Ok(IpcResponse::Status(status)) = postcard::from_bytes::<IpcResponse>(&resp_buf) {
+    while let Some(Ok(frame)) = framed.next().await {
+        if let Ok(IpcResponse::Status(status)) = postcard::from_bytes::<IpcResponse>(&frame) {
             on_status(status);
         }
     }
@@ -607,12 +611,27 @@ where
     F: Fn(IpcCommand) -> IpcResponse + Send + Sync + 'static,
     S: Fn() -> DesktopStatus + Send + Sync + 'static,
 {
-    let path = socket_path();
-    let _ = std::fs::remove_file(&path);
+    run_ipc_server_at(&socket_path(), handler, status_provider).await;
+}
 
-    let listener = match UnixListener::bind(&path) {
+async fn run_ipc_server_at<F, S>(path: &std::path::Path, handler: F, status_provider: S)
+where
+    F: Fn(IpcCommand) -> IpcResponse + Send + Sync + 'static,
+    S: Fn() -> DesktopStatus + Send + Sync + 'static,
+{
+    let _ = std::fs::remove_file(path);
+
+    let name = match path.to_path_buf().to_fs_name::<GenericFilePath>() {
+        Ok(n) => n,
+        Err(e) => {
+            error!(error = %e, socket = %path.display(), "Failed to build Night IPC socket name");
+            return;
+        }
+    };
+
+    let listener = match ListenerOptions::new().name(name).create_tokio() {
         Ok(l) => {
-            info!(socket = %path.display(), "Night IPC Server active");
+            info!(socket = %path.display(), "Night IPC Server active (interprocess)");
             l
         }
         Err(e) => {
@@ -626,42 +645,33 @@ where
 
     loop {
         match listener.accept().await {
-            Ok((mut stream, _addr)) => {
+            Ok(stream) => {
                 let handler = handler_arc.clone();
                 let status_fn = status_arc.clone();
 
                 tokio::spawn(async move {
-                    let mut len_buf = [0u8; 4];
-                    if stream.read_exact(&mut len_buf).await.is_err() {
+                    let mut framed = framed_socket(stream);
+                    let Some(Ok(buf)) = framed.next().await else {
                         return;
-                    }
-                    let len = u32::from_be_bytes(len_buf) as usize;
-                    let mut buf = vec![0u8; len];
-                    if stream.read_exact(&mut buf).await.is_err() {
-                        return;
-                    }
+                    };
 
                     match postcard::from_bytes::<IpcCommand>(&buf) {
                         Ok(IpcCommand::Subscribe) => {
-                            // 1. Send immediate initial state
                             let initial = status_fn();
-                            if let Ok(initial_payload) = postcard::to_stdvec(&IpcResponse::Status(initial)) {
-                                let len = initial_payload.len() as u32;
-                                if stream.write_all(&len.to_be_bytes()).await.is_err()
-                                    || stream.write_all(&initial_payload).await.is_err()
-                                {
+                            if let Ok(initial_payload) =
+                                postcard::to_stdvec(&IpcResponse::Status(initial))
+                            {
+                                if framed.send(initial_payload.as_slice()).await.is_err() {
                                     return;
                                 }
                             }
 
-                            // 2. Stream broadcasted events
                             let mut rx = broadcaster().subscribe();
                             while let Ok(status) = rx.recv().await {
-                                if let Ok(resp_payload) = postcard::to_stdvec(&IpcResponse::Status(status)) {
-                                    let len = resp_payload.len() as u32;
-                                    if stream.write_all(&len.to_be_bytes()).await.is_err()
-                                        || stream.write_all(&resp_payload).await.is_err()
-                                    {
+                                if let Ok(resp_payload) =
+                                    postcard::to_stdvec(&IpcResponse::Status(status))
+                                {
+                                    if framed.send(resp_payload.as_slice()).await.is_err() {
                                         break;
                                     }
                                 }
@@ -670,17 +680,13 @@ where
                         Ok(cmd) => {
                             let response = handler(cmd);
                             if let Ok(resp_payload) = postcard::to_stdvec(&response) {
-                                let resp_len = resp_payload.len() as u32;
-                                let _ = stream.write_all(&resp_len.to_be_bytes()).await;
-                                let _ = stream.write_all(&resp_payload).await;
+                                let _ = framed.send(resp_payload.as_slice()).await;
                             }
                         }
                         Err(e) => {
                             let response = IpcResponse::Error(format!("Malformed command: {e}"));
                             if let Ok(resp_payload) = postcard::to_stdvec(&response) {
-                                let resp_len = resp_payload.len() as u32;
-                                let _ = stream.write_all(&resp_len.to_be_bytes()).await;
-                                let _ = stream.write_all(&resp_payload).await;
+                                let _ = framed.send(resp_payload.as_slice()).await;
                             }
                         }
                     }
@@ -690,5 +696,36 @@ where
                 warn!(error = %e, "IPC accept error");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_interprocess_ipc_roundtrip() {
+        let sock = std::env::temp_dir().join(format!("night-ipc-test-{}.sock", std::process::id()));
+        let sock_srv = sock.clone();
+        let handle = tokio::spawn(async move {
+            run_ipc_server_at(
+                &sock_srv,
+                |cmd| match cmd {
+                    IpcCommand::GetPowerSaver => IpcResponse::PowerSaver(true),
+                    _ => IpcResponse::Ok,
+                },
+                DesktopStatus::default,
+            )
+            .await;
+        });
+
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        let resp = send_command_to(&sock, &IpcCommand::GetPowerSaver)
+            .await
+            .expect("IPC roundtrip failed");
+        assert_eq!(resp, IpcResponse::PowerSaver(true));
+
+        handle.abort();
+        let _ = std::fs::remove_file(&sock);
     }
 }
