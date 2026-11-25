@@ -605,6 +605,18 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
   * [x] Extended `nightctl launcher [apps|calc|files|clipboard|symbols|websearch|runner|dmenu|snowcap]`.
   * [x] Added `nightctl doctor` checking `WAYLAND_DISPLAY`, Night IPC connectivity, and core desktop binaries.
 
+---
+
+### Phase 29: Persistent Session Recovery, `app_id` Launch Resolution & `interprocess` IPC
+* [x] **`interprocess` + `LengthDelimitedCodec` IPC Migration (`crates/night-core/src/ipc.rs`)**:
+  * [x] Replaced raw `tokio::net::UnixStream`/`UnixListener` and manual byte-length framing with `interprocess::local_socket::tokio` and `tokio_util::codec::LengthDelimitedCodec` (4 MiB frame cap).
+  * [x] Added `test_interprocess_ipc_roundtrip` verifying live client/server IPC roundtrips.
+* [x] **Persistent Session Recovery (`crates/night-core/src/session_restore.rs`, `night-pinnacle`, `night-ctl`)**:
+  * [x] Moved `SavedSession::cache_path()` from volatile `$XDG_RUNTIME_DIR` to persistent `$XDG_DATA_HOME/night/saved-session.bin` so sessions survive logouts and reboots.
+  * [x] Added `resolve_launch_command()` mapping Wayland `app_id`s (reverse-DNS/branded IDs) to system executables.
+  * [x] Updated `SaveSession` / `RestoreSession` to capture per-window tags and active layout, and restore theme, layout, active tag, and windows.
+  * [x] Enhanced `nightctl session status` to inspect saved session snapshots on disk.
+
 
 
 
