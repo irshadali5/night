@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use tracing::{info, warn};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct UserConfig {
     #[serde(default)]
     pub general: GeneralConfig,
@@ -118,16 +118,6 @@ impl Default for GammaConfig {
     }
 }
 
-impl Default for UserConfig {
-    fn default() -> Self {
-        Self {
-            general: GeneralConfig::default(),
-            apps: AppsConfig::default(),
-            gamma: GammaConfig::default(),
-        }
-    }
-}
-
 impl UserConfig {
     /// Resolves standard XDG config directory via `dirs`
     pub fn path() -> PathBuf {
@@ -173,11 +163,34 @@ impl UserConfig {
                 source: std::io::Error::new(std::io::ErrorKind::InvalidData, e),
             }
         })?;
-        fs::write(&config_path, content).map_err(|source| crate::error::ConfigError::WriteFailed {
-            path: config_path.clone(),
-            source,
+        crate::write_atomic(&config_path, content.as_bytes()).map_err(|source| {
+            crate::error::ConfigError::WriteFailed {
+                path: config_path.clone(),
+                source,
+            }
         })?;
         info!(path = %config_path.display(), "Saved TOML configuration");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_launcher_is_walker() {
+        let cfg = UserConfig::default();
+        assert_eq!(cfg.apps.launcher, "walker");
+        assert_eq!(cfg.apps.minimal_launcher, "walker");
+    }
+
+    #[test]
+    fn test_toml_roundtrip() {
+        let cfg = UserConfig::default();
+        let toml_str = toml::to_string_pretty(&cfg).expect("serialize toml");
+        let parsed: UserConfig = toml::from_str(&toml_str).expect("deserialize toml");
+        assert_eq!(parsed.apps.launcher, cfg.apps.launcher);
+        assert_eq!(parsed.general.border_width, cfg.general.border_width);
     }
 }
