@@ -725,19 +725,21 @@ async fn task_msg(command: MsgCommand) {
         MsgCommand::Sink { action } => match action.as_deref() {
             Some("cycle") | Some("next") => night_core::ipc::IpcCommand::CycleAudioSink,
             Some("menu") => night_core::ipc::IpcCommand::ShowAudioSinkMenu,
-            Some(id_str) if id_str.parse::<u32>().is_ok() => {
-                night_core::ipc::IpcCommand::SetAudioSink(id_str.parse::<u32>().unwrap())
-            }
-            _ => night_core::ipc::IpcCommand::GetAudioSinks,
+            Some(id_str) => match id_str.parse::<u32>() {
+                Ok(id) => night_core::ipc::IpcCommand::SetAudioSink(id),
+                Err(_) => night_core::ipc::IpcCommand::GetAudioSinks,
+            },
+            None => night_core::ipc::IpcCommand::GetAudioSinks,
         },
         MsgCommand::Brightness { action } => {
             let act = match action.as_deref() {
                 Some("raise") | Some("up") => night_core::backlight::BacklightAction::Raise(5),
                 Some("lower") | Some("down") => night_core::backlight::BacklightAction::Lower(5),
-                Some(pct_str) if pct_str.parse::<u8>().is_ok() => {
-                    night_core::backlight::BacklightAction::Set(pct_str.parse::<u8>().unwrap())
-                }
-                _ => night_core::backlight::BacklightAction::Query,
+                Some(pct_str) => match pct_str.parse::<u8>() {
+                    Ok(pct) => night_core::backlight::BacklightAction::Set(pct),
+                    Err(_) => night_core::backlight::BacklightAction::Query,
+                },
+                None => night_core::backlight::BacklightAction::Query,
             };
             night_core::ipc::IpcCommand::Backlight(act)
         }
@@ -993,8 +995,7 @@ fn task_session(root: &Path) {
     let _ = fs::create_dir_all(&bin_dir);
     let session_src = root.join("target/release/night-session");
     let session_dst = bin_dir.join("night-session");
-    if session_src.exists() {
-        if let Ok(_) = fs::copy(&session_src, &session_dst) {
+    if session_src.exists() && fs::copy(&session_src, &session_dst).is_ok() {
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
@@ -1005,7 +1006,6 @@ fn task_session(root: &Path) {
                 }
             }
             println!("==> Installed pure-Rust session binary to {}", session_dst.display());
-        }
     } else {
         // Fallback to assets launcher if release binary not yet built
         let fallback_src = root.join("assets/night-session");
@@ -1031,7 +1031,7 @@ fn task_session(root: &Path) {
 
     // 3. Install systemd user services to ~/.config/systemd/user/
     let systemd_user_dir = home.join(".config/systemd/user");
-    if let Ok(_) = fs::create_dir_all(&systemd_user_dir) {
+    if fs::create_dir_all(&systemd_user_dir).is_ok() {
         let service_src = root.join("assets/night.service");
         if service_src.exists() {
             let _ = fs::copy(&service_src, systemd_user_dir.join("night.service"));
@@ -1048,7 +1048,7 @@ fn task_session(root: &Path) {
 
     // 4. Install XDG desktop portal configurations
     let portal_dir = home.join(".config/xdg-desktop-portal");
-    if let Ok(_) = fs::create_dir_all(&portal_dir) {
+    if fs::create_dir_all(&portal_dir).is_ok() {
         let portal_src = root.join("assets/night-portals.conf");
         if portal_src.exists() {
             let _ = fs::copy(&portal_src, portal_dir.join("night-portals.conf"));
@@ -1223,12 +1223,13 @@ fn task_wallpaper(target: Option<PathBuf>) {
     };
 
     if let Some(img) = wallpaper_path {
+        let img_str = img.to_string_lossy();
         println!("==> Setting Bihar Night wallpaper: {}", img.display());
         if which::which("swww").is_ok() {
             let _ = Command::new("swww")
                 .args([
                     "img",
-                    img.to_str().unwrap(),
+                    img_str.as_ref(),
                     "--transition-type",
                     "grow",
                     "--transition-pos",
@@ -1244,7 +1245,7 @@ fn task_wallpaper(target: Option<PathBuf>) {
         } else if which::which("swaybg").is_ok() {
             let _ = Command::new("pkill").args(["-x", "swaybg"]).status();
             let _ = Command::new("swaybg")
-                .args(["-i", img.to_str().unwrap(), "-m", "fill"])
+                .args(["-i", img_str.as_ref(), "-m", "fill"])
                 .spawn();
         }
     } else {
@@ -1292,7 +1293,7 @@ fn task_screenshot(mode: &str) {
                     if let Ok(wayshot_child) = wayshot {
                         if let Some(stdout) = wayshot_child.stdout {
                             let _ = Command::new("satty")
-                                .args(["--filename", "-", "--output-filename", target_file.to_str().unwrap()])
+                                .args(["--filename", "-", "--output-filename", target_file.to_string_lossy().as_ref()])
                                 .stdin(stdout)
                                 .status();
                         }
@@ -1303,7 +1304,7 @@ fn task_screenshot(mode: &str) {
         "full" => {
             println!("==> Capturing full screen to {}...", target_file.display());
             let _ = Command::new("wayshot")
-                .args(["-f", target_file.to_str().unwrap()])
+                .args(["-f", target_file.to_string_lossy().as_ref()])
                 .status();
 
             if which::which("rsclipd").is_ok() {
@@ -1341,7 +1342,7 @@ fn task_screenshot(mode: &str) {
                     if let Ok(wayshot_child) = wayshot {
                         if let Some(stdout) = wayshot_child.stdout {
                             let _ = Command::new("satty")
-                                .args(["--filename", "-", "--output-filename", target_file.to_str().unwrap()])
+                                .args(["--filename", "-", "--output-filename", target_file.to_string_lossy().as_ref()])
                                 .stdin(stdout)
                                 .status();
                         }
@@ -1411,7 +1412,7 @@ fn task_record() {
                 "--encode-resolution",
                 "1920x1080",
                 "-f",
-                target_file.to_str().unwrap(),
+                target_file.to_string_lossy().as_ref(),
             ])
             .spawn();
         println!("✅ Screen recording active in background.");
