@@ -129,8 +129,14 @@ pub async fn start_all() {
         spawn_shell("wl-paste --type text --watch nightctl clip-record >/dev/null 2>&1 &");
     }
 
-    // Synchronize wallpaper with current Bihar Night theme variant
+    // Synchronize wallpaper and Walker theme with current Bihar Night theme variant
     wallpaper::sync_wallpaper_theme(user_cfg.general.theme);
+    user_cfg.general.theme.sync_walker_theme();
+
+    // Spawn core daemon health & auto-restart supervisor
+    tokio::spawn(async {
+        supervise_core_daemons().await;
+    });
 
     // Spawn background battery power monitoring & low-energy notification alerts
     tokio::spawn(async {
@@ -158,4 +164,72 @@ pub async fn start_all() {
     });
 
     info!("Night daemon supervisor initialization finished.");
+}
+
+static RESTART_COUNTS: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<&'static str, u32>>> =
+    std::sync::OnceLock::new();
+
+fn restart_counts() -> &'static std::sync::Mutex<std::collections::HashMap<&'static str, u32>> {
+    RESTART_COUNTS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+/// Returns live health status for all managed core daemons.
+pub fn get_daemon_health() -> Vec<night_core::ipc::DaemonHealth> {
+    let counts = night_core::lock_unpoison(restart_counts());
+    CORE_DAEMONS
+        .iter()
+        .map(|d| night_core::ipc::DaemonHealth {
+            name: d.name.to_string(),
+            command: d.command.to_string(),
+            installed: which::which(d.command).is_ok(),
+            running: is_process_running(d.command),
+            restarts: counts.get(d.command).copied().unwrap_or(0),
+        })
+        .collect()
+}
+
+/// Periodically verifies core desktop daemons are alive and restarts crashed ones (up to 5 restarts).
+pub async fn supervise_core_daemons() {
+    const MAX_RESTARTS: u32 = 5;
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+        for daemon in CORE_DAEMONS {
+            if which::which(daemon.command).is_err() || is_process_running(daemon.command) {
+                continue;
+            }
+            let count = {
+                let mut counts = night_core::lock_unpoison(restart_counts());
+                let entry = counts.entry(daemon.command).or_insert(0);
+                if *entry >= MAX_RESTARTS {
+                    continue;
+                }
+                *entry += 1;
+                *entry
+            };
+            warn!(
+                daemon = %daemon.name,
+                binary = %daemon.command,
+                restart = count,
+                "Core daemon stopped unexpectedly; restarting"
+            );
+            spawn(daemon.command, daemon.args);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_core_daemons_include_walker_and_elephant() {
+        let cmds: Vec<&str> = CORE_DAEMONS.iter().map(|d| d.command).collect();
+        assert!(cmds.contains(&"elephant"));
+        assert!(cmds.contains(&"walker"));
+    }
+
+    #[test]
+    fn test_is_process_running_nonexistent() {
+        assert!(!is_process_running("nonexistent_night_daemon_xyz_999"));
+    }
 }
