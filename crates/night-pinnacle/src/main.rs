@@ -483,18 +483,25 @@ async fn config() {
                         last_reload_timestamp: 0,
                     });
                     let user_cfg = UserConfig::load();
+                    let layout_name = night_layout::current_layout().name().to_string();
                     let mut windows = Vec::new();
                     for win in pinnacle_api::window::get_all() {
+                        let win_tag = win
+                            .tags()
+                            .next()
+                            .map(|t| t.name())
+                            .unwrap_or_else(|| state.active_tag.clone());
                         windows.push(night_core::session_restore::SavedWindow {
                             app_id: win.app_id().to_string(),
                             title: win.title().to_string(),
-                            tag: state.active_tag.clone(),
+                            tag: win_tag,
                             is_floating: win.floating(),
                         });
                     }
                     night_core::session_restore::SavedSession::save(
                         &state.active_tag,
                         user_cfg.general.theme.name(),
+                        &layout_name,
                         windows,
                     );
                     IpcResponse::Ok
@@ -502,12 +509,32 @@ async fn config() {
                 IpcCommand::RestoreSession => {
                     let saved = night_core::session_restore::SavedSession::load();
                     if let Some(ref s) = saved {
-                        info!(windows = s.windows.len(), "Restoring saved desktop session");
+                        info!(
+                            windows = s.windows.len(),
+                            tag = %s.active_tag,
+                            theme = %s.theme,
+                            layout = %s.layout,
+                            "Restoring saved desktop session"
+                        );
+                        if let Some(variant) = night_core::ThemeVariant::parse_variant(&s.theme) {
+                            let mut cfg = UserConfig::load();
+                            cfg.general.theme = variant;
+                            let _ = cfg.save();
+                            night_daemons::wallpaper::sync_wallpaper_theme(variant);
+                            variant.sync_walker_theme();
+                        }
+                        if let Some(kind) = night_layout::LayoutKind::parse(&s.layout) {
+                            night_layout::set_layout_for_tag(&s.active_tag, kind);
+                        }
+                        night_tags::switch_to_tag(&s.active_tag);
                         for w in &s.windows {
-                            if which::which(&w.app_id).is_ok() {
-                                night_core::exec::spawn_shell(&w.app_id);
+                            if let Some(cmd) =
+                                night_core::session_restore::resolve_launch_command(&w.app_id)
+                            {
+                                night_core::exec::spawn_shell(&cmd);
                             }
                         }
+                        night_core::ipc::broadcast_status(current_desktop_status());
                     }
                     IpcResponse::SavedSession(saved)
                 }
