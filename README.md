@@ -62,8 +62,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 | **Status Bar** | [Ironbar](https://github.com/JakeStanger/ironbar) | GTK4-rs + Layer-Shell | Launched by `night-daemons` on startup. |
 | **Native Widgets** | [Snowcap](https://github.com/pinnacle-comp/snowcap) | Rust + Wayland | Companion widget system by the Pinnacle team. |
 | **Alternative Widgets** | [Eww](https://github.com/elkowar/eww) | GTK-rs + Cairo | Can be launched by `night-daemons`. |
-| **App Launcher** | [Anyrun](https://github.com/anyrun-org/anyrun) | GTK4-rs + Layer-Shell | Bound to `Super + Space` in `night-binds`. |
-| **Minimalist Launcher** | [Yofi](https://github.com/loki-47-500/yofi) | Pure Rust (`smithay-client-toolkit`) | Bound to `Super + d` in `night-binds`. |
+| **App Launcher** | [Walker](https://github.com/abenz1267/walker) + [Elephant](https://github.com/abenz1267/elephant) | Rust + GTK4 | Primary launcher & dmenu replacement bound to `Super + Space` / `Super + d` in `night-binds`. |
 | **Terminal Emulator** | [Alacritty](https://github.com/alacritty/alacritty) | Rust + OpenGL | Primary terminal bound to `Super + Return`. |
 | **Alternative Terminal**| [Rio](https://github.com/raphamorim/rio) | Rust + WebGPU | Bound to `Super + Shift + Return`. |
 | **GUI File Manager** | [Favnyr](https://github.com/GlitchAwakened/Favnyr) | Rust + Slint UI | Modern, lightweight native file manager bound to `Super + e`. |
@@ -89,8 +88,7 @@ Night acts as the brain of your desktop, coordinating with standalone, high-perf
 ### Application Launchers
 * `Super + Return` $\rightarrow$ Launch **Alacritty** (Terminal)
 * `Super + Shift + Return` $\rightarrow$ Launch **Rio** (GPU Terminal)
-* `Super + Space` $\rightarrow$ Launch **Anyrun** (Runner)
-* `Super + d` $\rightarrow$ Launch **Yofi** (Minimal Pure-Rust Launcher)
+* `Super + Space` / `Super + d` $\rightarrow$ Launch **Walker** (Application Launcher, Calculator, Files, Clipboard, Symbols)
 * `Super + e` $\rightarrow$ Launch **Favnyr** (Rust+Slint GUI File Manager)
 * `Super + y` $\rightarrow$ Launch **Yazi** (Async Terminal File Manager)
 * `Super + b` $\rightarrow$ Launch **Zen Browser** (Primary Web Browser)

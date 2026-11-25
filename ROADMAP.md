@@ -223,7 +223,7 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
   * [x] Window border width tuning and configuration saving to `~/.config/night/night.toml`.
   * [x] Layout indicator and click-to-cycle button.
 * [x] **Application Preferences**:
-  * [x] Visual configuration editor for terminals (`alacritty`, `rio`), browsers (`zen-browser`, `brave`), file managers (`favnyr`, `yazi`), and launchers (`anyrun`, `yofi`).
+  * [x] Visual configuration editor for terminals (`alacritty`, `rio`), browsers (`zen-browser`, `brave`), file managers (`favnyr`, `yazi`), and launchers (`walker`).
 * [x] **Displays & Monitor Profiles**:
   * [x] Monitor profile editor reading and writing declarative `~/.config/night/monitors.ron` via `MonitorProfile::save_all()`.
   * [x] HiDPI display scaling presets (`1.0x`, `1.25x`, `1.5x`, `2.0x`), resolution modes, orientation transforms, and Adaptive Sync / VRR toggles.
@@ -352,7 +352,7 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
   * [x] Cleans XDG exec arguments (`%f`, `%u`, `%F`, etc.) and automatically wraps terminal applications.
   * [x] Curated priority ordering for signature Tokyo Night tools (`Alacritty`, `Rio`, `Vivi`, `Favnyr`, `Yazi`, `Zen Browser`, `Brave`, `Night Settings`).
   * [x] Snowcap layer-shell modal bound to `Super + space` (and `nightctl launcher`).
-  * [x] Interactive single-key instant launch (`[1]..=[8]`), extended search (`[9]` Yofi), mnemonic shortcuts (`[T]`, `[M]`, `[F]`, `[B]`, `[S]`), and `[Esc]` cancellation.
+  * [x] Interactive single-key instant launch (`[1]..=[8]`), extended search (`[9]` Walker), mnemonic shortcuts (`[T]`, `[M]`, `[F]`, `[B]`, `[S]`), and `[Esc]` cancellation.
 * [x] **Pure-Rust Network Connectivity & Wi-Fi Monitor (`crates/night-core/src/network.rs`)**:
   * [x] Direct sysfs `/sys/class/net` operstate scanner for active wired (`en*`, `eth*`) and wireless (`wl*`) interfaces.
   * [x] Dynamic Nerd Font signal quality glyphs: `󰤨` (80-100%), `󰤥` (60-79%), `󰤢` (40-59%), `󰤟` (20-39%), `󰤯` (<20%), `󰈀` (Ethernet), `󰤮` (Disconnected).
@@ -595,7 +595,7 @@ Phase 1 ──> ... ──> Phase 22 ──> Phase 23 ──> Phase 24 ──> M
 
 ### Phase 28: Walker + Elephant Launcher Integration, Daemon Health Supervisor & `nightctl doctor`
 * [x] **Walker + Elephant Integration (`night-core`, `night-daemons`, `night-binds`, `xtask`)**:
-  * [x] Replaced legacy `anyrun`/`yofi`/`fuzzel` defaults with `walker` + `elephant` in `night.toml`, `Defaults`, `AppsConfig`, `settings.slint`, and `packaging/PKGBUILD`.
+  * [x] Replaced legacy launcher defaults with `walker` + `elephant` in `night.toml`, `Defaults`, `AppsConfig`, `settings.slint`, and `packaging/PKGBUILD`.
   * [x] Added dynamic `ThemeVariant::sync_walker_theme()` generating `~/.config/walker/themes/night/style.css` on startup, theme switch, and `night.toml` hot-reload.
   * [x] Bound `Super + Space` / `Alt + Space` to `walker` (with Snowcap fallback), `Super + .` to Walker symbols/emoji picker, and `Super + =` to Walker calculator.
 * [x] **Daemon Health & Auto-Restart Supervisor (`crates/night-daemons` & `night-core`)**:
