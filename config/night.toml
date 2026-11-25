@@ -17,8 +17,8 @@ titlebar_height = 18
 [apps]
 terminal = "alacritty"
 alt_terminal = "alacritty"
-launcher = "fuzzel"
-minimal_launcher = "fuzzel"
+launcher = "walker"
+minimal_launcher = "walker"
 file_manager = "alacritty -e yazi"
 term_file_manager = "yazi"
 browser = "zen-browser"
