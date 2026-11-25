@@ -1,7 +1,7 @@
 //! 🌙 Bihar Night Application Launcher & Command Runner Modal
 //! Fast, pure-Rust XDG desktop application scanner and layer-shell runner modal.
 //! Supports instant single-key launch (`[1-8]`), mnemonic shortcuts (`[T]`, `[M]`, `[F]`, `[B]`, `[S]`),
-//! and fallback to extended search (`[9]` Yofi).
+//! and fallback to extended search (`[9]` Walker).
 
 use pinnacle_api::experimental::snowcap_api::layer::{
     new_widget, ExclusiveZone, KeyboardInteractivity, ZLayer,
@@ -273,8 +273,8 @@ impl pinnacle_api::experimental::snowcap_api::widget::Program for LauncherModal 
             children.push(Text::new("").style(text::Style::new().pixels(4.0)).into());
         }
 
-        // Slot [9]: Extended Launcher (Yofi)
-        let slot9_line = "  [9] 󰍉  Extended Launcher (Yofi)    •  Fuzzy search all system binaries & apps".to_string();
+        // Slot [9]: Extended Launcher (Walker)
+        let slot9_line = "  [9] 󰍉  Extended Launcher (Walker)  •  Fuzzy search all system binaries & apps".to_string();
         let slot9_text = Text::new(slot9_line).style(
             text::Style::new()
                 .font(self.font.clone().weight(Weight::Bold))
@@ -360,7 +360,7 @@ pub fn show_launcher_modal() {
                 Keysym::_7 => Some(6),
                 Keysym::_8 => Some(7),
                 Keysym::Return => Some(0),
-                // [9] Extended launcher (Yofi / Anyrun)
+                // [9] Extended launcher (Walker)
                 Keysym::_9 => {
                     h.close();
                     let launcher = night_core::config::UserConfig::load().apps.launcher;
