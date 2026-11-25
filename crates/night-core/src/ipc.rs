@@ -438,6 +438,7 @@ pub enum IpcCommand {
 }
 
 /// Desktop IPC Response
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IpcResponse {
     Ok,

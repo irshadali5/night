@@ -106,7 +106,7 @@ fn get_system() -> &'static Mutex<System> {
 /// Gathers comprehensive real-time system performance statistics via `sysinfo`
 pub fn read_system_stats() -> SystemStats {
     let (cpu_pct, mem_used_mb, mem_total_mb, mem_pct) = {
-        let mut sys = get_system().lock().unwrap();
+        let mut sys = crate::lock_unpoison(get_system());
         sys.refresh_cpu_usage();
         sys.refresh_memory();
 

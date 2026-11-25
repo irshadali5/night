@@ -185,7 +185,7 @@ pub fn list_sinks() -> Vec<AudioSink> {
                         let is_default = trimmed.contains('*');
                         // Example line: "│  *   49. Built-in Audio Analog Stereo        [vol: 0.65]"
                         // Clean line by removing tree characters
-                        let clean = trimmed.replace('│', "").replace('*', "");
+                        let clean = trimmed.replace(['│', '*'], "");
                         let parts: Vec<&str> = clean.split_whitespace().collect();
                         if let Some(first) = parts.first() {
                             let id_str = first.trim_end_matches('.');
@@ -223,7 +223,7 @@ pub fn list_sinks() -> Vec<AudioSink> {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if parts.len() >= 2 {
                         let id = parts[0].parse::<u32>().unwrap_or(idx as u32);
-                        let name = parts[1].replace('_', " ").replace('.', " ");
+                        let name = parts[1].replace(['_', '.'], " ");
                         sinks.push(AudioSink {
                             id,
                             name,

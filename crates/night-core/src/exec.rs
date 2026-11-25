@@ -6,12 +6,21 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use std::sync::Once;
 use tracing::{debug, error, info, warn};
+
+static DESKTOP_ENV_INIT: Once = Once::new();
 
 /// Ensures essential Wayland and Cargo environment variables are initialized for all child processes.
 /// Automatically prepends `~/.cargo/bin` and `~/.local/bin` to `PATH` if not already present,
 /// and auto-detects `WAYLAND_DISPLAY` if absent from the current process environment.
 pub fn ensure_desktop_env() {
+    DESKTOP_ENV_INIT.call_once(|| {
+        init_desktop_env_once();
+    });
+}
+
+fn init_desktop_env_once() {
     // 1. Augment PATH with standard Cargo and local user bin directories
     if let Ok(current_path) = env::var("PATH") {
         let mut dirs_to_prepend: Vec<PathBuf> = Vec::new();
